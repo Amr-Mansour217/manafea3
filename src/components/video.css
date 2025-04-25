@@ -1,0 +1,448 @@
+:root {
+            --main-blue: #1e3157;
+            --dark-blue: #142541;
+            --third-color: #233d60;
+            --gold: #D4AC0C;
+            --dark-gold: #9c730c;
+            --white: #ffffff;
+            --light-bg: #f5f7fa;
+            --gray: #aaa;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            /* font-family: 'Cairo', sans-serif; */
+            background-color: var(--light-bg);
+            color: var(--dark-blue);
+        }
+        .videos-header {
+            background-color: var(--third-color);
+            padding: 30px 20px;
+            text-align: center;
+            color: var(--white);
+        }
+        
+        .videos-header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .videos-header p {
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        /* أقسام الفيديوهات */
+        .video-categories {
+            background-color: var(--light-bg);
+            padding: 15px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .video-categories ul {
+            display: flex;
+            list-style: none;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .video-categories ul li {
+            margin: 5px 10px;
+        }
+        
+        .video-categories ul li a {
+            display: block;
+            padding: 8px 15px;
+            background-color: #d8d6d6ab;
+            color: var(--dark-blue);
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .video-categories ul li a:hover,
+        .video-categories ul li a.active {
+            background-color: var(--main-blue);
+            color: var(--white);
+        }
+        
+        /* قسم الفيديوهات */
+        .videos-section {
+            padding: 0px 20px;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .title-actions {
+            display: flex;
+            gap: 10px;
+            margin-right: 10px;
+        }
+        
+        .title-actions .edit-icon:hover {
+            opacity: 0.8;
+        }
+        
+        .title-actions .delete-icon:hover {
+            opacity: 0.8;
+        }
+        
+        .section-title h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-blue);
+            position: relative;
+            display: inline-block;
+            padding: 0 30px;
+        }
+        
+        .section-title h2::before,
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 25px;
+            height: 2px;
+            background-color: var(--gold);
+            transform: translateY(-50%);
+        }
+        
+        .section-title h2::before {
+            right: 0;
+        }
+        
+        .section-title h2::after {
+            left: 0;
+        }
+        
+        /* شبكة الفيديوهات */
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        
+        .video-thumbnail iframe {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        
+        .video-card:hover .video-thumbnail img {
+            opacity: 0.7;
+        }
+        
+        /* .play-button {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 20px;
+            z-index: 1;
+            transition: background-color 0.3s, transform 0.3s;
+        } */
+        
+        /* .video-card:hover .play-button {
+            background-color: var(--gold);
+            transform: scale(1.1);
+        } */
+        
+        .video-info {
+            padding: 15px;
+        }        
+        .video-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+/*         
+        .video-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #777;
+            font-size: 13px;
+        } */
+                
+        
+        /* نافيجيشن الصفحات */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
+        }
+        
+        .pagination ul {
+            display: flex;
+            list-style: none;
+        }
+        
+        .pagination li {
+            margin: 0 5px;
+        }
+        
+        .pagination a {
+            display: flex;
+            width: 35px;
+            height: 35px;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--white);
+            color: var(--dark-blue);
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .pagination a:hover,
+        .pagination a.active {
+            background-color: var(--main-blue);
+            color: var(--white);
+        }
+        
+        @media (max-width: 768px) {
+            .top-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .main-nav {
+                flex-direction: column;
+            }
+            
+            .main-nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .videos-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .videos-header h1 {
+                font-size: 26px;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .video-categories ul {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .videos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .edit-field select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .edit-field select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .edit-field select option {
+            padding: 8px;
+        }
+
+        .video-thumbnail {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* نسبة 16:9 */
+            background: #000;
+            overflow: hidden;
+        }
+        
+        .video-thumbnail video,
+        .video-thumbnail iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .local-video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .local-video {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
+        .manage-categories-btn {
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .categories-list {
+            margin: 1rem 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .category-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .category-actions svg {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+        
+        .category-actions svg:hover {
+            opacity: 1;
+        }
+
+        /* تنسيق أيقونة التعديل في التصنيفات */
+        .category-actions .edit-icon {
+            color: var(--dark-blue); 
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .category-actions .edit-icon:hover {
+            opacity: 0.8;
+        }
+
+        /* الإبقاء على لون أيقونة الحذف باللون الأحمر */
+        .category-actions .delete-icon {
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .category-actions .delete-icon:hover {
+            opacity: 0.8;
+        }
+
+        .video-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .video-modal-wrapper {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .video-modal-title {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .video-modal-container {
+            margin-top: 15px;
+        }
+
+        .video-modal-text {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .video-modal-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .video-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .video-modal-save,
+        .video-modal-cancel {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .video-modal-save {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .video-modal-cancel {
+            background: #ddd;
+            color: #333;
+        }

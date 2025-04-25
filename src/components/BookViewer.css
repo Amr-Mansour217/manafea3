@@ -1,0 +1,195 @@
+.book-viewer-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.book-viewer-header {
+  padding: 1rem;
+  background-color: #fff;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 2;
+}
+
+.book-viewer-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.back-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: #0056b3;
+}
+
+.book-viewer-content {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.5rem;
+  min-height: 0;
+}
+
+.book-viewer-iframe {
+  flex: 1;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 500px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  background-color: white;
+}
+
+/* تحسين عرض PDF */
+.book-viewer-iframe::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.book-viewer-iframe::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+.book-viewer-iframe::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+.book-viewer-iframe::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* تحسينات لعرض الجداول */
+object[type="application/pdf"] {
+  background: white;
+  margin: 0 auto;
+}
+
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 100;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+/* تحسينات للأجهزة المحمولة */
+@media (max-width: 768px) {
+  .book-viewer-container {
+    height: 100dvh;
+  }
+
+  .book-viewer-header {
+    padding: 0.8rem;
+  }
+
+  .book-viewer-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .back-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .book-viewer-content {
+    padding: 0.25rem;
+  }
+
+  .book-viewer-iframe {
+    min-height: 400px;
+    transform-origin: top left;
+    /* تكبير افتراضي للأجهزة المحمولة */
+    transform: scale(1.2);
+  }
+}
+
+/* تحسينات للشاشات الصغيرة جداً */
+@media (max-width: 480px) {
+  .book-viewer-header {
+    padding: 0.5rem;
+  }
+
+  .book-viewer-content {
+    padding: 0.15rem;
+  }
+
+  .book-viewer-iframe {
+    min-height: 300px;
+    /* تكبير أكبر للشاشات الصغيرة */
+    transform: scale(1.4);
+  }
+}
+
+/* تحسينات للشاشات العريضة */
+@media (min-width: 1200px) {
+  .book-viewer-content {
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .book-viewer-iframe {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+/* تحسينات لوضع الظلام */
+@media (prefers-color-scheme: dark) {
+  .book-viewer-container {
+    background-color: #1a1a1a;
+  }
+
+  .book-viewer-header {
+    background-color: #2d2d2d;
+    border-bottom-color: #404040;
+  }
+
+  .book-viewer-header h1 {
+    color: #fff;
+  }
+
+  .loading-spinner {
+    background-color: rgba(45, 45, 45, 0.9);
+    color: #fff;
+  }
+}
+
+object {
+  height: 100%;
+} 

@@ -1,0 +1,517 @@
+.another-categories {
+    background-color: var(--light-bg);
+    padding: 15px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.another-categories ul {
+    display: flex;
+    list-style: none;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.another-categories ul li {
+    margin: 5px 10px;
+}
+
+.another-categories ul li a {
+    display: block;
+    padding: 8px 15px;
+    background-color: #d8d6d6ab;
+    color: var(--dark-blue);
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.another-categories ul li a:hover,
+.another-categories ul li a.active {
+    background-color: var(--main-blue);
+    color: var(--white);
+}
+
+.another-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .another-categories ul {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    list-style-type: none;
+    padding: 0;
+    margin-bottom: 30px;
+  }
+  
+  .another-categories li {
+    margin: 5px;
+  }
+  
+  .another-categories a {
+    text-decoration: none;
+    color: #333;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+  
+  .another-categories a.active,
+  .another-categories a:hover {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .websites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .website-item {
+    position: relative;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .website-item:hover {
+    transform: scale(1.05);
+  }
+  
+  .website-item img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin: 15px auto;
+    border-radius: 8px;
+    user-select: none;
+  }
+  
+  .website-item p {
+    margin: 0;
+    font-weight: bold;
+  }
+  
+  .page-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  .content-wrap {
+    flex: 1;
+  }
+
+  .another-header {
+    background-color: var(--third-color);
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--white);
+}
+
+.another-header h1 {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.another-header p {
+    margin: 0 auto;
+    line-height: 1.6;
+}
+  /* تصغير الصور بنسبة 35% للكمبيوتر */
+  /* تصغير الصور بنسبة 35% للكمبيوتر وتنزيلها لتحت بنسبة 15% */
+  @media (min-width: 1024px) {
+    .website-item img {
+      width: 65%; /* 100% - 35% = 65% */
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 15%; /* إضافة هامش علوي بنسبة 15% */
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .websites-grid {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px; /* تأكد من تطبيق نفس المسافة على الشاشات الأصغر */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .websites-grid {
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px; /* تأكد من تطبيق نفس المسافة على الشاشات الصغيرة جدًا */
+    }
+  }
+
+.website-item-wrapper {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.admin-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.website-item:hover .admin-controls {
+  opacity: 1;
+}
+
+.admin-controls button {
+  background: white;
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-controls button:hover {
+  transform: scale(1.1);
+}
+
+/* تغيير لون أيقونة التعديل */
+.admin-controls button:first-child {
+  color: #2196F3;
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.admin-controls button:first-child:hover {
+  background: rgba(33, 150, 243, 0.2);
+}
+
+/* تغيير لون أيقونة الحذف */
+.admin-controls button:last-child {
+  color: #f44336;
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.admin-controls button:last-child:hover {
+  background: rgba(244, 67, 54, 0.2);
+}
+
+.add-website-btn {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.add-app {
+  min-height: 200px;
+}
+
+/* زر إضافة موقع جديد */
+/* .add-app {
+  height: 200px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+.add-app:hover {
+  border-color: var(--primary-color);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.add-app-content {
+  text-align: center;
+  color: #666;
+}
+
+.add-app-content svg {
+  font-size: 2em;
+  margin-bottom: 15px;
+}
+
+.add-app-content p {
+  margin: 0;
+  font-size: 14px;
+} */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  direction: rtl;
+}
+
+.modal-content input[type="text"],
+.modal-content input[type="url"] {
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.modal-content label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.modal-content h3 {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-content h3::after {
+  content: attr(data-lang);
+  font-size: 0.8em;
+  color: #666;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  margin-top: 15px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-buttons button:first-child {
+  background: var(--primary-color);
+  color: white;
+}
+
+.modal-buttons button:last-child {
+  background: #6c757d;
+  color: white;
+}
+
+.another-edit-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.another-edit-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  direction: rtl;
+}
+
+.another-edit-form {
+  margin-top: 15px;
+}
+
+.another-edit-label {
+  margin-bottom: 5px;
+}
+
+.another-edit-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.another-edit-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.another-save-btn,
+.another-cancel-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.another-save-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.another-cancel-btn {
+  background: #ddd;
+  color: #333;
+}
+
+.another-edit-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.another-edit-wrapper {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.another-edit-title {
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: #333;
+}
+
+.another-edit-container {
+  margin-top: 15px;
+}
+
+.another-edit-text {
+  margin-bottom: 10px;
+  color: #666;
+}
+
+.another-edit-field {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.another-edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.another-edit-save,
+.another-edit-cancel {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.another-edit-save {
+  background: var(--primary-color);
+  color: white;
+}
+
+.another-edit-cancel {
+  background: #ddd;
+  color: #333;
+}
+
+.edit-header-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.edit-header-input {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.edit-header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.edit-header-buttons button {
+  padding: 5px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-header-buttons button:first-child {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.edit-header-buttons button:last-child {
+  background-color: #ddd;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}

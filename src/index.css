@@ -1,0 +1,13 @@
+:root {
+  --primary-rgb: 76, 175, 80; /* قم بتغيير هذه القيم حسب اللون الأساسي للموقع */
+  --primary-hover-color: #43a047; /* نسخة أغمق من اللون الأساسي */
+  --text-color: #374151;
+  --login-primary: #1e3a5f;
+  --login-primary-hover: #3a6ea5;
+  --login-text: #333;
+  --login-text-secondary: #666;
+  --login-border: #ddd;
+  --login-error: #dc2626;
+  --login-error-bg: #fee2e2;
+  --login-error-border: #fca5a5;
+}

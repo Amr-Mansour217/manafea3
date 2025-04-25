@@ -1,0 +1,580 @@
+header {
+    background-color: var(--primary-color);
+    position: relative;
+    overflow: hidden;
+    /* overflow-x: hidden; */
+  }
+.header-pattern {
+    /* position: absolute; */
+    width: 100vw;
+    /* height: 100%; */
+    /* background-image: url('https://cdnjs.cloudflare.com/ajax/libs/simple-icons/3.0.1/simple-icons.svg'); */
+    /* background-size: 200px; */
+    opacity: 0.05;
+  }
+  
+  .top-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .logo-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* حاوية النصوص المتحركة */
+.scroll-container {
+  position: absolute;
+  width: 100vw;
+  height: 40px;
+  overflow: hidden;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.scroll-track {
+  position: relative;
+  width: 200vw; /* ضعف عرض الشاشة لضمان التغطية الكاملة */
+  height: 100%;
+  display: flex;
+}
+
+.scroll-item {
+  position: absolute;
+  white-space: nowrap;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 8px 16px;
+  animation: scrollText 12s linear infinite;
+  opacity: 0.9;
+  width: 100vw;
+}
+
+/* حركة RTL (العربية وغيرها) */
+@keyframes scrollText {
+  0% {
+    transform: translateX(100vw);
+  }
+  100% {
+    transform: translateX(-100vw);
+  }
+}
+
+/* حركة LTR (الإنجليزية وغيرها) */
+[dir="ltr"] .scroll-item {
+  animation-name: scrollText-ltr;
+}
+
+@keyframes scrollText-ltr {
+  0% {
+    transform: translateX(-100vw);
+  }
+  100% {
+    transform: translateX(100vw);
+  }
+}
+
+/* تأكيد موضع اللوجو */
+.logo-link {
+  position: relative;
+  z-index: 10;
+  background-color: var(--primary-color);
+  padding: 0 20px;
+}
+
+.logo {
+  display: block;
+  height: 50px;
+  width: auto;
+}
+
+.scroll-edit-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
+  cursor: pointer;
+  color: var(--gold);
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.scroll-edit-icon:hover {
+  opacity: 1;
+}
+
+  .brand-name h1 {
+    font-family: 'Amiri', serif;
+    font-size: 32px;
+    margin: 0;
+    letter-spacing: -1px;
+  }
+  
+  .brand-name p {
+    font-size: 14px;
+    opacity: 0.8;
+  }
+  
+  .auth-links {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .auth-btn {
+    padding: 8px 20px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  
+  .login-btn {
+    background-color: transparent;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .login-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .register-btn {
+    background-color: white;
+    color: var(--primary-color);
+  }
+  
+  .register-btn:hover {
+    background-color: var(--light-color);
+    transform: translateY(-2px);
+  }
+  
+  .main-nav {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 30px;
+    background-color: rgba(0, 0, 0, 0.1);
+    position: relative;
+  }
+  
+  .nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 10px;
+    cursor: pointer;
+  }
+  
+  .nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+    font-weight: 500;
+  }
+  
+  .nav-link:before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: white;
+    transition: width 0.3s ease;
+    z-index: -1;
+  }
+  
+  .nav-link:hover:before,
+  .nav-link.active:before {
+    width: 100%;
+  }
+  
+  .nav-link.active {
+    font-weight: 700;
+  }
+  
+  .language-dropdown {
+    position: relative;
+    color: white;
+  }
+  
+  .language-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 16px;
+  }
+  
+  .language-content {
+    visibility: hidden;
+    position: fixed;
+    /* left: 0; */
+    /* top: 15vh; */
+    background-color: white;
+    border-radius: 8px;
+    width: 180px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 10px 0;
+    margin-top: 10px;
+    margin-inline: -70px;
+    z-index: 1000;
+  }
+  
+  .language-content.show {
+    visibility: visible;
+  }
+  
+  .language-content a {
+    display: block;
+    padding: 10px 20px;
+    color: var(--text-color);
+    text-decoration: none;
+    /* transition: all 0.2s; */
+  }
+  
+  .language-content a:hover {
+    background-color: var(--background-color);
+    color: var(--primary-color);
+  }
+  
+  @media (max-width: 768px) {
+    .top-nav {
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .main-nav {
+      flex-direction: column;
+    }
+    
+    .nav-menu {
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+  }
+  /* الأنماط الموجودة تبقى كما هي */
+
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  color: var(--white);
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  position: absolute;
+  /* top: 20px; */
+  z-index: 1101;
+}
+
+@media (max-width: 1024px) {
+  .language-content {
+    margin-inline: -40px;
+  }
+  .mobile-menu-btn {
+    display: block;
+  }
+
+  .main-nav .nav-menu {
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    width: 50vw;
+    background-color: var(--primary-color);
+    padding: 60px 20px 20px;
+    z-index: 1100;
+    transition: transform 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    cursor: unset;
+    animation: visibilityTrans .3s linear;
+  }
+  .nav-menu .nav-link {
+    visibility: visible;
+    animation: visibilityTrans .3s linear;
+  }
+
+  .rtl .main-nav .nav-menu {
+    left: 0;
+    transform: translateX(-100%);
+    visibility: hidden;
+    animation: visibilityTrans .3s linear;
+  }
+  
+  .ltr .main-nav .nav-menu {
+    right: 0;
+    animation: visibilityTrans .3s linear;
+    visibility: hidden;
+    transform: translateX(100%);
+  }
+  
+  .main-nav .nav-menu.mobile-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+  @keyframes visibilityTrans {
+    0% {visibility: hidden;}
+    99.9% {visibility: hidden;}
+    100% {visibility: visible;}
+  }
+  
+  .main-nav .nav-menu li {
+    margin: 10px 0;
+    animation: visibilityTrans .3s linear;
+  }
+
+  .rtl .mobile-menu-btn {
+    left: 20px;
+  }
+
+  .ltr .mobile-menu-btn {
+    right: 20px;
+  }
+
+  .rtl .language-dropdown {
+    right: 20px;
+  }
+
+  .ltr .language-dropdown {
+    left: 20px;
+  }
+}
+@media (max-width: 640px) {
+  .main-nav .nav-menu {
+    width: 100vw;
+  }
+}
+
+@media (min-width: 1025px) {
+  .main-nav .nav-menu {
+    display: flex;
+  }
+
+  .mobile-menu-btn {
+    display: none;
+  }
+}
+a {
+  cursor: pointer;
+}
+
+.nav-item-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.edit-icon {
+  color: white;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+  padding-inline: 5px;
+  margin-left: 10px;
+}
+
+
+.edit-icon:hover {
+  opacity: 1;
+}
+
+.edit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+}
+
+.edit-modal {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 300px;
+}
+
+.edit-modal h3 {
+  margin: 0 0 15px 0;
+  color: var(--text-color);
+}
+
+.edit-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.save-btn, .cancel-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.save-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #ddd;
+}
+
+.scrolling-edit-icon {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+  color: var(--gold);
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.scrolling-edit-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.scrolling-modal {
+  width: 500px;
+  max-width: 90vw;
+}
+
+.scrolling-items-list {
+  margin: 20px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.scrolling-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.item-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.edit-btn, .delete-btn {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.edit-btn:hover, .delete-btn:hover {
+  opacity: 1;
+}
+
+.delete-btn {
+  color: #ff6b6b;
+}
+
+.add-scrolling-item {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.add-scrolling-item input {
+  flex: 1;
+}
+
+.video-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+}
+
+.delete-icon {
+  cursor: pointer;
+  color: #ff4444;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s;
+}
+
+.delete-icon:hover {
+  transform: scale(1.1);
+  background: #ff4444;
+  color: white;
+}
+
+.add-video-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 20px auto;
+  transition: all 0.3s;
+}
+
+.add-video-btn:hover {
+  opacity: 0.9;
+}
+
+.video-type-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.type-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--primary-color);
+  background: none;
+  color: var(--primary-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.type-btn.active {
+  background: var(--primary-color);
+  color: white;
+}

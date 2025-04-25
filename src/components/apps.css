@@ -1,0 +1,519 @@
+.apps-categories {
+    background-color: var(--light-bg);
+    padding: 15px 0;
+    padding-top: 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.apps-categories ul {
+    display: flex;
+    list-style: none;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.apps-categories ul li {
+    margin: 5px 10px;
+    cursor: pointer;
+}
+
+.apps-categories ul li a {
+    display: block;
+    padding: 8px 15px;
+    background-color: #d8d6d6ab;
+    color: var(--dark-blue);
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.apps-categories ul li a:hover,
+.apps-categories ul li a.active {
+    background-color: var(--main-blue);
+    color: var(--white);
+}
+.apps-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .apps-categories {
+    margin-bottom: 20px;
+  }
+  
+  .apps-categories ul {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .apps-categories li {
+    margin: 0 10px;
+  }
+  
+  .apps-categories a {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+  }
+  
+  .apps-categories a.active {
+    color: #007bff;
+  }
+  
+  .apps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    justify-content: center;
+  }
+  
+  .app-item {
+    text-align: center;
+    position: relative;
+  }
+  
+  .app-item a {
+    text-decoration: none;
+    color: #333;
+  }
+  
+  .app-item img {
+    margin-top: 70px;
+    width: 150px; /* حجم ثابت للعرض */
+    height: 150px; /* نفس قيمة العرض للحصول على مربع */
+    object-fit: contain; /* لضمان ظهور الصورة كاملة داخل المربع */
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+    user-select: none;
+    background-color: #f8f9fa; /* خلفية فاتحة للصور */
+    padding: 10px; /* مسافة داخلية للصورة */
+  }
+  
+  .app-item img:hover {
+    transform: scale(1.05);
+  }
+  
+  .app-item p {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+
+  .app-item:hover .admin-controls {
+    opacity: 1;
+  }
+
+  .page-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  .content-wrap {
+    flex: 1;
+  }
+
+  .apps-header {
+    background-color: var(--third-color);
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--white);
+}
+
+.apps-header h1 {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.apps-header p {
+    margin: 0 auto;
+    line-height: 1.6;
+}
+  
+  /* ... الأنماط الأخرى تبقى كما هي ... */
+  
+  @media (max-width: 768px) {
+    .app-item img {
+      width: 120px;
+      height: 120px;
+    }
+  }
+
+.admin-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.admin-controls button {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.admin-controls button:hover {
+  background: white;
+  transform: scale(1.1);
+}
+
+.admin-controls .edit-btn {
+  color: #2196F3;
+}
+
+.admin-controls .delete-btn {
+  color: #f44336;
+}
+
+.add-app {
+  border: 2px dashed #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-app:hover {
+  border-color: var(--primary-color);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.add-app-content {
+  text-align: center;
+}
+
+.add-app-content svg {
+  font-size: 2em;
+  margin-bottom: 10px;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.modal-content input,
+.modal-content select {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.edit-icon {
+  cursor: pointer;
+  margin-right: 10px;
+  /* font-size: 0.8em; */
+  opacity: 0.7;
+}
+
+.image-upload-preview {
+  text-align: center;
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px dashed #ddd;
+  border-radius: 4px;
+}
+
+.file-label {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.file-input {
+  display: none;
+}
+
+.edit-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.edit-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  direction: rtl;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.edit-label {
+  font-weight: 500;
+  margin-bottom: -10px;
+}
+
+.edit-input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.edit-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+
+.edit-buttons button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  /* font-size: 14px; */
+}
+
+.save-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+}
+
+.edit-icon {
+  cursor: pointer;
+  margin-right: 10px;
+  /* font-size: 0.8em; */
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+.edit-icon:hover {
+  opacity: 1;
+}
+
+.apps-edit-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.apps-edit-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  direction: rtl;
+}
+
+.apps-edit-form {
+  margin-top: 15px;
+}
+
+.apps-edit-label {
+  margin-bottom: 5px;
+}
+
+.apps-edit-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.apps-edit-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.apps-save-btn,
+.apps-cancel-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.apps-save-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.apps-cancel-btn {
+  background: #ddd;
+  color: #333;
+}
+
+.apps-edit-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.apps-edit-wrapper {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.apps-edit-title {
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: #333;
+}
+
+.apps-edit-container {
+  margin-top: 15px;
+}
+
+.apps-edit-text {
+  margin-bottom: 10px;
+  color: #666;
+}
+
+.apps-edit-field {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.apps-edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.apps-edit-save,
+.apps-edit-cancel {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.apps-edit-save {
+  background: var(--primary-color);
+  color: white;
+}
+
+.apps-edit-cancel {
+  background: #ddd;
+  color: #333;
+}
+
+.edit-description-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.edit-description-input {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.edit-description-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.edit-description-buttons button {
+  padding: 5px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-description-buttons button:first-child {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.edit-description-buttons button:last-child {
+  background-color: #ddd;
+}
+
+.description-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
