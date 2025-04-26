@@ -661,6 +661,46 @@ function Videos(){
         setEditModalOpen(true);
     };
 
+    const handleSaveVideo = async () => {
+        setEditModalOpen(false);
+        setIsSavingEdit(true);
+        
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                alert('يرجى تسجيل الدخول كمشرف أولاً');
+                return;
+            }
+
+            const response = await axios.put(
+                'https://elmanafea.shop/admin/updatevideo',
+                {
+                    id: editingVideo.id,
+                    title: editingVideo.title,
+                    youtubeEmbedUrl: formatYoutubeUrl(editingVideo.link),
+                    lang: i18n.language
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.status === 200) {
+                await fetchVideos();
+                setEditingVideo(null);
+                alert('تم تحديث الفيديو بنجاح');
+            }
+        } catch (error) {
+            console.error('Error updating video:', error);
+            alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
     const handleDeleteVideo = async (videoId) => {
         try {
             const adminToken = localStorage.getItem('adminToken');
