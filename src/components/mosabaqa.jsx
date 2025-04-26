@@ -6,6 +6,9 @@ import Header from './header';
 import Footer from './footer';
 import './mosabaqa.css';
 import { countryCodes } from './countryCodes';
+import { useTranslation } from 'react-i18next';
+
+
 
 const Mosabaqa = () => {
   const { t, i18n } = useTranslation(); // إضافة i18n

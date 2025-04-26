@@ -379,20 +379,91 @@
             opacity: 0.8;
         }
 
-        .video-modal-overlay {
+        /* Modal Styles - Categories */
+        .video-category-modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
 
-        .video-modal-wrapper {
+        .video-category-modal {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .video-category-field {
+            margin-bottom: 15px;
+        }
+
+        .video-category-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .video-category-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .video-categories-list {
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .video-category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .video-category-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .video-category-actions svg {
+            cursor: pointer;
+            color: #666;
+        }
+
+        .video-category-actions svg:hover {
+            color: #007bff;
+        }
+
+        /* Modal Styles - Videos */
+        .video-add-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .video-add-modal {
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -400,49 +471,293 @@
             max-width: 500px;
         }
 
-        .video-modal-title {
-            margin-bottom: 20px;
-            font-size: 18px;
-            color: #333;
+        .video-add-field {
+            margin-bottom: 15px;
         }
 
-        .video-modal-container {
-            margin-top: 15px;
+        .video-add-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
 
-        .video-modal-text {
-            margin-bottom: 10px;
-            color: #666;
-        }
-
-        .video-modal-input {
+        .video-add-input {
             width: 100%;
             padding: 8px;
-            margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            font-size: 14px;
         }
 
-        .video-modal-actions {
+        .video-type-selector {
             display: flex;
             gap: 10px;
-            justify-content: flex-end;
+            margin-bottom: 20px;
         }
 
-        .video-modal-save,
-        .video-modal-cancel {
-            padding: 8px 16px;
+        .video-type-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .video-type-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        /* Common Modal Styles */
+        .video-modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .video-save-btn {
+            padding: 8px 20px;
+            background: #007bff;
+            color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
         }
 
-        .video-modal-save {
-            background: var(--primary-color);
+        .video-save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .video-cancel-btn {
+            padding: 8px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .video-save-btn:hover:not(:disabled) {
+            background: #0056b3;
+        }
+
+        .video-cancel-btn:hover {
+            background: #c82333;
+        }
+
+        /* Modal Styles - Edit Video */
+        .video-edit-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .video-edit-modal {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .video-edit-field {
+            margin-bottom: 15px;
+        }
+
+        .video-edit-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .video-edit-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .video-edit-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+        }
+
+        .video-edit-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .video-edit-type-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.3s ease;
+        }
+
+        .video-edit-type-btn.active {
+            background: var(--main-blue);
+            color: white;
+            border-color: var(--main-blue);
+        }
+
+        .video-edit-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .video-edit-save-btn {
+            padding: 8px 20px;
+            background: var(--main-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .video-edit-save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .video-edit-save-btn:hover:not(:disabled) {
+            background: var(--dark-blue);
+        }
+
+        .video-edit-cancel-btn {
+            padding: 8px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .video-edit-cancel-btn:hover {
+            background: #c82333;
+        }
+
+        /* Video Card Actions */
+        .video-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .video-actions .edit-icon,
+        .video-actions .delete-icon {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .video-actions .edit-icon {
+            color: var(--main-blue);
+        }
+
+        .video-actions .delete-icon {
+            color: #dc3545;
+        }
+
+        .video-actions .edit-icon:hover,
+        .video-actions .delete-icon:hover {
+            transform: scale(1.1);
+            background-color: white;
+        }
+
+        /* Delete Confirmation Modal */
+        .delete-confirm-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .delete-confirm-modal {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .delete-confirm-modal h3 {
+            margin-bottom: 20px;
+            color: #dc3545;
+        }
+
+        .delete-confirm-modal p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .delete-confirm-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .delete-confirm-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .delete-confirm-btn.confirm {
+            background-color: #dc3545;
             color: white;
         }
 
-        .video-modal-cancel {
-            background: #ddd;
-            color: #333;
+        .delete-confirm-btn.confirm:hover {
+            background-color: #c82333;
+        }
+
+        .delete-confirm-btn.cancel {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .delete-confirm-btn.cancel:hover {
+            background-color: #5a6268;
         }

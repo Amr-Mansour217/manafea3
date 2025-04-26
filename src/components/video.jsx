@@ -137,13 +137,29 @@ const translations = {
 
 const allCategories = [
   { id: 'all', name: 'جميع الفيديوهات' },
-  { id: 'aqeedah', name: 'العقيدة' },
+//   { id: 'aqeedah', name: 'العقيدة' },
   { id: 'fiqh', name: 'الفقه' },
   { id: 'tafseer', name: 'تفسير القرآن' },
   { id: 'seerah', name: 'السيرة النبوية' },
   { id: 'hadith', name: 'الحديث' },
   { id: 'akhlaq', name: 'الأخلاق' }
 ];
+
+const allVideos = {
+    ar: [
+        {
+            id: 1,
+            title: 'احكام الحج',
+            link: "https://www.youtube.com/embed/FsDrBKQy7gM",
+            category: 'aqeedah'
+        }
+        // ... rest of ar videos ...
+    ],
+    en: [
+        // ... en videos ...
+    ]
+    // ... rest of languages ...
+};
 
 function Videos(){
     const { t } = useTranslation();
@@ -154,6 +170,15 @@ function Videos(){
     const videosPerPage = 8;
 
     const [isAdmin, setIsAdmin] = useState(false); // تغيير القيمة الافتراضية إلى false
+
+    // إضافة state جديد للتحميل
+    const [isUploading, setIsUploading] = useState(false);
+    const [isSavingCategory, setIsSavingCategory] = useState(false);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [isSavingText, setIsSavingText] = useState(false);
+
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState(null);
 
     useEffect(() => {
         const checkAuth = () => {
@@ -226,998 +251,32 @@ function Videos(){
         return savedTitle ? JSON.parse(savedTitle) : translations.categories;
     });
 
-    const allVideos = {
-        ar: [
-            {
-                id: 1,
-                title: 'احكام الحج',
-                link: "https://www.youtube.com/embed/FsDrBKQy7gM",
-                category: 'aqeedah',
-          },
-          {
-            id: 2,
-            title: '2 احكام الحج',
-            link:"https://www.youtube.com/embed/3DlaM8VzOA0",
-            category: 'aqeedah',
-        },
-        {
-            id: 3,
-            title: '3 احكام الحج',
-            link:"https://www.youtube.com/embed/OZloBu0tdN4",
-            category: 'aqeedah',
-        },
-        {
-            id: 4,
-            title: 'من أحكام الحج _4',
-            link:"https://www.youtube.com/embed/T4OplBYc5_k" ,
-            category: 'aqeedah',
-        },
-        {
-            id: 5,
-            title: 'أحكام الحج 5 | هل يجوز تأخير الحج للشخص القادر ؟',
-            link:"https://www.youtube.com/embed/EeARmFLwZtc" ,
-            category: 'aqeedah',
-        },   
-        {
-            id: 6,
-            title: 'أحكام الحج 6',
-            link:"https://www.youtube.com/embed/41O096K052g" ,
-            category: 'aqeedah',
-        },
-        {
-            id: 7,
-            title: 'أحكام الحج 7',
-            link:"https://www.youtube.com/embed/NHAjTRWgEW8"  ,
-            category: 'aqeedah',
-        },
-        {
-            id: 8,
-            title: 'أحكام الحج | ما أركان الحج وما واجباته، وما سننه، وما الفرق بين الثلاثة؟',
-            link:"https://www.youtube.com/embed/ydwmJ5hdSEI"  ,
-            category: 'aqeedah',
-        },
-        {
-            id: 9,
-            title: 'العقيده الاسلاميه للاطفال وتعليم أقسام التوحيد _ نحولة كيدز',
-            link:"https://www.youtube.com/embed/FWsZ2HGagZk"  ,
-            category: 'aqeedah',
-        },
-        {
-            id: 10,
-            title: 'شرح ثلاثة الأصول (1) لمعالي الشيخ صالح آل الشيخ - عقيدة - كبار العلماء',
-            link:"https://www.youtube.com/embed/R5f3FFeRtto"   ,
-            category: 'aqeedah',
-        },
-        {
-            id:11,
-            title: 'تعليم الاطفال العقيدة الاسلامية الصحيحة| Teaching children the principles of Islam| الله خالقنا',
-            link:"https://www.youtube.com/embed/l4JJsY7T654"   ,
-            category: 'aqeedah',
-        },
-        {
-            id:12,
-            title: 'ما الطريقة المثلى لتعليم الأطفال العقيدة الصحيحة؟ لمعالي الشيخ صالح الفوزان',
-            link:"https://www.youtube.com/embed/LT885l6F0AQ"   ,
-            category: 'aqeedah',
-        },
-        {
-            id:13,
-            title: 'أهمية الفقه في الإسلام | #بذور_الخير الحلقة الحادية والعشرون',
-            link:"https://www.youtube.com/embed/g00JHEYCYDQ"    ,
-            category: 'fiqh',
-        },
-        {
-            id:14,
-            title: '01 تفسير الجزء الاول من القرآن الكريم',
-            link:"https://www.youtube.com/embed/CrfPLXu8F_s?list=PLQ7560lEIhRwONVvGZ7P2AcU4Si_fbKaY"    ,
-            category: 'tafseer',
-        },
-        {
-            id:15,
-            title: '02 تفسير الجزء الثاني من القرآن الكريم',
-            link:"https://www.youtube.com/embed/d6mFf0Tx1Qc?list=PLQ7560lEIhRwONVvGZ7P2AcU4Si_fbKaY"    ,
-            category: 'tafseer',
-        },
-        {
-            id:16,
-            title: '03 تفسير الجزء الثاني من القرآن الكريم',
-            link:"https://www.youtube.com/embed/lVfWebt_txg?list=PLQ7560lEIhRwONVvGZ7P2AcU4Si_fbKaY"    ,
-            category: 'tafseer',
-        },
-        {
-            id:17,
-            title: 'كيف تحولت الدرعية من قرية صغيرة إلى قلب الدولة السعودية الأولى؟ مع د.عبدالله المنيف في مخيال',
-            link:"https://www.youtube.com/embed/s15LqNPhaNs"    ,
-            category: 'seerah',
-        },
-        {
-            id:18,
-            title: 'السيرة النبوية 01 للشيخ الدكتور طارق السويدان',
-            link:"https://www.youtube.com/embed/LrwpOlTcqnI"     ,
-            category: 'seerah',
-        },  
-        {
-            id:19,
-            title: 'فكيف لو رأوني؟ | سلسلة أحاديث نبوية | مع خالد النجار 🎤',
-            link:"https://www.youtube.com/embed/rp79XaxrrXk?list=PL0ABfBaCkAn3NNBuQ2tdw5Bu9oY5E-sCn7"     ,
-            category: 'hadith',
-        },
-        {
-            id:20,
-            title: 'ذنوب عنان السماء | سلسلة أحاديث نبوية | مع خالد النجار 🎤',
-            link:"https://www.youtube.com/embed/jtJ0TwGQQj0?list=PL0ABfBaCkAn3NNBuQ2tdw5Bu9oY5E-sCn7",
-            category: 'hadith',
-        },    
-        {
-            id:21,
-            title: 'حسن الخلق ( الأخلاق في الإسلام ) | فيديو تعليمي !!',
-            link:"https://www.youtube.com/embed/r54-Ybflym4",
-            category: 'akhlaq',
-        },
-        {
-            id:22,
-            title: 'آداب الطعام | تعليم الأطفال | برنامج عمر وإخوته | كرتون إسلامي',
-            link:"https://www.youtube.com/embed/1wclOy6fo08",
-            category: 'akhlaq',
-        },    
-    ],
-        en: [
-            {
-                id: 1,
-                title: 'Basics of Islamic Creed',
-                link: "https://www.youtube.com/embed/2bmwco4Ugfs",
-                category: 'aqeedah'
-            },
-            {
-                id: 2,
-                title: 'An Unexpected Journey: A European Discovers Islam Online and His Life Turns Upside Down',
-                link:"https://www.youtube.com/embed/6WcsHia1VoQ",
-                category: 'aqeedah'
-            },
-            {
-                id: 3,
-                title: 'Why do we study Tawheed? | Shaykh Haytham Sarhan (',
-                link: "https://www.youtube.com/embed/f8PTOQFl4f4?list=PLBFEt29we81SMpAHBNdD5v1F3Wp2gzxnn" ,
-                category: 'aqeedah'
-            },
-            {
-                id: 4,
-                title: 'Concise Explanation of Kitab At Tawheed | Shaykh Haytham Sarhan',
-                link: "https://www.youtube.com/embed/XPOX5QedkGo?list=PLBFEt29we81RV9tEGDnhI8JB2rWDwgBGT" ,
-                category: 'aqeedah'
-            },
-            {
-                id: 5,
-                title: 'Fiqh - Semester 1',
-                link:"https://www.youtube.com/embed/V0tOuxRXgW8?list=PLDOc9rkFwfwD4Yxk6qCwcfnUIXiA6iIeU" ,
-                category: 'fiqh'
-            },
-            {
-                id: 6,
-                title: 'Fiqh - Semester 1 ',
-                link:"https://www.youtube.com/embed/Zxl94-DFGx4?list=PLDOc9rkFwfwD4Yxk6qCwcfnUIXiA6iIeU" ,
-                category: 'fiqh'
-            },
-            {
-                id: 7,
-                title: 'Description of ablution',
-                link: "https://www.youtube.com/embed/Ilmo9467cBU",
-                category: 'fiqh'
-            },
-            {
-                id: 8,
-                title: 'Nullifiers of ablution',
-                link:"https://www.youtube.com/embed/UK94ne7RrIM" ,
-                category: 'fiqh'
-            },
-            {
-                id: 9,
-                title: 'Surah Al-Faatiha (The Opening) ',
-                link:"https://www.youtube.com/embed/v0r76TgXL4E?list=PLYRXQljU5MiJ8Iz_VKgmatnx-H-leJ7st",
-                category: 'tafseer'
-            },
-            {
-                id: 10,
-                title: 'Alif Laam Meem',
-                link:"https://www.youtube.com/embed/YMNEgAGqAIk?list=PLYRXQljU5MiJ8Iz_VKgmatnx-H-leJ7st",
-                category: 'tafseer'
-            },
-            {
-                id: 11,
-                title: 'Islamic Lectures in English: The Miracles of Muhammad',
-                link:"https://www.youtube.com/embed/izMcJqVRPlQ",
-                category: 'seerah'
-            },
-            {
-                id: 12,
-                title: 'Arabia Before Islam ',
-                link:"https://www.youtube.com/embed/BcXSgvJLlYM?list=PLW7-5eCq8IySZOYczT-Z9-vFIBWNH5UMT",
-                category: 'seerah'
-            },
-            {
-                id: 13,
-                title: 'Book 1: Revelation | English AudioBook',
-                link:"https://www.youtube.com/embed/4w8VUspnVwM?list=PL7atYSa5SSm7XhiA_JyBaSd-eUSMAZ_yL",
-                category: 'hadith'
-            },
-            {
-                id: 14,
-                title: 'Book 2: Revelation | English AudioBook',
-                link:"https://www.youtube.com/embed/s5PSoCHPgB4?list=PL7atYSa5SSm7XhiA_JyBaSd-eUSMAZ_yL",
-                category: 'hadith'
-            },
-            {
-                id: 15,
-                title: 'Morality in the Quran',
-                link:"https://www.youtube.com/embed/60NLgmVQt3Y" ,
-                category: 'akhlaq'
-            },
-            {
-                id: 16,
-                title: 'Good manners ',
-                link:"https://www.youtube.com/embed/CHyiIPTy5Ag" ,
-                category: 'akhlaq'
-            },  {
-                id: 17,
-                title: 'good behaviour in islam',
-                link:"https://www.youtube.com/embed/RFfvMheEnmc" ,
-                category: 'akhlaq'
-            },  {
-                id: 18,
-                title: 'Good Character',
-                link:"https://www.youtube.com/embed/XkJ6rDjtL_E"  ,
-                category: 'akhlaq'
-            },
-        ],
-        ur: [  
-            {
-                id: 1,
-                title: "اسلام کی ضروری باتیں || علم دین سیکھنا ضروری کیوں",
-                link:"https://www.youtube.com/embed/IAtw3fPLcRc"   ,
-                category: 'fiqh'
-            },   {
-                id: 2,
-                title: "أنوار هدايت / قران کریم کے پاروں کا خلاصہ / آسان اور سہل انداز میں",
-                link:"https://www.youtube.com/embed/w2MT7w9rbRM"  ,
-                category: 'tafseer'
-            },   {
-                id: 3,
-                title: "سیرت نبوی صلی اللہ علیہ وسلم",
-                link:"https://www.youtube.com/embed/WkdD0TVYHOI"  ,
-                category: 'seerah'
-            },   {
-                id: 4,
-                title: "نبی ﷺ کا نسب نامہ ",
-                link:"https://www.youtube.com/embed/k3tC2IUafPc"  ,
-                category: 'seerah'
-            },   {
-                id: 6,
-                title: "نبی ﷺ کے والد کی شادی، وفات اور ترکہ",
-                link:"https://www.youtube.com/embed/LBrisEsdCQ0"  ,
-                category: 'seerah'
-            },   {
-                id: 7,
-                title: "نبی ﷺ کی ولادت اور رضاعت",
-                link:"https://www.youtube.com/embed/4YQkorWEMas"  ,
-                category: 'seerah'
-            },   {
-                id: 8,
-                title: "شقًٓ صدر کا واقعہ اور مہر نبوت کا تذکرہ",
-                link:"https://www.youtube.com/embed/h5lLbqqZJfc"   ,
-                category: 'seerah'
-            },
+    const fetchVideos = async () => {
+        try {
+            setIsLoading(true);
+            const response = await axios.get(
+                `https://elmanafea.shop/videos?lang=${i18n.language}&category=${activeCategory}`
+            );
 
-            {
-                id: 9,
-                title: "اسلام میں عقیدہ آخرت کی اہمیت",
-                description: "اسلامی عقیدے کے بارے میں بات کرنا",
-                link:"https://www.youtube.com/embed/9UX21zfbi9Q"   ,
-                category: 'aqeedah'
-            },
-            {
-                id: 10,
-                title: "| اسلامی شریعت میں حدیث کی تعریف کیا ہے ؟ | مولانا ڈاکٹر محمد الیاس فیصل",
-                description: "اسلامی قانون میں احادیث کے بارے میں بات کرنے والا کلپ",
-                link:"https://www.youtube.com/embed/kVVHEXwZOJg"   ,
-                category: 'hadith'
-            },
-            {
-                id: 11,
-                title: "قرآن میں بنیادی انسانی اخلاقیات",
-                description: "قرآن میں اخلاق کے بارے میں ایک کلپ",
-                link:"https://www.youtube.com/embed/dgNmGsshDgM"   ,
-                category: 'akhlaq'
-            },
-        ],
-        fr: [
-            {
-                id: 1,
-                title: "Cours 1: La croyance (Al Aquida)",
-                link: "https://www.youtube.com/embed/m9cn-hkFcWQ",
-                category: 'aqeedah'
-            },
-            {
-                id: 2,
-                title: "[1]Al `Aquîda Al-Wassitiya ",
-                link:"https://www.youtube.com/embed/2tR3KHseAkg?list=PLRDM2C56WTKEqkajD2htFLxffjeXgfC2j",
-                category: 'aqeedah'
-            },   {
-                id: 3,
-                title: "[2] Al `Aquîda Al-Wassitiya",
-                link:"https://www.youtube.com/embed/p_7cW82qxJQ?list=PLRDM2C56WTKEqkajD2htFLxffjeXgfC2j",
-                category: 'aqeedah'
-            },   {
-                id: 4,
-                title: "COMMENT RATTRAPER SES PRIÈRES. (fiqh mâliki) ",
-                link:"https://www.youtube.com/embed/Eev8eCFJB-8?list=PLiGphLNkyYRd9cKcyEU8TEUpQitmz-ZR7" ,
-                category: 'fiqh'
-            },   {
-                id: 5,
-                title: "COMMENT CORRIGER SA PRIÈRE (prosternations de l'oubli). ",
-                link:"https://www.youtube.com/embed/yvKnJTlxqFE?list=PLiGphLNkyYRd9cKcyEU8TEUpQitmz-ZR7",
-                category: 'fiqh'
-            },   {
-                id: 6,
-                title: "Tafsir Imam Sékou Sylla - Sourate Al Baqara Verset 183 à 184",
-                link:"https://www.youtube.com/embed/z3poKjmqa5Q?list=PLQQKxe64Xf055MOReJxVT8TRpZ7fj5gsf" ,
-                category: 'tafseer'
-            },   {
-                id: 7,
-                title: "Tafsir Imam Sékou Sylla - Sourate Adh-dhariyat Verset 38 à 51 ",
-                link:"https://www.youtube.com/embed/EXUmDwPalEU?list=PLQQKxe64Xf055MOReJxVT8TRpZ7fj5gsf",
-                category: 'tafseer'
-            },   {
-                id: 8,
-                title: "Tafsir Imam Sékou Sylla : Sourate An-Najm - Verset 33 à 46",
-                link:"https://www.youtube.com/embed/Ht5Qxv2WECQ?list=PLQQKxe64Xf055MOReJxVT8TRpZ7fj5gsf",
-                category: 'tafseer'
-            },   {
-                id: 9,
-                title: "La Sirah du Prophète Muhammad(SAW) EP 1",
-                link:"https://www.youtube.com/embed/H8dzFGR9aoY?list=PLYZxc42QNctXvxDw9LaQk02Nskb2iJTmd",
-                category: 'seerah'
-            },   {
-                id: 10,
-                title: "La Sirah du Prophète Muhammad(SAW) EP 2",
-                link:"https://www.youtube.com/embed/yIiOy1ajig4?list=PLYZxc42QNctXvxDw9LaQk02Nskb2iJTmd",
-                category: 'seerah'
-            },   {
-                id: 11,
-                title: "La Sirah du Prophète Muhammad(SAW) EP 3",
-                link:"https://www.youtube.com/embed/HMHxNd7MifE?list=PLYZxc42QNctXvxDw9LaQk02Nskb2iJTmd",
-                category: 'seerah'
-            },   {
-                id: 12,
-                title: "H1 - Les 40 Hadîth de Nawawi",
-                link:"https://www.youtube.com/embed/dCUvuXYu_9Y?list=PLxJLu-ZcLtGfTZCV9oLOgNcsAL0j88qWJ",
-                category: 'hadith'
-            },   {
-                id: 13,
-                title: "H2 - les 40 Hadîth de Nawawi ",
-                link:"https://www.youtube.com/embed/T76mNdKhsZ4?list=PLxJLu-ZcLtGfTZCV9oLOgNcsAL0j88qWJ",
-                category: 'hadith'
-            },   {
-                id: 14,
-                title: " Les 40 hadith de l'imam An-Nawawi (français)",
-                link:"https://www.youtube.com/embed/b2Uuq50Ur_Q",
-                category: 'hadith'
-            },   {
-                id: 15,
-                title: "Écoute et tu verras la vie autrement (Conférence) ",
-                link:"https://www.youtube.com/embed/oDrOxXHMv_4" ,
-                category: 'hadith'
-            },   {
-                id: 16,
-                title: "Science et éthique en islam / en français - Al-Mansour Al-Hudhaili",
-                link:"https://www.youtube.com/embed/D7A7xiIi4G0" ,
-                category: 'akhlaq'
-            },   {
-                id: 17,
-                title: "Bonnes mœurs",
-                link:"https://www.youtube.com/embed/An2d2E44q2U",
-                category: 'akhlaq'
-            },
-      
-        ],
-        tr: [
-            {
-                id: 1,
-                title: "DHBT MBSTS ÖABT DKAB INANÇ ESASLARI - UNITE 1 - DIN VE INANÇ 🕋",
-                link:"https://www.youtube.com/embed/aqXM_hM20hNQg?list=PLTfYWRDOnXGkMUYA7kYE65D1-GoB2JpRL" ,
-                category: 'aqeedah'
-            },   {
-                id: 2,
-                title: "İSLAM İNANÇ ESASLARI - ÜNİTE 2 - İSLAM DİNİ ve İNANCI",
-                link:"https://www.youtube.com/embed/yFp6bI-hNQg?list=PLTfYWRDOnXGkMUYA7kYE65D1-GoB2JpRL",
-                category: 'aqeedah'
-            },   {
-                id: 3,
-                title: "1- Fıkıh ve İslam Hukuku | Fıkha Giriş | Yakup Özcan",
-                link:"https://www.youtube.com/embed/1xRTiqXeMK0" ,
-                category: 'fiqh'
-            },   {
-                id: 4,
-                title: "2- İslam Hukuku'nun Oluşum Süreci | Fıkha Giriş | Yakup Özcan ",
-                link:"https://www.youtube.com/embed/Jz6o_xz_qJc",
-                category: 'fiqh'
-            },   {
-                id: 5,
-                title: "İslam’da Söz | Meâric Suresi Tefsiri 7 | Halis Bayancuk Hoca",
-                link:"https://www.youtube.com/embed/yL3ba9-UUoY" ,
-                category: 'tafseer'
-            },   {
-                id: 6,
-                title: "Hz Muhammed'in Hikmet Dolu 40 Sözü // 40 Hadis Hayatınıza Işık Tutacak Sözler",
-                link:"https://www.youtube.com/embed/6Yc3IbxjaeA" ,
-                category: 'hadith'
-            },
-            {
-                id: 7,
-                title: "Son Din İslam | Saadettin Acar | Konu: Ahlak",
-                link:"https://www.youtube.com/embed/iohNcClWNqk",
-                category: 'akhlaq'
-            },
-            {
-                id: 8,
-                title: "Hz. Muhammed'in (asm) Hayatı - Neden Siyer Öğrenmeliyiz? - Bölüm 1",
-                link:"https://www.youtube.com/embed/DcrrhvlwJIY",
-                category: 'seerah'
-            },
-        ],
-        id: [
-            {
-                id: 1,
-                title: "[Serial Aqidah] Eps. 1: Pondasi Iman - Ustadz Adi Hidayat",
-                link:"https://www.youtube.com/embed/VYD_2fsylcM" ,
-                category: 'aqeedah'
-            },
-
-            {
-                id: 2,
-                title: "[Serial Aqidah] Eps. 2: Pokok-Pokok Iman - Ustadz Adi Hidayat",
-                link:"https://www.youtube.com/embed/VYD_2fsylcM" ,
-                category: 'aqeedah'
-            },
-              {
-                id: 3,
-                title: "[Serial Fiqh Eps 1] Bab Pendahuluan Fiqh Sholat - Ustadz Adi Hidayat",
-                link:"https://www.youtube.com/embed/_OWAc3cPerU?list=PL3iW_rlEoH5LiWstWEY6bZFIDb7oHXz4h"  ,
-                category: 'fiqh'
-            },  {
-                id: 4,
-                title: "[Serial Fiqh Eps 2] Tata Cara Sholat - Ustadz Adi Hidayat",
-                link:"https://www.youtube.com/embed/uUsJQutYuAU?list=PL3iW_rlEoH5LiWstWEY6bZFIDb7oHXz4h"  ,
-                category: 'fiqh'
-            },  {
-                id: 5,
-                title: "[Serial Fiqh Eps 3] Tata Cara Wudhu - Ustadz Adi Hidayat",
-                link:"https://www.youtube.com/embed/h__PMrkx0Tc?list=PL3iW_rlEoH5LiWstWEY6bZFIDb7oHXz4h" ,
-                category: 'fiqh'
-            },  {
-                id: 6,
-                title: "Kajian Bakda Subuh Tafsir Al-Insyirah - Ustadz Adi Hidayat",
-                link:"https://www.youtube.com/embed/L5Dt_BaG3kQ" ,
-                category: 'tafseer'
-            },  {
-                id: 7,
-                title: "Tafsir Surah Adh-Dhuha - Ustadz Adi Hidayat",
-                link:"https://www.youtube.com/embed/W7wZStf3iiE"   ,
-                category: 'tafseer'
-            },  {
-                id: 8,
-                title: "Sirah Nabawiyah #1 : Pengantar Sirah Nabawiyah - Khalid Basalamah",
-                link:"https://www.youtube.com/embed/BWgwRJjm3sc?list=PLlK0gGuioshBgZZf8VOC4IonQtFxPsifW"  ,
-                category: 'seerah'
-            },  {
-                id: 9,
-                title: "Sirah Nabawiyah Episode Two - History of Makkah Establishment",
-                link:"https://www.youtube.com/embed/hHkxhDdkBWk?list=PLlK0gGuioshBgZZf8VOC4IonQtFxPsifW"  ,
-                category: 'seerah'
-            },
-            {
-                id: 10,
-                title: "E1] Sirah Rasulullah ﷺ - Kelahiran Baginda Membawa Rahmat Kepada Sekalian Alam | Ustaz Wadi Annuar",
-                link:"https://www.youtube.com/embed/VYD_2fsylcM" ,
-                category: 'seerah'
-            },{
-                id: 11,
-                title: "Kisah Nabi Muhammad SAW dari Lahir Hingga Wafat | Ustadz Abdul Somad",
-                link:"https://www.youtube.com/embed/pij8PGbhZwM" ,
-                category: 'hadith'
-            },{
-                id: 12,
-                title: "Perbedaan Adab Dan Akhlak - Ustadz Adi Hidayat",
-                link:"https://www.youtube.com/embed/PcntEfe6R_k"  ,
-                category: 'akhlaq'
-            },
-            {
-                id: 13,
-                title: "Ustaz Amin - Maksud Akhlak Dalam Islam",
-                link:"https://www.youtube.com/embed/l8iACx2hG-U" ,
-                category: 'akhlaq'
-            },
-    
-        ],
-        ru: [
-            
-           
-              {
-                id: 1,
-                title: "Правильная АКЫДА! | Вероубеждения АХЛЮ СУННА валь джамаа | Юсуф Берхудар",
-                link:"https://www.youtube.com/embed/HTnW5v0CUCA"  ,
-                category: 'aqeedah'
-            },   {
-                id: 2,
-                title: "Акида ( Вероубеждение ) ОЗВУЧКА - Шейх Ибн аль - Усаймин / напоминание братья и сёстры",
-                link:"https://www.youtube.com/embed/fKWI07hD0h4" ,
-                category: 'aqeedah'
-            },   {
-                id: 3,
-                title: "Ustaz Amin - Maksud Akhlak Dalam Islam",
-                link:"https://www.youtube.com/embed/l8iACx2hG-U" ,
-                category: 'fiqh'
-            },   {
-                id: 4,
-                title: "Введение в фикх. Что такое Шариат?",
-                link:"https://www.youtube.com/embed/Y2yIrM-JP8c"  ,
-                category: 'fiqh'
-            },   {
-                id: 6,
-                title: "удрость в Коране. Часть 1 из 7 | Нуман Али Хан",
-                link:"https://www.youtube.com/embed/znlevKeCXpE" ,
-                category: 'tafseer'
-            },   {
-                id: 7,
-                title: "Зависть как грех в исламе. Уроки из суры ан-Ниса | Нуман Али Хан (rus sub)",
-                link:"https://www.youtube.com/embed/vegaAvUs2Cw"  ,
-                category: 'tafseer'
-            },   {
-                id: 8,
-                title: "Сира Пророка Мухаммада ﷺ | Предисловие 1 из 29 | Муфтий Менк",
-                link:"https://www.youtube.com/embed/6gpHSUKg9EA"  ,
-                category: 'seerah'
-            },   {
-                id: 9,
-                title: "Сира Пророка Мухаммада ﷺ | Времена язычества и Рождение 2 из 29 | Муфтий Менк",
-                link:"https://www.youtube.com/embed/AIy5D4DqAEY"  ,
-                category: 'seerah'
-            },
-            {
-                id: 10,
-                title: "24 хадиса от Пророка, которые изменят вашу жизнь | Время покаяния",
-                link:"https://www.youtube.com/embed/vLgrsh51VTU" ,
-                category: 'hadith'
-            },
-            {
-                id: 11,
-                title: "БЛАГОЙ НРАВ НА ДЕЛЕ | Одна из самых прекрасных лекций шейха Абдурраззак Аль Бадра",
-                link:"https://www.youtube.com/embed/n-rcEGYshog" ,
-                category: 'akhlaq'
-            },
-            
-    
-        ],
-        hi: [
-            {
-                id: 1,
-                title:`शीर्षक: "इस्लाम के बारे में आवश्यक बातें || धार्मिक ज्ञान सीखना क्यों ज़रूरी है",`,
-                link:"https://www.youtube.com/embed/IAtw3fPLcRc"   ,
-                category: 'fiqh'
-            },   {
-                id: 2,
-                title: `अनवर हिदायत / पवित्र कुरान की आयतों का सारांश / सरल और आसान तरीके से`,
-                link:"https://www.youtube.com/embed/w2MT7w9rbRM"  ,
-                category: 'tafseer'
-            },   {
-                id: 3,
-                title: `पैगम्बर (सल्लल्लाहु अलैहि वसल्लम) की जीवनी`,
-                link:"https://www.youtube.com/embed/WkdD0TVYHOI"  ,
-                category: 'seerah'
-            },   {
-                id: 4,
-                title: `पैगम्बर की वंशावली`,
-                link:"https://www.youtube.com/embed/k3tC2IUafPc"  ,
-                category: 'seerah'
-            },   {
-                id: 6,
-                title: `पैगम्बर (स.) के पिता का विवाह, मृत्यु और विरासत`,
-                link:"https://www.youtube.com/embed/LBrisEsdCQ0"  ,
-                category: 'seerah'
-            },   {
-                id: 7,
-                title: `पैगम्बर (सल्लल्लाहु अलैहि व सल्लम) का जन्म और स्तनपान`,
-                link:"https://www.youtube.com/embed/4YQkorWEMas"  ,
-                category: 'seerah'
-            },   {
-                id: 8,
-                title: `सद्र की घटना और नबूवत की मुहर का उल्लेख`,
-                link:"https://www.youtube.com/embed/h5lLbqqZJfc"   ,
-                category: 'seerah'
-            }, 
-            {
-                id: 9,
-                title: `रमज़ान के डोनट्स में कदम रखें`,
-                description: "रमजान के दौरान हमें क्या करना चाहिए और क्या नहीं करना चाहिए, इस बारे में एक क्लिप।",
-                link:"https://www.youtube.com/embed/8s4tNCBXEdE"  ,
-                category: 'akhlaq'
-            },   {
-                id: 10,
-                title: `मोजे के ऊपर पोंछने की शर्तें क्या हैं?`,
-                description: "एक क्लिप जिसमें मोजे पोंछने की शर्तों के बारे में बताया गया है।",
-                link:"https://www.youtube.com/embed/GcxI1PaSK7A"   ,
-                category: 'akhlaq'
-            },    
-            {
-                id: 11,
-                title: "इस्लामी कानून में हदीस की परिभाषा क्या है? | मौलाना डॉ. मुहम्मद इलियास फैसल",
-                description: "اسلامی قانون میں احادیث کے بارے میں بات کرنے والا کلپ",
-                link:"https://www.youtube.com/embed/kVVHEXwZOJg"   ,
-                category: 'hadith'
-            }, 
-    
-        ],
-        bn: [
-
-            {
-                id: 1,
-                title: "1-ভূমিকা পর্ব: তিনটি মূলনীতির ধারাবাহিক ক্লাস।আলোচকঃ আব্দুর রব আফ্ফান,দ্বীরা সেন্টার রিয়াদ সৌদি আরব।",
-                link:"https://www.youtube.com/embed/9TkZdhf51Po"  ,
-                category: 'aqeedah'
-            },   {
-                id: 2,
-                title: "আকীদা সংক্রান্ত ভুল-ত্রুটি পর্ব ১",
-                link:"https://www.youtube.com/embed/UrRrlCAScas"  ,
-                category: 'aqeedah'
-            },   {
-                id: 3,
-                title: "শেখ আব্দুল রাজ্জাকের বাংলায় ইসলামের পরিচয়ের একটি বক্তৃতা।",
-                link:"https://www.youtube.com/embed/LN3FGPSqxiQ" ,
-                category: 'aqeedah'
-            },   {
-                id: 4,
-                title: "ফিকহ পাঠ্যক্রম, দ্বিতীয় স্তর, পর্ব ১/১০, বাংলায়, প্রচারক মামুন আল-রশিদ, টিচ মি ইসলাম স্কুল",
-                link:"https://www.youtube.com/embed/k3tC2IUafPc"  ,
-                category: 'fiqh'
-            },   {
-                id: 6,
-                title: "নামাজ পড়ার সঠিক পদ্ধতি",
-                link:"https://www.youtube.com/embed/XuTTXcd0-aY" ,
-                category: 'fiqh'
-            },   {
-                id: 7,
-                title: "যাকাতুল ফিতর (ফিতরা) | শায়েখ / মোহাম্মদ হুজাইফা ",
-                link:"https://www.youtube.com/embed/jJhMPqbFV7o"  ,
-                category: 'fiqh'
-            },   {
-                id: 8,
-                title: "উপবাসের অংশগুলি",
-                link:"https://www.youtube.com/embed/RQ0BV_iBuCM"   ,
-                category: 'fiqh'
-            },   
-            {
-                id: 9,
-                title: "পবিত্র কুরআনের ব্যাখ্যা",
-                link:"https://www.youtube.com/embed/21MWrFaYHzI"   ,
-                category: 'tafseer'
-            },
-            {
-                id: 10,
-                title: "সূরা আল-কাওসারের ব্যাখ্যা",
-                link:"https://www.youtube.com/embed/_3aE5GyghwQ"  ,
-                category: 'tafseer'
-            },
-            {
-                id: 11,
-                title: "রমজান কাউন্সিল",
-                link:"https://www.youtube.com/embed/PxE60JKK7Ks" ,
-                category: 'seerah'
-            },
-            {
-                id: 12,
-                title: "নবীর জীবনী অধ্যয়ন",
-                link:"https://www.youtube.com/embed/LH_VsQxk3Y4"  ,
-                category: 'seerah'
-            },
-            {
-                id: 13,
-                title: "নবীজির ৮০টি (গুরুত্বপূর্ণ) ছোট সহিহ হাদীস ",
-                description: "একটি হাদিস থেকে একটি ক্লিপ",
-                link:"https://www.youtube.com/embed/irGuzlLVIB4"  ,
-                category: 'hadith'
-            },
-            {
-                id: 14,
-                title: "ইসলামে নৈতিকতা ও আদর্শ",
-                description: "ইসলামে নীতিশাস্ত্র সম্পর্কে আলোচনা",
-                link:"https://www.youtube.com/embed/6acBpWlxgS8"  ,
-                category: 'akhlaq'
-            },
-    
-        ],
-        zh: [
-
-            {
-                id: 1,
-                title: "信仰简释",
-                link:"https://www.youtube.com/embed/A0FBuWy_d84"   ,
-                category: 'aqeedah'
-            },   {
-                id: 2,
-                title: "伊斯兰教的定义",
-                link:"https://www.youtube.com/embed/veptdUXYbpM"   ,
-                category: 'aqeedah'
-            },   {
-                id: 3,
-                title: "伊斯兰是什么-2",
-                link:"https://www.youtube.com/embed/u9ZIAO7fHT8" ,
-                category: 'aqeedah'
-            },   {
-                id: 4,
-                title: "如何祈祷",
-                link:"https://www.youtube.com/embed/MciGMMRDbLU"   ,
-                category: 'fiqh'
-            },   {
-                id: 6,
-                title: "卡里姆汗 - 朝觐中文版",
-                link:"https://www.youtube.com/embed/km_gI7tugX4"  ,
-                category: 'fiqh'
-            },   {
-                id: 7,
-                title: "布哈里圣训 ",
-                link:"https://www.youtube.com/embed/z830PPQkZOg"  ,
-                category: 'hadith'
-            },   {
-                id: 8,
-                title: "布哈里圣训实录 - 知识篇 - 第十二部分",
-                link:"https://www.youtube.com/embed/9jwU9h14wt8"   ,
-                category: 'hadith'
-            },   
-            {
-                id: 9,
-                title: "布哈里圣训实录 - 知识篇 - 第十部分",
-                link:"https://www.youtube.com/embed/oZ0LjWHmVzI"    ,
-                category: 'hadith'
-            },
-            {
-                id: 10,
-                title: "布哈里圣训实录 - 知识篇 - 第八部分",
-                link:"https://www.youtube.com/embed/mPEVlFMazFU"   ,
-                category: 'hadith'
-            },
-
-            {
-                id: 11,
-                title: "先知及其同伴在斋月期间的状况",
-                link:"https://www.youtube.com/embed/o8koNdcRAC4"   ,
-                category: 'hadith'
-            },
-            {
-                id: 12,
-                title: "开端章的解释",
-                description: "开端章完整解读",
-                link:"https://www.youtube.com/embed/-FyrENNecM4"   ,
-                category: 'tafseer'
-            },
-            {
-                id: 13,
-                title: "古兰经第二十二章注释",
-                description: "古兰经第二十二章 完整解释",
-                link:"https://www.youtube.com/embed/cCl6qZubfTI"   ,
-                category: 'tafseer'
-            },{
-                id: 14,
-                title: "古兰经第二十二章注释",
-                description: "古兰经第二十二章 法拉格篇的完整解释",
-                link:"https://www.youtube.com/embed/73kTev4kbbY"   ,
-                category: 'tafseer'
-            },{
-                id: 15,
-                title: "古兰经第二十二章注释",
-                description: "古兰经 1：安纳斯篇的完整解释",
-                link:"https://www.youtube.com/embed/ypoY3XjiqfI"   ,
-                category: 'tafseer'
-            },{
-                id: 16,
-                title: "他为你们而制服天地万物，对于能思维的民众，此中确有许多迹象。",
-                description: "宗教经文",
-                link:"https://www.youtube.com/embed/w2fbj-b8Uro"   ,
-                category: 'tafseer'
-            },{
-                id: 17,
-                title: "先知穆罕默德传记 #1",
-                description: "关于先知穆罕默德传记的片段，愿上帝保佯他并赐予他平安。",
-                link:"https://www.youtube.com/embed/i_vYYU2F4O8"   ,
-                category: 'seerah'
-            },{
-                id: 18,
-                title: "先知传记, 马旭平, 部分 四",
-                description: "关于先知穆罕默德传记的片段，愿上帝保佯他并赐予他平安。",
-                link:"https://www.youtube.com/embed/r-v6FkGFJ0o"   ,
-                category: 'seerah'
-            },
-            {
-                id: 19,
-                title: "伊斯兰教的伦理道德",
-                description: "一段关于伊斯兰教中道德重要性的视频",
-                link:"https://www.youtube.com/embed/7qnvS-QacM8"   ,
-                category: 'akhlaq'
-            },
-    
-        ],
-        tl: [
-            {
-                id: 1,
-                title: "Ano ang Islam?",
-                link:"https://www.youtube.com/embed/eLKwjvCOMaw"    ,
-                category: 'aqeedah'
-            },   {
-                id: 2,
-                title: "Tuklasin ang Iyong Tunay na Relihiyon - Filipino",
-                link:"https://www.youtube.com/embed/QL6-il8LLkU"   ,
-                category: 'aqeedah'
-            },   {
-                id: 3,
-                title: "Muhammad ﷺ sa Torah at sa Bibliya",
-                link:"https://www.youtube.com/embed/6iWoHSfhkCc"  ,
-                category: 'aqeedah'
-            },   {
-                id: 4,
-                title: "Bakit tayo nilikha ng Diyos?",
-                link:"https://www.youtube.com/embed/90oQt-iuCiY"   ,
-                category: 'aqeedah'
-            },   {
-                id: 6,
-                title: `Kahulugan ng "Walang Diyos kundi si Allah" - Filipino`,
-                link:"https://www.youtube.com/embed/UY3LVFLF6wM"  ,
-                category: 'aqeedah'
-            },   {
-                id: 7,
-                title: "RELIHIYON NG MGA PROPETA",
-                link:"https://www.youtube.com/embed/6fnVoq3jT10"  ,
-                category: 'aqeedah'
-            },   {
-                id: 8,
-                title: "Ang Pamamaraan ng Wudhu at Salah",
-                link:"https://www.youtube.com/embed/orBhUttvg0c"   ,
-                category: 'fiqh'
-            }, 
-            {
-                id: 9,
-                title: "Tafsir Jalalain dan Kitab Tafsir Bagus Lainnya",
-                description: "Isang clip na nagsasabi tungkol sa isang tanong na nasa isip ng karamihan ng mga tao: Bakit tayo nilikha ng Diyos?",
-                link:"https://www.youtube.com/embed/lsdVFCsPlFc"   ,
-                category: 'tafseer'
-            },   {
-                id: 10,
-                title: `Sirah Nabawiyah #1 : Pengantar Sirah Nabawiyah`,
-                description: "Pagpapaliwanag ng kahulugan ng La ilaha illa Allah sa wikang Filipino",
-                link:"https://www.youtube.com/embed/BWgwRJjm3sc?list=PLlK0gGuioshBgZZf8VOC4IonQtFxPsifW"  ,
-                category: 'seerah'
-            },   {
-                id: 11,
-                title: "ISLAM TAGALOG LECTURE",
-                description: "Pinag-uusapan ang relihiyon ng mga propeta",
-                link:"https://www.youtube.com/embed/GmDxOdKGf3I"  ,
-                category: 'hadith'
-            },   {
-                id: 12,
-                title: "Moralidad mula sa Pananaw ng Relihiyong-Islam (1) ",
-                description: "Pagsasalita sa Filipino tungkol sa paghuhugas at pagdarasal",
-                link:"https://www.youtube.com/embed/EQm-o3Bjde0"   ,
-                category: 'akhlaq'
-            }, 
-    
-        ],
-        fa: [
-
-            {
-                id: 1,
-                title: "آیا اسلام دین جدیدی است؟",
-                link:"https://www.youtube.com/embed/8ZSg3yQM56k"     ,
-                category: 'aqeedah'
-            },{
-                id: 2,
-                title: "بینش در تماس",
-                link:"https://www.youtube.com/embed/uAnDDfmsVgI"    ,
-                category: 'aqeedah'
-            },   {
-                id: 3,
-                title: "ایمان مسلمان",
-                link:"https://www.youtube.com/embed/MNY4zsXXT_w"   ,
-                category: 'aqeedah'
-            },   {
-                id: 4,
-                title: "شرح دعا",
-                link:"https://www.youtube.com/embed/XuU8qLaOD1s"   ,
-                category: 'fiqh'
-            },   {
-                id: 6,
-                title: `شرح صحيح بخارى `,
-                link:"https://www.youtube.com/embed/R1_MdEbSl1c"   ,
-                category: 'hadith'
-            },   {
-                id: 7,
-                title: "شرح صحيح بخارى 2",
-                link:"https://www.youtube.com/embed/CVsB0GcZlXU"  ,
-                category: 'hadith'
-            },   {
-                id: 8,
-                title: "شرح صحيح بخارى 3",
-                link:"https://www.youtube.com/embed/GakMWfCLLjo"    ,
-                category: 'hadith'
-            }, 
-
-            {
-                id: 9,
-                title: "جزء اول ترجمه تفسیری قرآنکریم به زبان فارسی سی جزء کامل",
-                description: "شرح دین اسلام و صحبت در مورد آن",
-                link:"https://www.youtube.com/embed/AHawE8RLInQ"     ,
-                category: 'tafseer'
-            },{
-                id: 10,
-                title: "بررسی سیره نبوی؛ سخنان پیامبر اسلام قبل از وفاتش چه بود",
-                description: "صحبت از بصیرت در تبلیغ اسلامی",
-                link:"https://www.youtube.com/embed/N0EMLGlWxoE"     ,
-                category: 'tafseer'
-            },   {
-                id: 11,
-                title: "بررسی سیره نبوی؛ سخنان پیامبر اسلام قبل از وفاتش چه بود",
-                description: "کلیپی در مورد دین اسلام",
-                link:"https://www.youtube.com/embed/N0EMLGlWxoE"   ,
-                category: 'seerah'
-            },   {
-                id: 12,
-                title: "سيرة النبي صلى الله عليه وسلم",
-                description: "صحبت در مورد چگونگی نماز خواندن",
-                link:"https://www.youtube.com/embed/0_MOPfSuAbs"    ,
-                category: 'seerah'
-            },   {
-                id: 13,
-                title: `اخلاق اسلامی`,
-                description: "کلیپی از حدیثی از صحیح بخاری",
-                link:"https://www.youtube.com/embed/noX8f1z97Lo"   ,
-                category: 'akhlaq'
-            }, 
-            {
-                id: 14,
-                title: `اخلاق اسلامی از ما چه میخواهد`,
-                description: "کلیپی از حدیثی از صحیح بخاری",
-                link:"https://www.youtube.com/embed/Vr_9gNHTkTw"   ,
-                category: 'akhlaq'
-            }, 
-              
-    
-        ],
-    }
-    
+            if (response.data.videos) {
+                const formattedVideos = response.data.videos.map(video => ({
+                    id: video._id,
+                    title: video.title,
+                    category: video.category,
+                    link: video.videoType === 'embed' ? video.videoEmbedUrl : video.videoPath,
+                    isLocal: video.videoType === 'upload'
+                }));
+                setVideos(formattedVideos);
+            }
+        } catch (error) {
+            console.error('Error fetching videos:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const initializeVideos = () => {
-            setIsLoading(true);
-            const currentLanguage = i18n.language;
-            
-            // محاولة تحميل الفيديوهات من localStorage
-            const savedVideos = localStorage.getItem('videosData');
-            let languageVideos;
-            
-            if (savedVideos) {
-                const parsedVideos = JSON.parse(savedVideos);
-                languageVideos = parsedVideos[currentLanguage] || allVideos[currentLanguage] || allVideos.en;
-            } else {
-                languageVideos = allVideos[currentLanguage] || allVideos.en;
-            }
-            
-            if (activeCategory === 'all') {
-                setVideos(languageVideos);
-            } else {
-                const filteredVideos = languageVideos.filter(video => video.category === activeCategory);
-                setVideos(filteredVideos);
-            }
-            setCurrentPage(1);
-            setIsLoading(false);
-        };
-
-        initializeVideos();
+        fetchVideos();
     }, [i18n.language, activeCategory]);
 
     useEffect(() => {
@@ -1346,28 +405,35 @@ function Videos(){
 
     const fetchCategoriesData = async () => {
         try {
-            const adminToken = localStorage.getItem('adminToken');
-            const response = await axios.get(
-                `https://elmanafea.shop/admin/categories?lang=${i18n.language}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${adminToken}`
-                    }
-                }
-            );
+            const currentLang = i18n.language;
+            const response = await axios.get(`https://elmanafea.shop/categories?lang=${currentLang}`);
 
             if (response.data?.categories) {
-                setCategories(response.data.categories.map(cat => ({
+                const mappedCategories = response.data.categories.map(cat => ({
                     id: cat.id,
                     name: cat.title,
-                    _id: cat._id // إضافة _id من الاستجابة
-                })));
+                    _id: cat._id,
+                    lang: cat.lang
+                }));
+
+                // Add the "all" category if it doesn't exist
+                const allCategory = {
+                    id: 'all',
+                    name: translations.categories[currentLang].all
+                };
+
+                const finalCategories = [allCategory, ...mappedCategories];
+                setCategories(finalCategories);
             }
         } catch (error) {
             console.error('Error fetching categories:', error);
-            // إذا فشل جلب البيانات، استخدم الفئات الافتراضية
-            const defaultCategories = Object.entries(translations.categories[i18n.language])
-                .map(([id, name]) => ({ id, name }));
+            // If fetching fails, use default categories
+            const defaultCategories = [
+                { id: 'all', name: translations.categories[i18n.language].all },
+                ...Object.entries(translations.categories[i18n.language])
+                    .filter(([id]) => id !== 'all')
+                    .map(([id, name]) => ({ id, name }))
+            ];
             setCategories(defaultCategories);
         }
     };
@@ -1379,6 +445,10 @@ function Videos(){
     const handleAddCategory = async () => {
         if (!newCategory.id || !newCategory.name) return;
         
+        // إغلاق المودال فوراً
+        setShowCategoryModal(false);
+        setIsSavingCategory(true);
+        
         const currentLang = i18n.language;
         
         try {
@@ -1388,11 +458,11 @@ function Videos(){
                 return;
             }
 
-            const response = await axios.post('https://elmanafea.shop/admin/categories', 
+            const response = await axios.post('https://elmanafea.shop/admin/addcategory', 
                 {
+                    id: newCategory.id,
                     title: newCategory.name,
-                    lang: currentLang,
-                    index: categories.length + 1
+                    lang: currentLang
                 },
                 {
                     headers: {
@@ -1403,26 +473,36 @@ function Videos(){
 
             if (response.status === 200) {
                 await fetchCategoriesData();
-                setShowCategoryModal(false);
                 setNewCategory({ id: '', name: '' });
                 alert('تمت الإضافة بنجاح');
             }
-
         } catch (error) {
             console.error('Error:', error);
             alert(error.response?.data?.message || 'حدث خطأ في عملية الإضافة');
+        } finally {
+            setIsSavingCategory(false);
         }
     };
 
     const handleEditCategory = (category) => {
         if (category.id === 'all') return; // منع تعديل تصنيف "الكل"
         setEditingCategory(category);
-        setNewCategory({ ...category });
+        setNewCategory({ 
+            id: category.id,
+            name: category.name,
+            _id: category._id 
+        });
         setShowCategoryModal(true);
     };
 
     const handleUpdateCategory = async () => {
-        const currentLang = i18n.language;
+        if (!editingCategory?._id) {
+            alert('لا يمكن تحديث التصنيف، معرف التصنيف غير موجود');
+            return;
+        }
+
+        setShowCategoryModal(false);
+        setIsSavingCategory(true);
         
         try {
             const adminToken = localStorage.getItem('adminToken');
@@ -1431,73 +511,121 @@ function Videos(){
                 return;
             }
 
-            const response = await axios.post('https://elmanafea.shop/admin/categories', 
+            const response = await axios.put(
+                `https://elmanafea.shop/admin/updatecategory/${editingCategory._id}`,
                 {
                     title: newCategory.name,
-                    lang: currentLang,
-                    index: categories.findIndex(cat => cat.id === editingCategory?.id) + 1
+                    lang: i18n.language
                 },
                 {
                     headers: {
-                        Authorization: `Bearer ${adminToken}`
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
                     }
                 }
             );
 
             if (response.status === 200) {
-                await fetchCategoriesData(); // تحديث البيانات من الباك إند
-                setShowCategoryModal(false);
+                await fetchCategoriesData();
                 setEditingCategory(null);
                 setNewCategory({ id: '', name: '' });
                 alert('تم التحديث بنجاح');
             }
-
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error updating category:', error.response?.data || error);
             alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+        } finally {
+            setIsSavingCategory(false);
         }
     };
 
-    const handleDeleteCategory = (categoryId) => {
+    const handleDeleteCategory = async (categoryId) => {
         if (categoryId === 'all') return; // منع حذف تصنيف "الكل"
-        
-        const currentLang = i18n.language;
-        const updatedCategories = categories.filter(cat => cat.id !== categoryId);
-        
-        // حفظ التصنيفات في localStorage
-        const savedCategories = JSON.parse(localStorage.getItem('categories') || '{}');
-        savedCategories[currentLang] = updatedCategories;
-        localStorage.setItem('categories', JSON.stringify(savedCategories));
-        
-        setCategories(updatedCategories);
+
+        // إيجاد التصنيف المراد حذفه للحصول على معرف المستند (_id)
+        const categoryToDelete = categories.find(cat => cat.id === categoryId);
+        if (!categoryToDelete?._id) {
+            alert('لم يتم العثور على معرف التصنيف');
+            return;
+        }
+
+        setCategoryToDelete(categoryToDelete);
+        setShowDeleteConfirmModal(true);
     };
 
-    const handleAddVideo = () => {
-        const currentLang = i18n.language;
-        
+    const handleAddVideo = async () => {
         if (!newVideoData.title || (!newVideoData.link && !selectedFile)) return;
 
-        const newVideo = {
-            id: Date.now(),
-            title: newVideoData.title,
-            link: newVideoData.type === 'youtube' 
-                ? (newVideoData.link.includes('embed') 
-                    ? newVideoData.link 
-                    : newVideoData.link.replace('watch?v=', 'embed/'))
-                : URL.createObjectURL(selectedFile),
-            isLocal: newVideoData.type === 'file',
-            category: newVideoData.category
-        };
-
-        // تحديث الفيديوهات في localStorage
-        const savedVideos = JSON.parse(localStorage.getItem('videosData') || '{}');
-        savedVideos[currentLang] = [...(savedVideos[currentLang] || []), newVideo];
-        localStorage.setItem('videosData', JSON.stringify(savedVideos));
-
-        setVideos(prev => [...prev, newVideo]);
         setShowAddVideoModal(false);
-        setNewVideoData({ title: '', link: '', type: '', category: 'all' });
-        setSelectedFile(null);
+        setIsUploading(true);
+
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                alert('يرجى تسجيل الدخول كمشرف أولاً');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('title', newVideoData.title);
+            formData.append('lang', i18n.language);
+            formData.append('category', newVideoData.category);
+
+            if (newVideoData.type === 'file') {
+                formData.append('videoType', 'upload');
+                formData.append('video', selectedFile);
+            } else if (newVideoData.type === 'youtube') {
+                let videoLink = newVideoData.link;
+                
+                // Convert to embed format if needed
+                if (videoLink.includes('watch?v=')) {
+                    const videoId = videoLink.split('watch?v=')[1].split('&')[0];
+                    videoLink = `https://www.youtube.com/embed/${videoId}`;
+                } else if (!videoLink.includes('youtube.com/')) {
+                    videoLink = `https://www.youtube.com/embed/${videoLink}`;
+                }
+                formData.append('videoType', 'embed');
+                formData.append('youtubeEmbedUrl', videoLink);
+            }
+
+            const response = await axios.post('https://elmanafea.shop/admin/uploadvideo', 
+                formData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
+
+            if (response.status === 200) {
+                // Fetch updated videos
+                const updatedVideosResponse = await axios.get(
+                    `https://elmanafea.shop/videos?lang=${i18n.language}&category=${newVideoData.category}`
+                );
+                
+                if (updatedVideosResponse.data.videos) {
+                    const formattedVideos = updatedVideosResponse.data.videos.map(video => ({
+                        id: video._id,
+                        title: video.title,
+                        category: video.category,
+                        link: video.videoType === 'embed' ? video.videoEmbedUrl : video.videoPath,
+                        isLocal: video.videoType === 'upload'
+                    }));
+                    setVideos(formattedVideos);
+                }
+
+                setNewVideoData({ title: '', link: '', type: '', category: 'all' });
+                setSelectedFile(null);
+                alert('تم رفع الفيديو بنجاح');
+            }
+        } catch (error) {
+            console.error('Error uploading video:', error.response?.data || error.message);
+            alert(error.response?.data?.message || 'حدث خطأ في عملية رفع الفيديو');
+            setShowAddVideoModal(true);
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const handleDeleteVideo = (videoId) => {
@@ -1521,33 +649,77 @@ function Videos(){
         setEditModalOpen(true);
     };
 
-    const handleSaveVideo = () => {
-        const currentLang = i18n.language;
-        
-        if (!editingVideo.title) return;
-
-        const updatedVideo = {
-            ...editingVideo,
-            link: editingVideo.type === 'youtube' 
-                ? (editingVideo.link.includes('embed') 
-                    ? editingVideo.link 
-                    : editingVideo.link.replace('watch?v=', 'embed/'))
-                : selectedFile ? URL.createObjectURL(selectedFile) : editingVideo.link
-        };
-
-        const updatedVideos = videos.map(video => 
-            video.id === editingVideo.id ? updatedVideo : video
-        );
-
-        // تحديث الفيديوهات في localStorage
-        const savedVideos = JSON.parse(localStorage.getItem('videosData') || '{}');
-        savedVideos[currentLang] = updatedVideos;
-        localStorage.setItem('videosData', JSON.stringify(savedVideos));
-
-        setVideos(updatedVideos);
+    const handleSaveVideo = async () => {
         setEditModalOpen(false);
-        setEditingVideo(null);
-        setSelectedFile(null);
+        setIsSavingEdit(true);
+        
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                alert('يرجى تسجيل الدخول كمشرف أولاً');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('title', editingVideo.title);
+            formData.append('lang', i18n.language);
+            formData.append('category', editingVideo.category);
+
+            if (editingVideo.type === 'file' && selectedFile) {
+                formData.append('videoType', 'upload');
+                formData.append('video', selectedFile);
+            } else if (editingVideo.type === 'youtube') {
+                let videoLink = editingVideo.link;
+                
+                // Convert to embed format if needed
+                if (videoLink.includes('watch?v=')) {
+                    const videoId = videoLink.split('watch?v=')[1].split('&')[0];
+                    videoLink = `https://www.youtube.com/embed/${videoId}`;
+                } else if (!videoLink.includes('youtube.com/')) {
+                    videoLink = `https://www.youtube.com/embed/${videoLink}`;
+                }
+                formData.append('videoType', 'embed');
+                formData.append('youtubeEmbedUrl', videoLink);
+            }
+
+            const response = await axios.post(
+                'https://elmanafea.shop/admin/uploadvideo',
+                formData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
+
+            if (response.status === 200) {
+                // Fetch updated videos
+                const updatedVideosResponse = await axios.get(
+                    `https://elmanafea.shop/videos?lang=${i18n.language}&category=${editingVideo.category}`
+                );
+                
+                if (updatedVideosResponse.data.videos) {
+                    const formattedVideos = updatedVideosResponse.data.videos.map(video => ({
+                        id: video._id,
+                        title: video.title,
+                        category: video.category,
+                        link: video.videoType === 'embed' ? video.videoEmbedUrl : video.videoPath,
+                        isLocal: video.videoType === 'upload'
+                    }));
+                    setVideos(formattedVideos);
+                }
+
+                setEditingVideo(null);
+                setSelectedFile(null);
+                alert('تم تحديث الفيديو بنجاح');
+            }
+        } catch (error) {
+            console.error('Error updating video:', error.response?.data || error.message);
+            alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+        } finally {
+            setIsSavingEdit(false);
+        }
     };
 
     const handleEditTextClick = (text, type) => {
@@ -1565,16 +737,20 @@ function Videos(){
     };
 
     const handleTextSave = async () => {
+        // إغلاق المودال فوراً
+        setEditModalOpen(false);
+        setIsSavingText(true);
+        
         const currentLang = i18n.language;
 
-        if (editingText.type === 'title') {
-            try {
-                const adminToken = localStorage.getItem('adminToken');
-                if (!adminToken) {
-                    alert('يرجى تسجيل الدخول كمشرف أولاً');
-                    return;
-                }
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                alert('يرجى تسجيل الدخول كمشرف أولاً');
+                return;
+            }
 
+            if (editingText.type === 'title') {
                 const response = await axios.post('https://elmanafea.shop/admin/vidpageheader', 
                     {
                         header: editingText.text,
@@ -1589,23 +765,10 @@ function Videos(){
 
                 if (response.status === 200) {
                     await fetchVideoHeaderData();
-                    setEditModalOpen(false);
                     setEditingText(null);
                     alert('تم التحديث بنجاح');
                 }
-
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
-            }
-        } else if (editingText.type === 'description') {
-            try {
-                const adminToken = localStorage.getItem('adminToken');
-                if (!adminToken) {
-                    alert('يرجى تسجيل الدخول كمشرف أولاً');
-                    return;
-                }
-
+            } else if (editingText.type === 'description') {
                 const response = await axios.post('https://elmanafea.shop/admin/vidsecondheader', 
                     {
                         second_header: editingText.text,
@@ -1620,15 +783,15 @@ function Videos(){
 
                 if (response.status === 200) {
                     await fetchVideoSecondHeaderData();
-                    setEditModalOpen(false);
                     setEditingText(null);
                     alert('تم التحديث بنجاح');
                 }
-
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
             }
+        } catch (error) {
+            console.error('Error:', error);
+            alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+        } finally {
+            setIsSavingText(false);
         }
     };
 
@@ -1657,7 +820,7 @@ function Videos(){
     
     return (
         <>
-            <Header/>
+            <Header />
             <div className="videos-header">
                 <div className="editable-container">
                     <h1>{getTextContent('title', 'مكتبة الفيديوهات الإسلامية')}</h1>
@@ -1836,41 +999,41 @@ function Videos(){
             )}
 
             {showAddVideoModal && (
-                <div className="edit-modal-overlay">
-                    <div className="edit-modal">
+                <div className="video-add-modal-overlay">
+                    <div className="video-add-modal">
                         <h3>إضافة فيديو جديد</h3>
                         
                         <div className="video-type-selector">
                             <button 
-                                className={`type-btn ${newVideoData.type === 'youtube' ? 'active' : ''}`}
+                                className={`video-type-btn ${newVideoData.type === 'youtube' ? 'active' : ''}`}
                                 onClick={() => setNewVideoData(prev => ({ ...prev, type: 'youtube' }))}
                             >
                                 رابط يوتيوب
                             </button>
                             <button 
-                                className={`type-btn ${newVideoData.type === 'file' ? 'active' : ''}`}
+                                className={`video-type-btn ${newVideoData.type === 'file' ? 'active' : ''}`}
                                 onClick={() => setNewVideoData(prev => ({ ...prev, type: 'file' }))}
                             >
                                 رفع ملف
                             </button>
                         </div>
 
-                        <div className="edit-field">
+                        <div className="video-add-field">
                             <label>عنوان الفيديو:</label>
                             <input
                                 type="text"
                                 value={newVideoData.title}
                                 onChange={(e) => setNewVideoData(prev => ({ ...prev, title: e.target.value }))}
-                                className="edit-input"
+                                className="video-add-input"
                             />
                         </div>
 
-                        <div className="edit-field">
+                        <div className="video-add-field">
                             <label>التصنيف:</label>
                             <select
                                 value={newVideoData.category}
                                 onChange={(e) => setNewVideoData(prev => ({ ...prev, category: e.target.value }))}
-                                className="edit-input"
+                                className="video-add-input"
                             >
                                 {categories.map(category => (
                                     <option key={category.id} value={category.id}>
@@ -1881,37 +1044,37 @@ function Videos(){
                         </div>
 
                         {newVideoData.type === 'youtube' && (
-                            <div className="edit-field">
+                            <div className="video-add-field">
                                 <label>رابط اليوتيوب:</label>
                                 <input
                                     type="text"
                                     value={newVideoData.link}
                                     onChange={(e) => setNewVideoData(prev => ({ ...prev, link: e.target.value }))}
-                                    className="edit-input"
+                                    className="video-add-input"
                                     placeholder="مثال: https://www.youtube.com/embed/..."
                                 />
                             </div>
                         )}
 
                         {newVideoData.type === 'file' && (
-                            <div className="edit-field">
+                            <div className="video-add-field">
                                 <label>اختر ملف الفيديو:</label>
                                 <input
                                     type="file"
                                     accept="video/*"
                                     onChange={(e) => setSelectedFile(e.target.files[0])}
-                                    className="edit-input"
+                                    className="video-add-input"
                                 />
                             </div>
                         )}
 
-                        <div className="modal-buttons">
+                        <div className="video-modal-buttons">
                             <button 
                                 onClick={handleAddVideo} 
-                                className="save-btn"
-                                disabled={!newVideoData.title || (!newVideoData.link && !selectedFile)}
+                                className="video-save-btn"
+                                disabled={!newVideoData.title || (!newVideoData.link && !selectedFile) || isUploading}
                             >
-                                حفظ
+                                {isUploading ? 'جاري الحفظ...' : 'حفظ'}
                             </button>
                             <button 
                                 onClick={() => {
@@ -1919,7 +1082,7 @@ function Videos(){
                                     setNewVideoData({ title: '', link: '', type: '', category: 'all' });
                                     setSelectedFile(null);
                                 }} 
-                                className="cancel-btn"
+                                className="video-cancel-btn"
                             >
                                 إلغاء
                             </button>
@@ -1929,26 +1092,26 @@ function Videos(){
             )}
 
             {editModalOpen && editingVideo && (
-                <div className="edit-modal-overlay">
-                    <div className="edit-modal">
+                <div className="video-edit-modal-overlay">
+                    <div className="video-edit-modal">
                         <h3>تعديل الفيديو</h3>
                         
-                        <div className="edit-field">
+                        <div className="video-edit-field">
                             <label>عنوان الفيديو:</label>
                             <input
                                 type="text"
                                 value={editingVideo.title}
                                 onChange={(e) => setEditingVideo(prev => ({ ...prev, title: e.target.value }))}
-                                className="edit-input"
+                                className="video-edit-input"
                             />
                         </div>
 
-                        <div className="edit-field">
+                        <div className="video-edit-field">
                             <label>التصنيف:</label>
                             <select
                                 value={editingVideo.category}
                                 onChange={(e) => setEditingVideo(prev => ({ ...prev, category: e.target.value }))}
-                                className="edit-input"
+                                className="video-edit-select"
                             >
                                 {categories.map(category => (
                                     <option key={category.id} value={category.id}>
@@ -1959,34 +1122,35 @@ function Videos(){
                         </div>
 
                         {editingVideo.type === 'youtube' ? (
-                            <div className="edit-field">
+                            <div className="video-edit-field">
                                 <label>رابط يوتيوب:</label>
                                 <input
                                     type="text"
                                     value={editingVideo.link}
                                     onChange={(e) => setEditingVideo(prev => ({ ...prev, link: e.target.value }))}
-                                    className="edit-input"
+                                    className="video-edit-input"
                                     placeholder="مثال: https://www.youtube.com/embed/..."
                                 />
                             </div>
                         ) : (
-                            <div className="edit-field">
+                            <div className="video-edit-field">
                                 <label>تغيير ملف الفيديو:</label>
                                 <input
                                     type="file"
                                     accept="video/*"
                                     onChange={(e) => setSelectedFile(e.target.files[0])}
-                                    className="edit-input"
+                                    className="video-edit-input"
                                 />
                             </div>
                         )}
 
-                        <div className="modal-buttons">
+                        <div className="video-edit-buttons">
                             <button 
                                 onClick={handleSaveVideo} 
-                                className="save-btn"
+                                className="video-edit-save-btn"
+                                disabled={!editingVideo?.title || isSavingEdit}
                             >
-                                حفظ
+                                {isSavingEdit ? 'جاري الحفظ...' : 'حفظ'}
                             </button>
                             <button 
                                 onClick={() => {
@@ -1994,7 +1158,7 @@ function Videos(){
                                     setEditingVideo(null);
                                     setSelectedFile(null);
                                 }} 
-                                className="cancel-btn"
+                                className="video-edit-cancel-btn"
                             >
                                 إلغاء
                             </button>
@@ -2020,8 +1184,9 @@ function Videos(){
                                 <button 
                                     className="video-modal-save"
                                     onClick={handleTextSave}
+                                    disabled={!editingText?.text || isSavingText}
                                 >
-                                    حفظ
+                                    {isSavingText ? 'جاري الحفظ...' : 'حفظ'}
                                 </button>
                                 <button 
                                     className="video-modal-cancel"
@@ -2039,38 +1204,38 @@ function Videos(){
             )}
 
             {showCategoryModal && (
-                <div className="edit-modal-overlay">
-                    <div className="edit-modal">
+                <div className="video-category-modal-overlay">
+                    <div className="video-category-modal">
                         <h3>{editingCategory ? 'تعديل التصنيف' : 'إضافة تصنيف جديد'}</h3>
                         
-                        <div className="edit-field">
+                        <div className="video-category-field">
                             <label>معرف التصنيف:</label>
                             <input
                                 type="text"
                                 value={newCategory.id}
                                 onChange={(e) => setNewCategory(prev => ({ ...prev, id: e.target.value }))}
-                                className="edit-input"
+                                className="video-category-input"
                                 disabled={editingCategory}
                             />
                         </div>
 
-                        <div className="edit-field">
+                        <div className="video-category-field">
                             <label>اسم التصنيف:</label>
                             <input
                                 type="text"
                                 value={newCategory.name}
                                 onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
-                                className="edit-input"
+                                className="video-category-input"
                             />
                         </div>
 
                         {!editingCategory && (
-                            <div className="categories-list">
+                            <div className="video-categories-list">
                                 {categories.map(category => (
-                                    <div key={category.id} className="category-item">
+                                    <div key={category.id} className="video-category-item">
                                         <span>{category.name}</span>
                                         {category.id !== 'all' && (
-                                            <div className="category-actions">
+                                            <div className="video-category-actions">
                                                 <FontAwesomeIcon 
                                                     icon={faPenToSquare} 
                                                     onClick={() => handleEditCategory(category)}
@@ -2086,13 +1251,13 @@ function Videos(){
                             </div>
                         )}
 
-                        <div className="modal-buttons">
+                        <div className="video-modal-buttons">
                             <button 
                                 onClick={editingCategory ? handleUpdateCategory : handleAddCategory} 
-                                className="save-btn"
-                                disabled={!newCategory.id || !newCategory.name}
+                                className="video-save-btn"
+                                disabled={!newCategory.id || !newCategory.name || isSavingCategory}
                             >
-                                {editingCategory ? 'تحديث' : 'إضافة'}
+                                {isSavingCategory ? 'جاري الحفظ...' : (editingCategory ? 'تحديث' : 'إضافة')}
                             </button>
                             <button 
                                 onClick={() => {
@@ -2100,7 +1265,65 @@ function Videos(){
                                     setEditingCategory(null);
                                     setNewCategory({ id: '', name: '' });
                                 }} 
-                                className="cancel-btn"
+                                className="video-cancel-btn"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteConfirmModal && (
+                <div className="delete-confirm-modal-overlay">
+                    <div className="delete-confirm-modal">
+                        <h3>تأكيد الحذف</h3>
+                        <p>هل أنت متأكد من حذف تصنيف "{categoryToDelete?.name}"؟</p>
+                        <div className="delete-confirm-actions">
+                            <button
+                                className="delete-confirm-btn confirm"
+                                onClick={async () => {
+                                    try {
+                                        const adminToken = localStorage.getItem('adminToken');
+                                        if (!adminToken) {
+                                            alert('يرجى تسجيل الدخول كمشرف أولاً');
+                                            return;
+                                        }
+
+                                        const response = await axios.delete(
+                                            `https://elmanafea.shop/admin/removecategory/${categoryToDelete._id}`,
+                                            {
+                                                headers: {
+                                                    'Authorization': `Bearer ${adminToken}`,
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                data: {
+                                                    lang: i18n.language
+                                                }
+                                            }
+                                        );
+
+                                        if (response.status === 200) {
+                                            await fetchCategoriesData();
+                                            alert('تم حذف التصنيف بنجاح');
+                                        }
+                                    } catch (error) {
+                                        console.error('Error deleting category:', error.response?.data || error);
+                                        alert(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
+                                    } finally {
+                                        setShowDeleteConfirmModal(false);
+                                        setCategoryToDelete(null);
+                                    }
+                                }}
+                            >
+                                نعم، احذف
+                            </button>
+                            <button
+                                className="delete-confirm-btn cancel"
+                                onClick={() => {
+                                    setShowDeleteConfirmModal(false);
+                                    setCategoryToDelete(null);
+                                }}
                             >
                                 إلغاء
                             </button>
@@ -2110,7 +1333,7 @@ function Videos(){
             )}
             <Footer />
         </>
-    )
+    );
 }
 
 export default Videos;
