@@ -6,7 +6,7 @@ import Header from './header';
 import Footer from './footer';
 import './mosabaqa.css';
 import { countryCodes } from './countryCodes';
-import { useTranslation } from 'react-i18next';
+// import { useTranslation } from 'react-i18next';
 
 
 
@@ -66,7 +66,7 @@ const Mosabaqa = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
-      setError('الرجاء إدخال الاسم ورقم الهاتف');
+      setError(t('الرجاء إدخال الاسم ورقم الهاتف'));
       return;
     }
     
@@ -77,7 +77,7 @@ const Mosabaqa = () => {
         setFormData({ name: '', answer: '', countryCode: '+966', phone: '', email: '', country: '' });
       }, 3000);
     } catch (error) {
-      setError('حدث خطأ في إرسال البيانات');
+      setError(t('حدث خطأ في إرسال البيانات'));
     }
   };
 
@@ -94,36 +94,38 @@ const Mosabaqa = () => {
       <Header />
       <div className="mosabaqa-container">
         <div className="mosabaqa-form">
-          <h2>المسابقة الرمضانية</h2>
+          <h2>{t('المسابقة الرمضانية')}</h2>
           <div className="question-section">
-            <h3>السؤال:</h3>
-            <p>ما هو أول مسجد بني في الإسلام؟</p>
+            <h3>{t('السؤال')}:</h3>
+            <p>{t('ما هو أول مسجد بني في الإسلام؟')}</p>
           </div>
             <div className="form-group">
-              <label>الإجابة</label>
+              <label>{t('الإجابة')}</label>
               <input
                 type="text"
                 name="answer"
                 value={formData.answer}
                 onChange={handleChange}
                 required
+                placeholder={t('اكتب إجابتك هنا')}
               />
             </div>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>الاسم</label>
+              <label>{t('الاسم')}</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
                 required
+                placeholder={t('ادخل اسمك الكامل')}
               />
             </div>
 
             <div className="form-group">
-              <label>رقم الهاتف</label>
+              <label>{t('رقم الهاتف')}</label>
               <div className="phone-input-group">
                 <div className="country-code-container">
                   <input
@@ -164,29 +166,31 @@ const Mosabaqa = () => {
             </div>
 
             <div className="form-group">
-              <label>البلد (اختياري)</label>
+              <label>{t('البلد')}</label>
               <input
                 type="text"
                 name="country"
                 value={formData.country}
                 onChange={handleChange}
+                placeholder={t('ادخل اسم بلدك')}
               />
             </div>
 
             <div className="form-group">
-              <label>البريد الإلكتروني (اختياري)</label>
+              <label>{t('البريد الإلكتروني')}</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
+                placeholder={t('ادخل بريدك الإلكتروني')}
               />
             </div>
 
-            {error && <div className="error-message">{error}</div>}
+            {error && <div className="error-message">{t(error)}</div>}
             
             <button type="submit" className="submit-btn">
-              إرسال المشاركة
+              {t('إرسال المشاركة')}
             </button>
           </form>
         </div>
@@ -197,8 +201,8 @@ const Mosabaqa = () => {
               <div className="success-icon">
                 <FontAwesomeIcon icon={faCheckCircle} />
               </div>
-              <h3>تم إرسال مشاركتك بنجاح!</h3>
-              <p>شكراً لمشاركتك في المسابقة</p>
+              <h3>{t('تم إرسال مشاركتك بنجاح!')}</h3>
+              <p>{t('شكراً لمشاركتك في المسابقة')}</p>
             </div>
           </div>
         )}

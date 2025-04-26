@@ -251,21 +251,55 @@ function Videos(){
         return savedTitle ? JSON.parse(savedTitle) : translations.categories;
     });
 
+    const formatYoutubeUrl = (url) => {
+        if (!url) return '';
+        let videoId;
+        if (url.includes('watch?v=')) {
+            videoId = url.split('watch?v=')[1].split('&')[0];
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1].split('?')[0];
+        } else if (url.includes('youtube.com/embed/')) {
+            videoId = url.split('embed/')[1].split('?')[0];
+        } else {
+            videoId = url.trim();
+        }
+        return `https://www.youtube.com/embed/${videoId}`;
+    };
+
     const fetchVideos = async () => {
         try {
             setIsLoading(true);
             const response = await axios.get(
-                `https://elmanafea.shop/videos?lang=${i18n.language}&category=${activeCategory}`
+                activeCategory === 'all' 
+                    ? `https://elmanafea.shop/videos/all?lang=${i18n.language}`
+                    : `https://elmanafea.shop/videos?lang=${i18n.language}&category=${activeCategory}`
             );
 
+            console.log('Videos response:', response.data);
+            console.log('Videos URL:', response.config.url);
+
             if (response.data.videos) {
-                const formattedVideos = response.data.videos.map(video => ({
-                    id: video._id,
-                    title: video.title,
-                    category: video.category,
-                    link: video.videoType === 'embed' ? video.videoEmbedUrl : video.videoPath,
-                    isLocal: video.videoType === 'upload'
-                }));
+                const formattedVideos = response.data.videos.map(video => {
+                    // طباعة كل فيديو للتشخيص
+                    console.log('Raw video data:', video);
+
+                    let videoLink = '';
+                    if (video.videoType === 'embed') {
+                        videoLink = formatYoutubeUrl(video.youtubeEmbedUrl || video.link);
+                    } else if (video.videoType === 'upload') {
+                        videoLink = "https://elmanafea.shop" + video.videoPath || video.url;
+                    }
+
+                    return {
+                        id: video._id,
+                        title: video.title,
+                        category: video.category,
+                        link: videoLink,
+                        isLocal: video.videoType === 'upload'
+                    };
+                });
+
+                console.log('Formatted videos:', formattedVideos);
                 setVideos(formattedVideos);
             }
         } catch (error) {
@@ -575,17 +609,8 @@ function Videos(){
                 formData.append('videoType', 'upload');
                 formData.append('video', selectedFile);
             } else if (newVideoData.type === 'youtube') {
-                let videoLink = newVideoData.link;
-                
-                // Convert to embed format if needed
-                if (videoLink.includes('watch?v=')) {
-                    const videoId = videoLink.split('watch?v=')[1].split('&')[0];
-                    videoLink = `https://www.youtube.com/embed/${videoId}`;
-                } else if (!videoLink.includes('youtube.com/')) {
-                    videoLink = `https://www.youtube.com/embed/${videoLink}`;
-                }
                 formData.append('videoType', 'embed');
-                formData.append('youtubeEmbedUrl', videoLink);
+                formData.append('youtubeEmbedUrl', formatYoutubeUrl(newVideoData.link));
             }
 
             const response = await axios.post('https://elmanafea.shop/admin/uploadvideo', 
@@ -628,31 +653,15 @@ function Videos(){
         }
     };
 
-    const handleDeleteVideo = (videoId) => {
-        const currentLang = i18n.language;
-        
-        const updatedVideos = videos.filter(video => video.id !== videoId);
-        
-        // تحديث الفيديوهات في localStorage
-        const savedVideos = JSON.parse(localStorage.getItem('videosData') || '{}');
-        savedVideos[currentLang] = updatedVideos;
-        localStorage.setItem('videosData', JSON.stringify(savedVideos));
-        
-        setVideos(updatedVideos);
-    };
-
     const handleEditVideo = (video) => {
         setEditingVideo({
-            ...video,
+            ...video, 
             type: video.isLocal ? 'file' : 'youtube'
         });
         setEditModalOpen(true);
     };
 
-    const handleSaveVideo = async () => {
-        setEditModalOpen(false);
-        setIsSavingEdit(true);
-        
+    const handleDeleteVideo = async (videoId) => {
         try {
             const adminToken = localStorage.getItem('adminToken');
             if (!adminToken) {
@@ -660,80 +669,32 @@ function Videos(){
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('title', editingVideo.title);
-            formData.append('lang', i18n.language);
-            formData.append('category', editingVideo.category);
-
-            if (editingVideo.type === 'file' && selectedFile) {
-                formData.append('videoType', 'upload');
-                formData.append('video', selectedFile);
-            } else if (editingVideo.type === 'youtube') {
-                let videoLink = editingVideo.link;
-                
-                // Convert to embed format if needed
-                if (videoLink.includes('watch?v=')) {
-                    const videoId = videoLink.split('watch?v=')[1].split('&')[0];
-                    videoLink = `https://www.youtube.com/embed/${videoId}`;
-                } else if (!videoLink.includes('youtube.com/')) {
-                    videoLink = `https://www.youtube.com/embed/${videoLink}`;
-                }
-                formData.append('videoType', 'embed');
-                formData.append('youtubeEmbedUrl', videoLink);
+            if (!window.confirm('هل أنت متأكد من حذف هذا الفيديو؟')) {
+                return;
             }
 
-            const response = await axios.post(
-                'https://elmanafea.shop/admin/uploadvideo',
-                formData,
+            const response = await axios.delete(
+                'https://elmanafea.shop/admin/deletevideo',
                 {
                     headers: {
                         'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'multipart/form-data'
+                        'Content-Type': 'application/json'
+                    },
+                    data: {
+                        id: videoId,
+                        lang: i18n.language
                     }
                 }
             );
 
             if (response.status === 200) {
-                // Fetch updated videos
-                const updatedVideosResponse = await axios.get(
-                    `https://elmanafea.shop/videos?lang=${i18n.language}&category=${editingVideo.category}`
-                );
-                
-                if (updatedVideosResponse.data.videos) {
-                    const formattedVideos = updatedVideosResponse.data.videos.map(video => ({
-                        id: video._id,
-                        title: video.title,
-                        category: video.category,
-                        link: video.videoType === 'embed' ? video.videoEmbedUrl : video.videoPath,
-                        isLocal: video.videoType === 'upload'
-                    }));
-                    setVideos(formattedVideos);
-                }
-
-                setEditingVideo(null);
-                setSelectedFile(null);
-                alert('تم تحديث الفيديو بنجاح');
+                await fetchVideos();
+                alert('تم حذف الفيديو بنجاح');
             }
         } catch (error) {
-            console.error('Error updating video:', error.response?.data || error.message);
-            alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
-        } finally {
-            setIsSavingEdit(false);
+            console.error('Error deleting video:', error);
+            alert(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
         }
-    };
-
-    const handleEditTextClick = (text, type) => {
-        const currentText = type === 'title' ? 
-            getTextContent('title', 'مكتبة الفيديوهات الإسلامية') :
-            type === 'description' ?
-            getTextContent('description', 'مجموعة مميزة من المحاضرات والدروس في علوم الشريعة والسيرة النبوية') :
-            text;
-
-        setEditingText({
-            text: currentText,
-            type: type
-        });
-        setEditModalOpen(true);
     };
 
     const handleTextSave = async () => {
@@ -901,25 +862,6 @@ function Videos(){
                 {sectionTitle.visible && (
                     <div className="section-title">
                         <h2>{t(sectionTitle.text)}</h2>
-                        {isAdmin && (
-                            <div className="title-actions">
-                                <FontAwesomeIcon 
-                                    icon={faPenToSquare} 
-                                    className="edit-icon"
-                                    onClick={() => handleEditTextClick(sectionTitle.text, 'sectionTitle')}
-                                    style={{ marginLeft: '10px', cursor: 'pointer', color: '#007bff' }}
-                                />
-                                {/* <FontAwesomeIcon 
-                                    icon={faTrash} 
-                                    className="delete-icon"
-                                    onClick={() => {
-                                        setSectionTitle(prev => ({ ...prev, visible: false }));
-                                        localStorage.setItem('sectionTitle', JSON.stringify({ ...sectionTitle, visible: false }));
-                                    }}
-                                    style={{ cursor: 'pointer', color: '#dc3545' }}
-                                /> */}
-                            </div>
-                        )}
                     </div>
                 )}
                 <div className="videos-grid">
@@ -940,20 +882,32 @@ function Videos(){
                                         />
                                     </div>
                                 )}
-                                {video.isLocal ? (
-                                    <div className="local-video-container">
-                                        <video className="local-video" src={video.link} controls />
-                                    </div>
-                                ) : (
-                                    <iframe 
-                                        width="100%" 
-                                        height="100%" 
-                                        src={video.link} 
-                                        title={video.title}
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                        allowFullScreen
-                                    ></iframe>
-                                )}
+                                <div className="video-container">
+                                    {video.link ? (
+                                        <iframe 
+                                            src={video.link}
+                                            title={video.title}
+                                            width="100%"
+                                            height="100%"
+                                            frameBorder="0"
+                                            allow="clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                            loading="lazy"
+                                        ></iframe>
+                                    ) : video.url ? (
+                                        <video 
+                                            controls
+                                            width="100%"
+                                            height="100%"
+                                            src={video.url}
+                                            title={video.title}
+                                        >
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    ) : (
+                                        <div className="video-error">الفيديو غير متوفر</div>
+                                    )}
+                                </div>
                             </div>
                             <div className="video-info">
                                 <h3 className="video-title">{video.title}</h3>

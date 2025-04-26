@@ -1,91 +1,108 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from './i18n';
 import axios from 'axios';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faPenToSquare, faPlus } from '@fortawesome/free-solid-svg-icons';
 import './videos.css';
+import Header from './header';
+import Footer from './footer';
 
 const Videos = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [videos, setVideos] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [currentCategory, setCurrentCategory] = useState('');
+  const [currentCategory, setCurrentCategory] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showAddVideoModal, setShowAddVideoModal] = useState(false);
-  const [newVideoData, setNewVideoData] = useState({
-    title: '',
-    link: '',
-    type: '',
-    file: null,
-  });
   const [secondHeader, setSecondHeader] = useState('');
-  const [isEditing, setIsEditing] = useState(null);
-  const [editValue, setEditValue] = useState('');
+  const [showAddVideoModal, setShowAddVideoModal] = useState(false);
+  const [newVideoData, setNewVideoData] = useState({ title: '', link: '', type: '', file: null });
   const [editingVideo, setEditingVideo] = useState(null);
 
+  // فحص إذا كان المستخدم مشرف
   useEffect(() => {
-    const adminToken = localStorage.getItem('adminToken');
-    setIsAdmin(!!adminToken);
+    const checkAdmin = () => {
+      const token = localStorage.getItem('adminToken');
+      setIsAdmin(!!token);
+    };
+    checkAdmin();
   }, []);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get(`https://elmanafea.shop/categories?lang=${i18n.language}`);
-        if (response.data.success) {
-          setCategories(response.data.categories);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
+  // جلب الفيديوهات من الباك إند
+  const fetchVideos = async () => {
+    try {
+      const response = await axios.get(
+        `https://elmanafea.shop/videos?lang=${i18n.language}&category=${currentCategory || ''}`
+      );
+
+      if (response.data.videos) {
+        // ترتيب الفيديوهات حسب الكاتيجوري
+        const formattedVideos = response.data.videos
+          .map(video => ({
+            id: video._id,
+            title: video.title,
+            category: video.category,
+            videoType: video.videoType,
+            link: video.videoType === 'embed' ? video.videoEmbedUrl : video.videoPath
+          }))
+          .sort((a, b) => a.category.localeCompare(b.category));
+          
+        setVideos(formattedVideos);
       }
-    };
-
-    fetchCategories();
-  }, [i18n.language]);
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const response = await axios.get(
-          `https://elmanafea.shop/video?lang=${i18n.language}&category=${currentCategory}`
-        );
-        if (response.data.success) {
-          setVideos(response.data.videos);
-        }
-      } catch (error) {
-        console.error('Error fetching videos:', error);
-      }
-    };
-
     fetchVideos();
-  }, [i18n.language, currentCategory]);
+  }, [currentCategory, i18n.language]);
 
-  useEffect(() => {
-    const fetchSecondHeader = async () => {
-      try {
-        const response = await axios.get(`https://elmanafea.shop/vidsecondheader?lang=${i18n.language}`);
-        if (response.data.success && response.data.second_header) {
-          setSecondHeader(response.data.second_header);
-        }
-      } catch (error) {
-        console.error('Error fetching second header:', error);
+  // رفع فيديو جديد
+  const handleAddVideo = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('title', newVideoData.title);
+      formData.append('lang', i18n.language);
+      formData.append('category', currentCategory);
+      formData.append('videoType', newVideoData.type === 'link' ? 'embed' : 'upload');
+
+      if (newVideoData.type === 'link') {
+        formData.append('youtubeEmbedUrl', newVideoData.link);
+      } else if (newVideoData.file) {
+        formData.append('video', newVideoData.file);
       }
-    };
 
-    fetchSecondHeader();
-  }, [i18n.language]);
+      const response = await axios.post(
+        'https://elmanafea.shop/admin/uploadvideo',
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
 
-  const handleVideoUpload = async (videoData, categoryId) => {
+      if (response.data.success) {
+        await fetchVideos();
+        setShowAddVideoModal(false);
+        setNewVideoData({ title: '', link: '', type: '', file: null });
+      }
+    } catch (error) {
+      console.error('Error uploading video:', error);
+    }
+  };
+
+  // تعديل فيديو
+  const handleUpdateVideo = async (videoData) => {
     try {
       const formData = new FormData();
       formData.append('title', videoData.title);
       formData.append('lang', i18n.language);
-      formData.append('category', categoryId);
-      formData.append('videoType', videoData.type === 'link' ? 'text' : 'file');
+      formData.append('category', currentCategory);
+      formData.append('videoType', videoData.type === 'text' ? 'embed' : 'upload');
 
-      if (videoData.type === 'link') {
-        formData.append('video', videoData.link);
-      } else if (videoData.type === 'file' && videoData.file) {
+      if (videoData.type === 'text') {
+        formData.append('youtubeEmbedUrl', videoData.link);
+      } else if (videoData.file) {
         formData.append('video', videoData.file);
       }
 
@@ -95,27 +112,24 @@ const Videos = () => {
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-          },
+            'Content-Type': 'multipart/form-data'
+          }
         }
       );
 
       if (response.data.success) {
-        const updatedVideosResponse = await axios.get(
-          `https://elmanafea.shop/video?lang=${i18n.language}&category=${currentCategory}`
-        );
-        if (updatedVideosResponse.data.success) {
-          setVideos(updatedVideosResponse.data.videos);
-        }
+        await fetchVideos();
+        setEditingVideo(null);
       }
     } catch (error) {
-      console.error('Error uploading video:', error);
-      throw error;
+      console.error('Error updating video:', error);
     }
   };
 
+  // حذف فيديو
   const handleDeleteVideo = async (videoId) => {
     try {
-      const response = await axios.delete(
+      await axios.delete(
         `https://elmanafea.shop/admin/deletevideo/${videoId}`,
         {
           headers: {
@@ -123,394 +137,185 @@ const Videos = () => {
           },
         }
       );
-
-      if (response.data.success) {
-        setVideos((prevVideos) => prevVideos.filter((video) => video.id !== videoId));
-      }
+      await fetchVideos();
     } catch (error) {
       console.error('Error deleting video:', error);
     }
   };
 
-  const handleAddVideo = () => {
-    if (!newVideoData.title || (!newVideoData.link && !newVideoData.file) || !currentCategory) return;
-
-    handleVideoUpload(newVideoData, currentCategory);
-    setShowAddVideoModal(false);
-    setNewVideoData({ title: '', link: '', type: '', file: null });
-  };
-
-  const handleUpdateSecondHeader = async (newText) => {
-    try {
-      const response = await axios.post('https://elmanafea.shop/admin/vidsecondheader', {
-        second_header: newText,
-        lang: i18n.language
-      }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-
-      if (response.data.success) {
-        setSecondHeader(newText);
-      }
-    } catch (error) {
-      console.error('Error updating second header:', error);
-      throw error;
-    }
-  };
-
-  const handleUpdateCategory = async (categoryId, title) => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        alert('يرجى تسجيل الدخول كمشرف أولاً');
-        return;
-      }
-
-      const response = await axios.post('https://elmanafea.shop/admin/addcategory', {
-        lang: i18n.language,
-        title: title,
-        id: categoryId
-      }, {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.status === 200) {
-        const categoriesResponse = await axios.get(`https://elmanafea.shop/categories?lang=${i18n.language}`);
-        if (categoriesResponse.data && Array.isArray(categoriesResponse.data)) {
-          setCategories(categoriesResponse.data);
-        }
-        setIsEditing(null);
-      }
-    } catch (error) {
-      console.error('Error updating category:', error);
-      alert('حدث خطأ في تحديث التصنيف');
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get(`https://elmanafea.shop/categories?lang=${i18n.language}`);
-      if (response.data && Array.isArray(response.data)) {
-        setCategories(response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
-
-  const handleUpdateVideo = async (videoData) => {
-    try {
-      const formData = new FormData();
-      formData.append('title', videoData.title);
-      formData.append('lang', i18n.language);
-      formData.append('category', currentCategory);
-      formData.append('videoType', videoData.type === 'text' ? 'text' : 'file');
-
-      if (videoData.type === 'text') {
-        formData.append('video', videoData.link);
-      } else if (videoData.type === 'file' && videoData.file) {
-        formData.append('video', videoData.file);
-      }
-
-      const response = await axios.post(
-        'https://elmanafea.shop/admin/uploadvideo',
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-          },
-        }
+  const renderVideoContent = (video) => {
+    if (video.videoType === 'embed') {
+      return (
+        <iframe
+          width="100%"
+          height="100%"
+          src={video.link}
+          title={video.title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
       );
-
-      if (response.data.success) {
-        const updatedVideosResponse = await axios.get(
-          `https://elmanafea.shop/video?lang=${i18n.language}&category=${currentCategory}`
-        );
-        if (updatedVideosResponse.data.success) {
-          setVideos(updatedVideosResponse.data.videos);
-        }
-        setEditingVideo(null);
-      }
-    } catch (error) {
-      console.error('Error updating video:', error);
-      alert('حدث خطأ في تحديث الفيديو');
+    } else {
+      return (
+        <video controls width="100%" height="100%">
+          <source src={video.link} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      );
     }
   };
+
+  // تصنيف الفيديوهات حسب الكاتيجوري
+  const videosByCategory = videos.reduce((acc, video) => {
+    if (!acc[video.category]) {
+      acc[video.category] = [];
+    }
+    acc[video.category].push(video);
+    return acc;
+  }, {});
 
   return (
-    <div className="videos-page">
-      <div className="video-header">
-        <h1>{t('عنوان الفيديو الرئيسي')}</h1>
-        {isAdmin ? (
-          <div className="editable-container">
-            <input
-              type="text"
-              value={secondHeader}
-              onChange={(e) => setSecondHeader(e.target.value)}
-              onBlur={() => handleUpdateSecondHeader(secondHeader)}
-              className="header-edit-input"
-            />
-          </div>
-        ) : (
-          <p>{secondHeader}</p>
-        )}
-      </div>
-
-      <div className="video-categories-container">
-        {categories.map((category, index) => (
-          <div 
-            key={category.id}
-            className={`video-category-item ${currentCategory === category.id ? 'video-category-active' : ''}`}
-            onClick={() => setCurrentCategory(category.id)}
-          >
-            {isEditing === category.id ? (
-              <div className="video-category-edit-form">
-                <input
-                  type="text"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className="video-category-input"
-                />
-                <div className="video-category-buttons">
-                  <button 
-                    onClick={() => {
-                      handleUpdateCategory(category.id, editValue);
-                      setIsEditing(null);
-                    }}
-                    className="video-category-save-btn"
-                  >
-                    حفظ
-                  </button>
-                  <button 
-                    onClick={() => setIsEditing(null)}
-                    className="video-category-cancel-btn"
-                  >
-                    إلغاء
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="video-category-content">
-                <span className="video-category-title">{category.title}</span>
-                {isAdmin && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditing(category.id);
-                      setEditValue(category.title);
-                    }}
-                    className="video-category-edit-btn"
-                  >
-                    تعديل
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="video-items-grid">
-        {videos.map((video) => (
-          <div className="video-item-card" key={video.id}>
-            <div className="video-item-thumbnail">
-              {isAdmin && (
-                <div className="video-item-actions">
-                  <FontAwesomeIcon
-                    icon={faTrash}
-                    className="video-delete-icon"
-                    onClick={() => handleDeleteVideo(video.id)}
-                  />
-                  <FontAwesomeIcon 
-                    icon={faPenToSquare} 
-                    className="video-edit-icon"
-                    onClick={() => {
-                      setEditingVideo({
-                        id: video.id,
-                        title: video.title,
-                        link: video.link,
-                        type: 'text',
-                        file: null
-                      });
-                    }}
-                  />
-                </div>
-              )}
-              <iframe
-                width="100%"
-                height="100%"
-                src={video.link}
-                title={video.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-            <div className="video-item-info">
-              <h3 className="video-item-title">{video.title}</h3>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {isAdmin && (
-        <div className="add-video-btn-container">
-          <button className="add-video-btn" onClick={() => setShowAddVideoModal(true)}>
-            {t('إضافة فيديو جديد')}
-          </button>
+    <>
+      <Header />
+      <div className="videos-page">
+        <div className="video-header">
+          <h1>{t('عنوان الفيديو الرئيسي')}</h1>
+          {isAdmin && (
+            <button 
+              className="add-video-btn"
+              onClick={() => setShowAddVideoModal(true)}
+            >
+              {t('إضافة فيديو')}
+            </button>
+          )}
         </div>
-      )}
 
-      {showAddVideoModal && (
-        <div className="video-modal-overlay">
-          <div className="video-modal-content">
-            <h3>إضافة فيديو جديد</h3>
-
-            <div className="video-type-buttons">
-              <button
-                className={`video-type-btn ${newVideoData.type === 'link' ? 'active' : ''}`}
-                onClick={() => setNewVideoData((prev) => ({ ...prev, type: 'link' }))}
-              >
-                رابط
-              </button>
-              <button
-                className={`video-type-btn ${newVideoData.type === 'file' ? 'active' : ''}`}
-                onClick={() => setNewVideoData((prev) => ({ ...prev, type: 'file' }))}
-              >
-                ملف
-              </button>
+        {Object.entries(videosByCategory).map(([category, categoryVideos]) => (
+          <div key={category} className="video-category-section">
+            <h2>{category}</h2>
+            <div className="video-grid">
+              {categoryVideos.map((video) => (
+                <div className="video-item" key={video.id}>
+                  <div className="video-item-container">
+                    {isAdmin && (
+                      <div className="video-item-actions">
+                        <button
+                          className="edit-btn"
+                          onClick={() => setEditingVideo(video)}
+                        >
+                          {t('تعديل')}
+                        </button>
+                        <button
+                          className="delete-btn"
+                          onClick={() => handleDeleteVideo(video.id)}
+                        >
+                          {t('حذف')}
+                        </button>
+                      </div>
+                    )}
+                    {renderVideoContent(video)}
+                  </div>
+                  <div className="video-item-info">
+                    <h3 className="video-item-title">{video.title}</h3>
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
+        ))}
 
-            <div className="video-form-field">
-              <label>عنوان الفيديو:</label>
+        {showAddVideoModal && (
+          <div className="video-modal">
+            <div className="video-modal-content">
+              <h3>{t('إضافة فيديو جديد')}</h3>
               <input
                 type="text"
+                placeholder={t('عنوان الفيديو')}
                 value={newVideoData.title}
-                onChange={(e) => setNewVideoData((prev) => ({ ...prev, title: e.target.value }))}
-                className="video-form-input"
+                onChange={(e) => setNewVideoData({ ...newVideoData, title: e.target.value })}
               />
-            </div>
-            {newVideoData.type === 'link' && (
-              <div className="video-form-field">
-                <label>رابط الفيديو:</label>
+              <div className="video-type-selector">
+                <button
+                  className={newVideoData.type === 'link' ? 'active' : ''}
+                  onClick={() => setNewVideoData({ ...newVideoData, type: 'link' })}
+                >
+                  {t('رابط يوتيوب')}
+                </button>
+                <button
+                  className={newVideoData.type === 'file' ? 'active' : ''}
+                  onClick={() => setNewVideoData({ ...newVideoData, type: 'file' })}
+                >
+                  {t('ملف فيديو')}
+                </button>
+              </div>
+              {newVideoData.type === 'link' ? (
                 <input
                   type="text"
+                  placeholder={t('رابط الفيديو')}
                   value={newVideoData.link}
-                  onChange={(e) => setNewVideoData((prev) => ({ ...prev, link: e.target.value }))}
-                  className="video-form-input"
+                  onChange={(e) => setNewVideoData({ ...newVideoData, link: e.target.value })}
                 />
-              </div>
-            )}
-            {newVideoData.type === 'file' && (
-              <div className="video-form-field">
-                <label>اختر ملف الفيديو:</label>
+              ) : (
                 <input
                   type="file"
                   accept="video/*"
-                  onChange={(e) => setNewVideoData((prev) => ({ ...prev, file: e.target.files[0] }))}
-                  className="video-form-input"
+                  onChange={(e) => setNewVideoData({ ...newVideoData, file: e.target.files[0] })}
                 />
+              )}
+              <div className="modal-buttons">
+                <button onClick={handleAddVideo}>{t('إضافة')}</button>
+                <button onClick={() => setShowAddVideoModal(false)}>{t('إلغاء')}</button>
               </div>
-            )}
-            <div className="video-modal-buttons">
-              <button
-                onClick={handleAddVideo}
-                className="video-save-btn"
-                disabled={!newVideoData.title || (!newVideoData.link && !newVideoData.file)}
-              >
-                حفظ
-              </button>
-              <button
-                onClick={() => {
-                  setShowAddVideoModal(false);
-                  setNewVideoData({ title: '', link: '', type: '', file: null });
-                }}
-                className="video-cancel-btn"
-              >
-                إلغاء
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {editingVideo && (
-        <div className="video-modal-overlay">
-          <div className="video-modal-content">
-            <h3>تعديل الفيديو</h3>
-
-            <div className="video-type-buttons">
-              <button
-                className={`video-type-btn ${editingVideo.type === 'text' ? 'active' : ''}`}
-                onClick={() => setEditingVideo(prev => ({ ...prev, type: 'text' }))}
-              >
-                رابط
-              </button>
-              <button
-                className={`video-type-btn ${editingVideo.type === 'file' ? 'active' : ''}`}
-                onClick={() => setEditingVideo(prev => ({ ...prev, type: 'file' }))}
-              >
-                ملف
-              </button>
-            </div>
-
-            <div className="video-form-field">
-              <label>عنوان الفيديو:</label>
+        {editingVideo && (
+          <div className="video-modal">
+            <div className="video-modal-content">
+              <h3>{t('تعديل الفيديو')}</h3>
               <input
                 type="text"
                 value={editingVideo.title}
-                onChange={(e) => setEditingVideo(prev => ({ ...prev, title: e.target.value }))}
-                className="video-form-input"
+                onChange={(e) => setEditingVideo({ ...editingVideo, title: e.target.value })}
               />
-            </div>
-
-            {editingVideo.type === 'text' && (
-              <div className="video-form-field">
-                <label>رابط الفيديو:</label>
+              <div className="video-type-selector">
+                <button
+                  className={editingVideo.type === 'text' ? 'active' : ''}
+                  onClick={() => setEditingVideo({ ...editingVideo, type: 'text' })}
+                >
+                  {t('رابط يوتيوب')}
+                </button>
+                <button
+                  className={editingVideo.type === 'file' ? 'active' : ''}
+                  onClick={() => setEditingVideo({ ...editingVideo, type: 'file' })}
+                >
+                  {t('ملف فيديو')}
+                </button>
+              </div>
+              {editingVideo.type === 'text' ? (
                 <input
                   type="text"
                   value={editingVideo.link}
-                  onChange={(e) => setEditingVideo(prev => ({ ...prev, link: e.target.value }))}
-                  className="video-form-input"
+                  onChange={(e) => setEditingVideo({ ...editingVideo, link: e.target.value })}
                 />
-              </div>
-            )}
-
-            {editingVideo.type === 'file' && (
-              <div className="video-form-field">
-                <label>اختر ملف الفيديو:</label>
+              ) : (
                 <input
                   type="file"
                   accept="video/*"
-                  onChange={(e) => setEditingVideo(prev => ({ ...prev, file: e.target.files[0] }))}
-                  className="video-form-input"
+                  onChange={(e) => setEditingVideo({ ...editingVideo, file: e.target.files[0] })}
                 />
+              )}
+              <div className="modal-buttons">
+                <button onClick={() => handleUpdateVideo(editingVideo)}>{t('حفظ')}</button>
+                <button onClick={() => setEditingVideo(null)}>{t('إلغاء')}</button>
               </div>
-            )}
-
-            <div className="video-modal-buttons">
-              <button
-                onClick={() => handleUpdateVideo(editingVideo)}
-                className="video-save-btn"
-                disabled={!editingVideo.title || (!editingVideo.link && !editingVideo.file)}
-              >
-                حفظ
-              </button>
-              <button
-                onClick={() => setEditingVideo(null)}
-                className="video-cancel-btn"
-              >
-                إلغاء
-              </button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+      <Footer />
+    </>
   );
 };
 
