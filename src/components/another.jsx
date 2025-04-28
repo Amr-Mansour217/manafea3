@@ -5,6 +5,7 @@ import { faEdit, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
 import Header from './header';
 import './another.css';
 import Footer from './footer';
+import axios from 'axios';
 
 function Another() {
   const { t, i18n } = useTranslation();
@@ -75,52 +76,105 @@ function Another() {
     localStorage.setItem('anotherTexts', JSON.stringify(texts));
   }, [texts]);
 
-  const handleAddWebsite = () => {
+  const handleAddWebsite = async () => {
     if (!newWebsite.name || !newWebsite.url) {
       alert('من فضلك أدخل جميع البيانات المطلوبة');
       return;
     }
 
-    const currentLang = i18n.language;
-    const currentWebsites = websites[currentLang] || [];
-    const newId = currentWebsites.length > 0 
-      ? Math.max(...currentWebsites.map(w => w.id)) + 1 
-      : 1;
+    try {
+      const response = await axios.post('https://elmanafea.shop/admin/addwebsite', {
+        name: newWebsite.name,
+        url: newWebsite.url,
+        language: i18n.language
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
 
-    setWebsites({
-      ...websites,
-      [currentLang]: [
-        ...currentWebsites,
-        { ...newWebsite, id: newId }
-      ]
-    });
-    setShowAddModal(false);
-    setNewWebsite({ name: '', url: '' });
+      if (response.status !== 200) {
+        throw new Error('فشل في إضافة الموقع');
+      }
+
+      await fetchWebsites();
+      setShowAddModal(false);
+      setNewWebsite({ name: '', url: '' });
+    } catch (error) {
+      console.error('Error adding website:', error);
+      alert(error.message);
+    }
   };
 
-  const handleUpdateWebsite = () => {
+  const fetchWebsites = async () => {
+    try {
+      const response = await axios.get('https://elmanafea.shop/websites');
+      const data = response.data;
+      console.log('Fetched websites:', data);
+
+      if (Array.isArray(data)) {
+        const updatedWebsites = data.map(site => ({
+          id: site._id,
+          name: site.name,
+          url: site.url
+        }));
+        setWebsites({ ...websites, [i18n.language]: updatedWebsites });
+      }
+    } catch (error) {
+      console.error('Error fetching websites:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchWebsites();
+  }, [i18n.language]);
+
+  const handleUpdateWebsite = async () => {
     if (!editingWebsite.name || !editingWebsite.url) {
       alert('من فضلك أدخل جميع البيانات المطلوبة');
       return;
     }
 
-    const currentLang = i18n.language;
-    setWebsites({
-      ...websites,
-      [currentLang]: websites[currentLang].map(w => 
-        w.id === editingWebsite.id ? editingWebsite : w
-      )
-    });
-    setEditingWebsite(null);
+    try {
+      const response = await axios.put(`https://elmanafea.shop/admin/updatewebsites/${editingWebsite.id}`, {
+        title: editingWebsite.name,
+        url: editingWebsite.url
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+
+      if (response.status !== 200) {
+        throw new Error('فشل في تحديث الموقع');
+      }
+
+      await fetchWebsites();
+      setEditingWebsite(null);
+    } catch (error) {
+      console.error('Error updating website:', error);
+      alert(error.message);
+    }
   };
 
-  const handleDeleteWebsite = (id) => {
+  const handleDeleteWebsite = async (id) => {
     if (window.confirm('هل أنت متأكد من حذف هذا الموقع؟')) {
-      const currentLang = i18n.language;
-      setWebsites({
-        ...websites,
-        [currentLang]: websites[currentLang].filter(w => w.id !== id)
-      });
+      try {
+        const response = await axios.delete(`https://elmanafea.shop/admin/deletewebsites/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          }
+        });
+
+        if (response.status !== 200) {
+          throw new Error('فشل في حذف الموقع');
+        }
+
+        await fetchWebsites();
+      } catch (error) {
+        console.error('Error deleting website:', error);
+        alert(error.message);
+      }
     }
   };
 

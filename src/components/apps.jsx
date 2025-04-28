@@ -256,15 +256,13 @@ function Apps() {
       formData.append('url', newApp.link);
       formData.append('platform', newApp.category);
 
-      const response = await fetch('https://elmanafea.shop/admin/addapp', {
-        method: 'POST',
+      const response = await axios.post('https://elmanafea.shop/admin/addapp', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        },
-        body: formData
+        }
       });
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('فشل في إضافة التطبيق');
       }
 
@@ -285,13 +283,13 @@ function Apps() {
 
   const fetchApps = async (platform) => {
     try {
-      const response = await fetch(`https://elmanafea.shop/apps?platform=${platform}`);
-      const data = await response.json();
+      const response = await axios.get(`https://elmanafea.shop/apps?platform=${platform}`);
+      const data = response.data;
       console.log('Fetched apps:', data);
 
       if (Array.isArray(data)) {
         const updatedApps = data.map(app => ({
-          id: app.id,
+          id: app._id,
           name: app.title || '',
           image: app.photo ? `https://elmanafea.shop/${app.photo.startsWith('/') ? app.photo.slice(1) : app.photo}` : '',
           link: app.url || '',
@@ -326,15 +324,13 @@ function Apps() {
       formData.append('url', editingApp.link);
       formData.append('platform', editingApp.category);
 
-      const response = await fetch('https://elmanafea.shop/admin/addapp', {
-        method: 'POST',
+      const response = await axios.put(`https://elmanafea.shop/admin/updateapp/${editingApp.id}`, formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        },
-        body: formData
+        }
       });
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('فشل في تحديث التطبيق');
       }
 
@@ -433,6 +429,25 @@ function Apps() {
     localStorage.setItem('appsTexts', JSON.stringify(updatedTexts));
     setEditingField(null);
     setTempText('');
+  };
+
+  const handleDeleteApp = async (appId, category) => {
+    try {
+      const response = await axios.delete(`https://elmanafea.shop/admin/deleteapp/${appId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+
+      if (response.status !== 200) {
+        throw new Error('فشل في حذف التطبيق');
+      }
+
+      await fetchApps(category);
+    } catch (error) {
+      console.error('Error deleting app:', error);
+      alert(error.message);
+    }
   };
 
   const filteredApps = apps.filter(app => app.category === activeCategory);
@@ -561,7 +576,7 @@ function Apps() {
                     </button>
                     <button onClick={() => {
                       if(window.confirm('هل أنت متأكد من حذف هذا التطبيق؟')) {
-                        setApps(apps.filter(a => a.id !== app.id));
+                        handleDeleteApp(app.id, app.category);
                       }
                     }}>
                       <FontAwesomeIcon icon={faTrash} />
