@@ -46,12 +46,19 @@ const Home = () => {
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
   const [newVideoData, setNewVideoData] = useState({
     title: '',
-    youtubeEmbedUrl: ''
+    youtubeEmbedUrl: '',
+    videoFile: null,
+    videoType: 'youtube' // Can be 'youtube' or 'local'
   });
   const [headerData, setHeaderData] = useState(() => {
     const savedHeader = localStorage.getItem('headerData');
     return savedHeader ? JSON.parse(savedHeader) : null;
   });
+
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [editingVideo, setEditingVideo] = useState(false);
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
 
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
@@ -340,30 +347,28 @@ const Home = () => {
         return;
       }
 
-      console.log('Adding video with data:', {
-        title: newVideoData.title,
-        lang: i18n.language,
-        youtubeEmbedUrl: newVideoData.youtubeEmbedUrl
-      });
-
       const formData = new FormData();
       formData.append('title', newVideoData.title);
       formData.append('lang', i18n.language);
-      formData.append('videoType', 'youtube');
-      formData.append('youtubeEmbedUrl', newVideoData.youtubeEmbedUrl);
+      formData.append('videoType', newVideoData.videoType);
+
+      if (newVideoData.videoType === 'youtube') {
+        formData.append('youtubeEmbedUrl', newVideoData.youtubeEmbedUrl);
+      } else if (newVideoData.videoType === 'local') {
+        formData.append('videoFile', newVideoData.videoFile);
+      }
 
       const response = await axios.post('https://elmanafea.shop/admin/homeuploadvideo', formData, {
         headers: {
-          Authorization: `Bearer ${adminToken}`
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'multipart/form-data'
         }
       });
-
-      console.log('Server response:', response.data);
 
       if (response.data.success) {
         toast.success('تم إضافة الفيديو بنجاح');
         setShowAddVideoModal(false);
-        setNewVideoData({ title: '', youtubeEmbedUrl: '' });
+        setNewVideoData({ title: '', youtubeEmbedUrl: '', videoFile: null, videoType: 'youtube' });
         await fetchVideos();
       } else {
         toast.error(response.data.message || 'حدث خطأ أثناء إضافة الفيديو');
@@ -927,43 +932,118 @@ const getHeaderTitle = useCallback(() => {
     </div>
 
     {showAddVideoModal && (
-      <div className="edit-modal-overlay">
-        <div className="edit-modal">
-          <h3>إضافة فيديو جديد</h3>
+      <div className="home-video-modal-overlay">
+        <div className="home-video-modal">
+          <h3 className="home-video-modal-title">إضافة فيديو جديد</h3>
 
-          <div className="edit-field">
+          <div className="home-video-field">
             <label>عنوان الفيديو:</label>
             <input
               type="text"
               value={newVideoData.title}
               onChange={(e) => setNewVideoData(prev => ({ ...prev, title: e.target.value }))}
-              className="edit-input"
+              className="home-video-input"
             />
           </div>
-          <div className="edit-field">
-            <label>رابط اليوتيوب:</label>
-            <input
-              type="text"
-              value={newVideoData.youtubeEmbedUrl}
-              onChange={(e) => setNewVideoData(prev => ({ ...prev, youtubeEmbedUrl: e.target.value }))}
-              className="edit-input"
-              placeholder="مثال: https://www.youtube.com/embed/..."
-            />
+
+          <div className="home-video-field">
+            <label>نوع الفيديو:</label>
+            <select 
+              value={newVideoData.videoType}
+              onChange={(e) => setNewVideoData(prev => ({ ...prev, videoType: e.target.value }))}
+              className="home-video-input"
+            >
+              <option value="youtube">يوتيوب</option>
+              <option value="local">رفع من الجهاز</option>
+            </select>
           </div>
-          <div className="modal-buttons">
+
+          {newVideoData.videoType === 'youtube' ? (
+            <div className="home-video-field">
+              <label>رابط اليوتيوب:</label>
+              <input
+                type="text"
+                value={newVideoData.youtubeEmbedUrl}
+                onChange={(e) => setNewVideoData(prev => ({ ...prev, youtubeEmbedUrl: e.target.value }))}
+                className="home-video-input"
+                placeholder="مثال: https://www.youtube.com/embed/..."
+              />
+            </div>
+          ) : (
+            <div className="home-video-field">
+              <label>ملف الفيديو:</label>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => setNewVideoData(prev => ({ ...prev, videoFile: e.target.files[0] }))}
+                className="home-video-input"
+              />
+            </div>
+          )}
+
+          <div className="home-video-modal-buttons">
             <button 
               onClick={handleAddVideo} 
-              className="save-btn"
-              disabled={!newVideoData.title || !newVideoData.youtubeEmbedUrl}
+              className="home-video-save-btn"
+              disabled={!newVideoData.title || (!newVideoData.youtubeEmbedUrl && !newVideoData.videoFile)}
             >
               حفظ
             </button>
             <button 
               onClick={() => {
                 setShowAddVideoModal(false);
-                setNewVideoData({ title: '', youtubeEmbedUrl: '' });
+                setNewVideoData({ 
+                  title: '', 
+                  youtubeEmbedUrl: '', 
+                  videoFile: null,
+                  videoType: 'youtube'
+                });
               }} 
-              className="cancel-btn"
+              className="home-video-cancel-btn"
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showVideoModal && (
+      <div className="home-video-modal-overlay">
+        <div className="home-video-modal">
+          <h2 className="home-video-modal-title">
+            {editingVideo ? 'تعديل الفيديو' : 'إضافة فيديو جديد'}
+          </h2>
+          <div className="home-video-field">
+            <label>عنوان الحلقة:</label>
+            <input
+              type="text"
+              className="home-video-input"
+              value={videoTitle}
+              onChange={(e) => setVideoTitle(e.target.value)}
+            />
+          </div>
+          <div className="home-video-field">
+            <label>عنوان الفيديو:</label>
+            <input
+              type="text"
+              className="home-video-input"
+              placeholder="مثل: https://www.youtube.com/embed..."
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+            />
+          </div>
+          <div className="home-video-modal-buttons">
+            <button 
+              className="home-video-save-btn"
+              disabled={!videoTitle || !videoUrl}
+              onClick={handleSaveVideo}
+            >
+              حفظ
+            </button>
+            <button 
+              className="home-video-cancel-btn"
+              onClick={() => setShowVideoModal(false)}
             >
               إلغاء
             </button>

@@ -100,7 +100,7 @@ body {
   display: inline-block;
 }
 
-.hero h1:after {
+/* .hero h1:after {
   content: '';
   position: absolute;
   bottom: -10px;
@@ -109,7 +109,7 @@ body {
   width: 80px;
   height: 3px;
   background-color: var(--gold);
-}
+} */
 
 .hero p {
   font-size: 20px;
@@ -885,4 +885,89 @@ body {
 
 [dir="rtl"] .form-input {
   text-align: right;
+}
+
+.home-video-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.home-video-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  direction: rtl;
+}
+
+.home-video-modal-title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.home-video-field {
+  margin-bottom: 1rem;
+}
+
+.home-video-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #666;
+}
+
+.home-video-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.home-video-modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.home-video-save-btn,
+.home-video-cancel-btn {
+  padding: 0.5rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.home-video-save-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+}
+
+.home-video-save-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.home-video-cancel-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+}
+
+.home-video-save-btn:hover:not(:disabled),
+.home-video-cancel-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }

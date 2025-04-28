@@ -571,3 +571,28 @@ a {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   transition: transform 0.3s ease;
 }
+
+.subtitle-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.subtitle-container p {
+  margin: 0;
+  /* font-size: 1.2em; */
+  /* color: #666; */
+}
+
+.edit-icon {
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.edit-icon:hover {
+  color: #1976D2;
+}

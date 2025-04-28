@@ -48,9 +48,6 @@ function Intre() {
   const [showSubtitleModal, setShowSubtitleModal] = useState(false);
   const [subtitleText, setSubtitleText] = useState('');
   const [editingSubtitleText, setEditingSubtitleText] = useState('');
-  const [showSectionTitleModal, setShowSectionTitleModal] = useState(false);
-  const [sectionTitleText, setSectionTitleText] = useState('كتب مختارة');
-  const [editingSectionTitleText, setEditingSectionTitleText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -67,127 +64,6 @@ function Intre() {
   const [error, setError] = useState(null);
   const booksPerPage = 8; // Adjust this number as needed
   const navigate = useNavigate();
-
-  // const allBooks = {
-  //   ar: [
-  //     {
-  //       id: 1,
-  //       title: "كيفية زيارة مسجد الرسول",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1hv72fKhQG1m2whBBqDTS63ieVNLPsu2i/preview"
-  //     },
-  //     {
-  //       id: 2,
-  //       title: "من معجزات النبي",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1YfWpJcysDhW6plIH-QJ0sDc-wpcKkDPV/preview"
-  //     },
-  //     {
-  //       id: 3,
-  //       title: "رسالة في فقه الميسر",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1gy-qFZrmnMEDFiZXiTHZRSwwsNr1lu3Y/preview"
-  //     },
-  //     {
-  //       id: 4,
-  //       title: "صفحة الحج واحكام الزيارة",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1RZWCnHbMOL5x_6_mMZRTe6LM9ECqlHSa/preview"
-  //     },
-  //     {
-  //       id: 5,
-  //       title: "الحج والعمرة (سؤال وجواب)",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1LUcNUCBP5I8pueN_frd7f4lvdYJn3vjc/preview"
-  //     },
-  //     {
-  //       id: 6,
-  //       title: "ثلاثة الاصول وادلتها",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1Vvckj_lk3XjBXMjoxTinXhwNgsCWPxoL/preview"
-  //     },
-  //     {
-  //       id: 7,
-  //       title: "المدينة المنورة (فضائلها - المسجد النبوي - الحجرة النبوية)",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1W8ZkOA_3SHdrcHvVJ1YCM81DdkJeY21y/preview"
-  //     },
-  //     {
-  //       id: 8,
-  //       title: "العقيدة الصحيحة وما يضادها",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1rZZrbriz1abdKqL9X_K7owUQ8vuNRz85/preview"
-  //     },
-  //     {
-  //       id: 9,
-  //       title: "كيف اصلي",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1AjkIZCRQZa4TB7ES2XbOzUzVS8_xJEyY/preview"
-  //     },
-  //     {
-  //       id: 10,
-  //       title: "مجموعة الاحاديث النبوية",
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1fTtMKPqeVfZP87snatLhAUBppX7Vgjzb/preview"
-  //     },
-  //   ],
-  //   en: [
-  //     {
-  //       id: 1,
-  //       title: 'The True Religion of God',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1tKNqOde60ryRX-F5-Z201AHx7MdBNVKt/preview"
-  //     },
-  //     {
-  //       id: 2,
-  //       title: 'The Obligation of Adhering to the Sunnah',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1tmgYmM-s7Hx-wSVyR5j2XitN3ZGkcl0E/preview"
-  //     },
-  //     {
-  //       id: 3,
-  //       title: 'The Authenic Creed',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1QmZaAT6WiN4YPO3oRcJmpjMd9Dm9N4Vi/preview"
-  //     },
-  //     {
-  //       id: 4,
-  //       title: 'The Massenger Of Islam Muhammad',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1_NkRkm_vDQXyHIh8csJCQbvomwSp6YYO/preview"
-  //     },
-  //     {
-  //       id: 5,
-  //       title: 'Iam Muslim',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1bW0l_BnLhuBphUvpHcZX5kNNVNohgdTp/preview"
-  //     },
-  //     {
-  //       id: 6,
-  //       title: 'Islam: The Religion of all Prophets',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1snyIiXw13ujN0BMUrmt12efXz8PvYjWx/preview"
-  //     },
-  //     {
-  //       id: 7,
-  //       title: 'THE RELIGION OF ADAM AND EVE',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/18-wqYd6YiOWD58mQjhFBEAB7qOag5FNa/preview"
-  //     },
-  //     {
-  //       id: 8,
-  //       title: 'The Three Fundamental Principles of Islam and TheirProofs',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1KK95Op49ewAnSQoX1_M88h1RC3ljTvBg/preview"
-  //     },
-  //     {
-  //       id: 9,
-  //       title: 'WHO CREATED ME AND WHY ?',
-  //       description: "",
-  //       link: "https://drive.google.com/file/d/1LhSWcfko2YNRr3VwEcddU9D1iE9CETEd/preview"
-  //     },
-  //   ],
-  // };
 
   // Initialize axios instance with default config
   const api = axios.create({
@@ -657,37 +533,6 @@ function Intre() {
     }
   };
 
-  // Add new function to handle section title update
-  const handleUpdateSectionTitle = async () => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        throw new Error('Admin authentication required');
-      }
-
-      const response = await api.post(
-        '/admin/sectiontitle',
-        {
-          sectionTitle: editingSectionTitleText,
-          lang: i18n.language
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminToken}`
-          }
-        }
-      );
-
-      if (response.status === 200) {
-        setSectionTitleText(editingSectionTitleText);
-        setShowSectionTitleModal(false);
-      }
-    } catch (error) {
-      console.error('Error updating section title:', error);
-      alert(error.response?.data?.message || 'Failed to update section title');
-    }
-  };
-
   const handleBookClick = (book) => {
     const encodedUrl = encodeURIComponent(book.link);
     const encodedTitle = encodeURIComponent(book.title);
@@ -748,24 +593,30 @@ function Intre() {
           </div>
         </div>
 
+        {/* Modal for editing subtitle */}
+        {showSubtitleModal && (
+          <div className="modal">
+            <div className="modal-content">
+              <h3>تعديل العنوان الفرعي</h3>
+              <input
+                type="text"
+                value={editingSubtitleText}
+                onChange={(e) => setEditingSubtitleText(e.target.value)}
+                placeholder="أدخل العنوان الفرعي"
+                className="modal-input"
+              />
+              <div className="modal-buttons">
+                <button onClick={handleUpdateSubtitle}>حفظ</button>
+                <button onClick={() => setShowSubtitleModal(false)}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <section className="videos-section">
           <div className="section-title">
             <div className="section-title-container">
-              <h2>{sectionTitleText}</h2>
-              {isAdmin && (
-                <FontAwesomeIcon
-                  icon={faPenToSquare}
-                  style={{
-                    color: '#2196F3',
-                    // fontSize: '24px',
-                  }}
-                  className="edit-icon"
-                  onClick={() => {
-                    setEditingSectionTitleText(sectionTitleText);
-                    setShowSectionTitleModal(true);
-                  }}
-                />
-              )}
+              <h2>{t('كتب مختارة')}</h2>
             </div>
             {isAdmin && (
               <button className="add-btn" onClick={() => setShowAddModal(true)}>
@@ -773,46 +624,6 @@ function Intre() {
               </button>
             )}
           </div>
-
-          {/* Subtitle Edit Modal */}
-          {showSubtitleModal && (
-            <div className="modal">
-              <div className="modal-content">
-                <h3>تعديل النص التوضيحي</h3>
-                <input
-                  type="text"
-                  value={editingSubtitleText}
-                  onChange={(e) => setEditingSubtitleText(e.target.value)}
-                  placeholder="أدخل النص التوضيحي"
-                  className="modal-input"
-                />
-                <div className="modal-buttons">
-                  <button onClick={handleUpdateSubtitle}>حفظ</button>
-                  <button onClick={() => setShowSubtitleModal(false)}>إلغاء</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Section Title Edit Modal */}
-          {showSectionTitleModal && (
-            <div className="modal">
-              <div className="modal-content">
-                <h3>تعديل عنوان القسم</h3>
-                <input
-                  type="text"
-                  value={editingSectionTitleText}
-                  onChange={(e) => setEditingSectionTitleText(e.target.value)}
-                  placeholder="أدخل عنوان القسم"
-                  className="modal-input"
-                />
-                <div className="modal-buttons">
-                  <button onClick={handleUpdateSectionTitle}>حفظ</button>
-                  <button onClick={() => setShowSectionTitleModal(false)}>إلغاء</button>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div className="videos-grid">
             {currentBooks.map(book => (
