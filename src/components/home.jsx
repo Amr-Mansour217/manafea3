@@ -59,6 +59,8 @@ const Home = () => {
   const [editingVideo, setEditingVideo] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [videoToDelete, setVideoToDelete] = useState(null);
 
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
@@ -71,8 +73,6 @@ const Home = () => {
     if (savedVideos) {
       const parsedVideos = JSON.parse(savedVideos);
       setVideos(parsedVideos[currentLanguage] || []);
-    } else {
-      setVideos(allVideos[currentLanguage] || []);
     }
   }, [i18n.language]);
 
@@ -200,6 +200,8 @@ const Home = () => {
     fetchSecondHeaderData();
     fetchHeroImage();
     fetchLessonWord();
+    
+    
   }, [i18n.language]);
 
   useEffect(() => {
@@ -311,35 +313,39 @@ const Home = () => {
     }
   };
 
-  const fetchVideos = async () => {
-    try {
-      console.log('Fetching videos for language:', i18n.language);
-      const response = await axios.get(`https://elmanafea.shop/homevideos?lang=${i18n.language}`);
-      console.log('Fetched videos:', response.data);
-      
-      if (Array.isArray(response.data)) {
-        const formattedVideos = response.data.map(video => ({
-          id: video.id,
-          title: video.title,
-          link: video.videoType === "youtube" ? video.videoEmbedUrl : video.videoPath,
-          videoType: video.videoType
-        }));
-        console.log('Formatted videos:', formattedVideos);
-        setVideos(formattedVideos);
-      } else {
-        console.error('Unexpected response format:', response.data);
-      }
-    } catch (error) {
-      console.error('Error fetching videos:', error);
-      toast.error('حدث خطأ أثناء تحميل الفيديوهات');
+  // تحسين دالة formatYoutubeUrl لتتعامل مع المزيد من أنماط روابط يوتيوب
+  const formatYoutubeUrl = (url) => {
+    if (!url) return '';
+    let videoId;
+    
+    // تعامل مع الرابط العادي للمشاهدة
+    if (url.includes('watch?v=')) {
+      videoId = url.split('watch?v=')[1].split('&')[0];
+    } 
+    // تعامل مع الرابط المختصر
+    else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split('?')[0];
+    } 
+    // تعامل مع رابط التضمين مباشرة
+    else if (url.includes('youtube.com/embed/')) {
+      videoId = url.split('embed/')[1].split('?')[0];
     }
+    // تعامل مع الرابط الذي يحتوي على معرف الفيديو فقط
+    else {
+      videoId = url.trim();
+    }
+    
+    return `https://www.youtube.com/embed/${videoId}`;
   };
 
-  useEffect(() => {
-    fetchVideos();
-  }, [i18n.language]);
-
   const handleAddVideo = async () => {
+    if (!newVideoData.title || (!newVideoData.youtubeEmbedUrl && !newVideoData.videoFile)) {
+      toast.error('الرجاء إدخال جميع البيانات المطلوبة');
+      return;
+    }
+
+    setShowAddVideoModal(false);
+
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
@@ -350,274 +356,210 @@ const Home = () => {
       const formData = new FormData();
       formData.append('title', newVideoData.title);
       formData.append('lang', i18n.language);
-      formData.append('videoType', newVideoData.videoType);
 
       if (newVideoData.videoType === 'youtube') {
-        formData.append('youtubeEmbedUrl', newVideoData.youtubeEmbedUrl);
-      } else if (newVideoData.videoType === 'local') {
-        formData.append('videoFile', newVideoData.videoFile);
+        formData.append('videoType', 'youtube');
+        formData.append('youtubeEmbedUrl', formatYoutubeUrl(newVideoData.youtubeEmbedUrl));
+      } else {
+        formData.append('videoType', 'upload');
+        formData.append('videoPath', newVideoData.videoFile);
       }
 
-      const response = await axios.post('https://elmanafea.shop/admin/homeuploadvideo', formData, {
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-          'Content-Type': 'multipart/form-data'
+      const response = await axios.post('https://elmanafea.shop/admin/homeuploadvideo', 
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'multipart/form-data'
+          }
         }
-      });
+      );
 
       if (response.data.success) {
+        await fetchVideos();
         toast.success('تم إضافة الفيديو بنجاح');
         setShowAddVideoModal(false);
-        setNewVideoData({ title: '', youtubeEmbedUrl: '', videoFile: null, videoType: 'youtube' });
-        await fetchVideos();
-      } else {
-        toast.error(response.data.message || 'حدث خطأ أثناء إضافة الفيديو');
+        setNewVideoData({ 
+          title: '', 
+          youtubeEmbedUrl: '', 
+          videoFile: null, 
+          videoType: 'youtube' 
+        });
       }
     } catch (error) {
-      console.error('Error adding video:', error);
-      toast.error(error.response?.data?.message || 'حدث خطأ أثناء إضافة الفيديو');
+      console.error('Error uploading video:', error);
+      toast.error(error.response?.data?.message || 'حدث خطأ أثناء رفع الفيديو');
     }
   };
-  
-  const handleDeleteVideo = (videoId) => {
-    const currentLang = i18n.language;
+
+  const handleVideoEditClick = (video, index) => {
+    console.log("تفاصيل الفيديو المراد تعديله:", video);  
     
-    setVideos(prevVideos => {
-      const updatedVideos = prevVideos.filter(video => video.id !== videoId);
-      const homeVideosData = JSON.parse(localStorage.getItem('homeVideos') || '{}');
-      
-      if (!homeVideosData[currentLang]) {
-        homeVideosData[currentLang] = [];
-      }
-      homeVideosData[currentLang] = updatedVideos;
-      
-      localStorage.setItem('homeVideos', JSON.stringify(homeVideosData));
-      return updatedVideos;
+    // تمييز نوع الفيديو بشكل دقيق
+    // استخدام الخاصية videoType الموجودة في بيانات الفيديو
+    const videoType = video.videoType;
+    console.log("نوع الفيديو من البيانات:", videoType);
+    
+    setEditingItem({ 
+      type: 'video', 
+      index, 
+      id: video.id,
+      title: video.title, 
+      link: video.link,
+      videoType: videoType
     });
+    
+    setEditValue({ 
+      title: video.title, 
+      link: video.link,
+      type: videoType  // استخدام النوع المحدد من البيانات الأصلية
+    });
+    
+    setEditModalOpen(true);
   };
 
-  const allVideos = {
-    ar: [
-        {
-            title: 'الأخلاق في رمضان',
-            link:"https://www.youtube.com/embed/BYkWHLm4bSk" ,
-        },
-        {
-            id: 2,
-            title: 'الحلقة الأولى | حديث رمضان | الموسم الأول عنوان الحلقة: إستقبال رمضان',
-            link: 'https://www.youtube.com/embed/wTPq6Hnz2XA?si=pOdZHWuZ5oHhbVYa',
-        },
-        {
-            id: 3,
-            title: 'السيرة النبوية',
-            link: 'https://www.youtube.com/embed/tjp7wiUaPZk?si=QTrBLZ8nzMYXSliB',
-        },
-    ],
-    en: [
-        {
-            id: 1,
-            title: 'Cleaning up before Ramadan - FULL LECTURE - Mufti Menk',
-            link:"https://www.youtube.com/embed/Q-eK7M4OqSo",
-        },
-        {
-            id: 2,
-            title: 'Make The Most of This Month! | Ramadan Reminder 01 | Mufti Menk',
-            link:"https://www.youtube.com/embed/ufffdfz-Wqc",
-        },
-        {
-            id: 3,
-            title: 'Virtues of Ramadan',
-            link: "https://www.youtube.com/embed/UK94ne7RrIM?si=GiFDf1xL4aDjFCu2",
-        },
-    ],
-    ur: [  
-        {
-            id: 1,
-            title: "uran Tafseer | Juz 2 | Ramadan Special",
-            link: 'https://www.youtube.com/embed/GqFrODsIPlQ?si=llaU_0ED6T2azXV1',
-        },
-        {
-            id: 2,
-            title: "رمضان کے روزوں کی فضیلت واہمیت",
-            link: "https://www.youtube.com/embed/3H-5zH6ZMnw",
-        },
-        {
-            id: 3,
-            title: "عقیدہ کی اہمیت",
-            link: 'https://www.youtube.com/embed/GqFrODsIPlQ?si=llaU_0ED6T2azXV1',
-        },
-    ],
-    fr: [
+  const handleEditVideo = async (video) => {
+    if (!editValue.title) {
+      toast.error('الرجاء إدخال عنوان الفيديو');
+      return;
+    }
+    
+    // تتحقق من نوع الفيديو وطلب الرابط إذا كان يوتيوب فقط
+    if (editValue.type === 'youtube' && !editValue.link) {
+      toast.error('الرجاء إدخال رابط الفيديو');
+      return;
+    }
 
-      {
-        id: 1,
-        title: "RAMADAN : 30 JOURS POUR CHANGER - NADER ABOU ANAS",
-        link: 'https://www.youtube.com/embed/GqFrODsIPlQ?si=llaU_0ED6T2azXV1',
-    },
-    {
-        id: 2,
-        title: "Le Ramadan - Imam Yacine [ Conférence complète en 4K ]",
-        link:"https://www.youtube.com/embed/5ylnAaWaino",
-    },
-    {
-        id: 3,
-        title: "Le Ramadan - Imam Yacine ",
-        link:"https://www.youtube.com/embed/5ylnAaWaino" ,
-    },
+    setEditModalOpen(false);
+
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        toast.error('يرجى تسجيل الدخول كمشرف أولاً');
+        return;
+      }
+
+      // الإعداد الأساسي للبيانات - العنوان فقط دون رابط يوتيوب
+      const updateData = {
+        title: editValue.title,
+        lang: i18n.language
+      };
       
-    ],
-    tr: [
-      {
-        id: 1,
-        title: "İslam'da Ramazan ayının yeri ve önemi | Dr. Ömer Demirbağ | Ahmed Şahin | Bir Başka Ramazan",
-        link:"https://www.youtube.com/embed/UnZNrKdizJE" ,
-    },
-    {
-        id: 2,
-        title: "Ramazan'da Bu 4 Şeyi Kesinlikle Yapın!",
-        link:"https://www.youtube.com/embed/EG8ewqGifDg",
-    },
-    {
-        id: 3,
-        title: "DHBT MBSTS ÖABT DKAB INANÇ ESASLARI - UNITE 1 - DIN VE INANÇ 🕋",
-        link:"https://www.youtube.com/embed/aqXM_hM20hI?list=PLTfYWRDOnXGkMUYA7kYE65D1-GoB2JpRL" ,
-    },
+      // إضافة بيانات يوتيوب فقط إذا كان الفيديو من نوع يوتيوب
+      if (editValue.type === 'embed') {
+        const formattedUrl = formatYoutubeUrl(editValue.link);
+        updateData.youtubeEmbedUrl = formattedUrl;
+      }
 
-    ],
-    id: [
+      console.log("نوع الفيديو قبل الإرسال:", editValue.type);
+      console.log("البيانات المرسلة للتحديث:", updateData);
 
-      {
-        id: 1,
-        title: "Tiga Amalan Pokok Ramadhan - Ustadz Adi Hidayat",
-        link:"https://www.youtube.com/embed/koE44zuc_ic"  ,
-    },
-    {
-        id: 2,
-        title: "Empat Keistimewaan Ramadhan - Ustadz Adi Hidayat",
-        link:"https://www.youtube.com/embed/GU59no0BBrw",
-    },
-    {
-        id: 3,
-        title: "Pondasi Iman - Ustadz Adi Hidayat",
-        link:"https://www.youtube.com/embed/VYD_2fsylcM"  ,
-    },
+      const response = await axios.put(
+        `https://elmanafea.shop/admin/homeupdatevideo/${editingItem.id}`,
+        updateData,
+        {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
-    ],
-    ru: [
+      console.log("استجابة التحديث:", response.data);
 
-      {
-        id: 1,
-        title: "ИСТОРИЯ ПОСТА в месяц Рамадан - Доктор Закир Найк",
-        link:"https://www.youtube.com/embed/XcdBtTBLayU"  ,
-    },
-    {
-        id: 2,
-        title: "ЧТО ТАКОЕ РАМАДАН? Рауф Гаджиев",
-        link:"https://www.youtube.com/embed/4_p-of9xt8k",
-    },
-    {
-        id: 3,
-        title: "Правильная АКЫДА! | Вероубеждения АХЛЮ СУННА валь джамаа | Юсуф Берхудар",
-        link:"https://www.youtube.com/embed/HTnW5v0CUCA"  ,
-    },
+      if (response.status === 200) {
+        await fetchVideos();
+        toast.success('تم تحديث الفيديو بنجاح');
+        setEditModalOpen(false);
+        setEditValue(null);
+        setEditingItem(null);
+      }
+    } catch (error) {
+      console.error('Error updating video:', error);
+      if (error.response) {
+        console.error('تفاصيل الخطأ:', error.response.status, error.response.data);
+      }
+      toast.error(error.response?.data?.message || 'حدث خطأ أثناء تحديث الفيديو');
+    }
+  };
 
-    ],
-    hi: [
+  const handleDeleteVideo = (videoId) => {
+    setVideoToDelete(videoId);
+    setShowDeleteConfirmModal(true);
+  };
 
-      {
-        id: 1,
-        title: "Quran Tafseer | Juz 2 | Ramadan Special ",
-        link:"https://www.youtube.com/embed/vtTw3SHElsQ"  ,
-    },
-    {
-        id: 2,
-        title: "Ramzan Ke Roze Ki Fazilat & Ahmiyat | رمضان کے روزوں کی فضیلت واہمیت Baseerat | بصیرت",
-        link:"https://www.youtube.com/embed/3H-5zH6ZMnw",
-    },
-    {
-        id: 3,
-        title: "Roze ka Hukm & Roza na Rakhne wale log | روزے کا حکم نیز روزہ نہ رکھنے والے لوگ | Baseerat | بصیرت",
-        link:"https://www.youtube.com/embed/QlTqvBVI4zI",
-    },
+  const confirmDeleteVideo = async () => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        toast.error('يرجى تسجيل الدخول كمشرف أولاً');
+        return;
+      }
 
-    ],
-    bn: [
+      const response = await axios.delete(
+        `https://elmanafea.shop/admin/homedeletevideo/${videoToDelete}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          params: {
+            lang: i18n.language
+          }
+        }
+      );
 
-      {
-        id: 1,
-        title: "রমযান কোরআনের মাস  ",
-        link:"https://www.youtube.com/embed/R5wsOLKlK_E"  ,
-    },
-    {
-        id: 2,
-        title: "ভূমিকা পর্ব: তিনটি মূলনীতির ধারাবাহিক ক্লাস।আলোচকঃ আব্দুর রব আফ্ফান,দ্বীরা সেন্টার রিয়াদ সৌদি আরব।",
-        link:"https://www.youtube.com/embed/9TkZdhf51Po",
-    },
-    {
-        id: 3,
-        title: "রমযান কোরআনের মাস",
-        link:"https://www.youtube.com/embed/R5wsOLKlK_E",
-    },
+      if (response.status === 200) {
+        await fetchVideos();
+        toast.success('تم حذف الفيديو بنجاح');
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      toast.error(error.response?.data?.message || 'حدث خطأ أثناء حذف الفيديو');
+    } finally {
+      setShowDeleteConfirmModal(false);
+      setVideoToDelete(null);
+    }
+  };
 
-    ],
-    zh: [
+  const fetchVideos = async () => {
+    try {
+      const response = await axios.get(`https://elmanafea.shop/homevideos?lang=${i18n.language}`);
+      console.log('Raw response:', response);
+      console.log('Videos data:', response.data);
 
-      {
-        id: 1,
-        title: "斋戒的律例",
-        link:"https://www.youtube.com/embed/5WgqPoiqb08"  ,
-    },
-    {
-        id: 2,
-        title: "Karim Khan－關於開齋節的中文翻譯版。祝大家開齋節快樂",
-        link:"https://www.youtube.com/embed/iMRMd-1crHQ",
-    },
-    {
-        id: 3,
-        title: "穆圣和他的同伴们怎样度过斋月——马雪平",
-        link:"https://www.youtube.com/embed/o8koNdcRAC4",
-    },
+      if (response.data.videos) {
+        const formattedVideos = response.data.videos.map(video => {
+          console.log('Processing video:', video);
+          
+          let videoLink = '';
+          if (video.videoType === 'youtube') {
+            videoLink = video.youtubeEmbedUrl;
+          } else if (video.videoType === 'upload') {
+            videoLink = `https://elmanafea.shop${video.videoPath}`;
+          }
 
-    ],
-    tl: [
+          return {
+            id: video._id,
+            title: video.title,
+            link: videoLink,
+            videoType: video.videoType,
+            // createdAt: video.createdAt
+          };
+        });
 
-      {
-        id: 1,
-        title: "Ang kabutihan ng Ramadan at pag-aayuno",
-        link:"https://www.youtube.com/embed/8oAv_PsVg1s"  ,
-    },
-    {
-        id: 2,
-        title: "Ang pinakamahusay na ng Ramadan",
-        link:"https://www.youtube.com/embed/UhL6B7PTyBg",
-    },
-    {
-        id: 3,
-        title: "Umrah sa Ramadan - sa Filipino.",
-        link:"https://www.youtube.com/embed/EyMCtF3b2VE",
-    },
+        console.log('Formatted videos:', formattedVideos);
+        setVideos(formattedVideos);
+      }
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+      toast.error('حدث خطأ أثناء تحميل الفيديوهات');
+    }
+  };
 
-    ],
-    fa: [
-
-      {
-        id: 1,
-        title: "دروس رمضان - به زبان فارسی دروس رمضان به زبان فارسی",
-        link:"https://www.youtube.com/embed/6ZIJ4rwiIUI"  ,
-    },
-    {
-        id: 2,
-        title: "آیا اسلام دین جدیدی است؟ به فارسی آیا اسلام دین جدیدی است؟ به زبان فارسی",
-        link:"https://www.youtube.com/embed/8ZSg3yQM56k" ,
-    },
-    {
-        id: 3,
-        title: "دین اسلام درس زبان فارسی 1 قسمت اول",
-        link:"https://www.youtube.com/embed/MNY4zsXXT_w" ,
-    },
-
-    ],
-}
+  useEffect(() => {
+    fetchVideos();
+  }, [i18n.language]);
 
 useEffect(() => {
   if (isModalOpen) {
@@ -630,6 +572,11 @@ useEffect(() => {
 }, [isModalOpen]);
 
 const handleEditClick = (key, section, value) => {
+  // لا تسمح بتحرير 'more' في قسم 'section'
+  if (section === 'section' && key === 'more') {
+    return;
+  }
+  
   setEditingItem({
     key,
     section,
@@ -640,23 +587,6 @@ const handleEditClick = (key, section, value) => {
   setEditModalOpen(true);
 };
 
-const handleVideoEditClick = (video, index) => {
-  setEditingItem({ 
-    type: 'video', 
-    index, 
-    id: video.id,
-    title: video.title, 
-    link: video.link,
-    videoType: video.videoType
-  });
-  setEditValue({ 
-    title: video.title, 
-    link: video.link,
-    type: video.videoType
-  });
-  setEditModalOpen(true);
-};
-
 const handleSaveEdit = async () => {
   if (editingItem?.type === 'video') {
     try {
@@ -664,7 +594,7 @@ const handleSaveEdit = async () => {
       formData.append('title', editValue.title);
       formData.append('lang', i18n.language);
       formData.append('videoType', 'youtube');  // نحن نتعامل فقط مع فيديوهات يوتيوب في الوقت الحالي
-      formData.append('youtubeEmbedUrl', editValue.link);
+      formData.append('youtubeEmbedUrl', formatYoutubeUrl(editValue.link));
 
       const response = await axios.post('https://elmanafea.shop/admin/homeuploadvideo', formData, {
         headers: {
@@ -874,38 +804,46 @@ const getHeaderTitle = useCallback(() => {
       </div>
       
       <div className="videos-grid">
-  {videos.map((video, index) => (
-    <div className="video-card" key={video.id || index}>
-      <div className="video-thumbnail">
-        {isAdmin && (
-          <div className="video-actions">
-            <FontAwesomeIcon 
-              icon={faTrash} 
-              className="delete-icon"
-              onClick={() => handleDeleteVideo(video.id)}    
-            />          
-            <FontAwesomeIcon 
-              icon={faPenToSquare} 
-              className="edit-icon"
-              onClick={() => handleVideoEditClick(video, index)}
-            />
+        {videos.map((video) => (
+          <div className="video-card" key={video.id}>
+            <div className="video-thumbnail">
+              {isAdmin && (
+                <div className="video-actions">
+                  <FontAwesomeIcon 
+                    icon={faTrash} 
+                    className="delete-icon"
+                    onClick={() => handleDeleteVideo(video.id)}    
+                  />          
+                  <FontAwesomeIcon 
+                    icon={faPenToSquare} 
+                    className="edit-icon"
+                    onClick={() => handleVideoEditClick(video)}
+                  />
+                </div>
+              )}
+              <div className="video-container">
+                {video.link ? (
+                  <iframe 
+                    src={video.link}
+                    title={video.title}
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    allow="clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                  ></iframe>
+                ) : (
+                  <div className="video-error">الفيديو غير متوفر</div>
+                )}
+              </div>
+            </div>
+            <div className="video-info">
+              <h3 className="video-title">{video.title}</h3>
+            </div>
           </div>
-        )}
-        <iframe 
-          width="100%" 
-          height="100%" 
-          src={video.link} 
-          title={video.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowFullScreen
-        ></iframe>
+        ))}
       </div>
-      <div className="video-info">
-        <h3 className="video-title">{video.title}</h3>
-      </div>
-    </div>
-  ))}
-</div>
       
       {isAdmin && (
         <div className="add-video-btn-container">
@@ -920,13 +858,6 @@ const getHeaderTitle = useCallback(() => {
             {getHeroText('section', 'more')}
             <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faArrowRight : faArrowLeft} />
           </a>
-          {isAdmin && (
-            <FontAwesomeIcon 
-              icon={faEllipsisVertical} 
-              className="edit-icon edit-icon-color"
-              onClick={() => handleEditClick('more', 'section', getHeroText('section', 'more'))}
-            />
-          )}
         </div>
       </div>
     </div>
@@ -966,8 +897,10 @@ const getHeaderTitle = useCallback(() => {
                 value={newVideoData.youtubeEmbedUrl}
                 onChange={(e) => setNewVideoData(prev => ({ ...prev, youtubeEmbedUrl: e.target.value }))}
                 className="home-video-input"
-                placeholder="مثال: https://www.youtube.com/embed/..."
+                placeholder="مثال: https://www.youtube.com/watch?v=HDBTmALzv-8"
+                dir="ltr"
               />
+              <small className="input-hint">يمكنك إدخال أي نوع من روابط يوتيوب (رابط المشاهدة أو رابط مختصر)</small>
             </div>
           ) : (
             <div className="home-video-field">
@@ -1104,34 +1037,41 @@ const getHeaderTitle = useCallback(() => {
     )}
 
     {editModalOpen && editingItem?.type === 'video' ? (
-      <div className="edit-modal-overlay">
-        <div className="edit-modal">
-          <h3>تعديل الفيديو</h3>
+      <div className="home-edit-modal-overlay">
+        <div className="home-edit-modal">
+          <h3 className="home-edit-modal-title">تعديل الفيديو</h3>
 
-          <div className="edit-field">
-            <label>عنوان الفيديو:</label>
+          <div className="home-edit-field">
+            <label className="home-edit-label">عنوان الفيديو:</label>
             <input
               type="text"
               value={editValue.title}
               onChange={(e) => setEditValue(prev => ({ ...prev, title: e.target.value }))}
-              className="edit-input"
+              className="home-edit-input"
             />
           </div>
-          <div className="edit-field">
-            <label>رابط اليوتيوب:</label>
-            <input
-              type="text"
-              value={editValue.link}
-              onChange={(e) => setEditValue(prev => ({ ...prev, link: e.target.value }))}
-              className="edit-input"
-              placeholder="مثال: https://www.youtube.com/embed/..."
-            />
-          </div>
-          <div className="modal-buttons">
+          
+          {/* إظهار حقل الرابط فقط إذا كان الفيديو من نوع يوتيوب */}
+          {editValue.type === 'youtube' && (
+            <div className="home-edit-field">
+              <label className="home-edit-label">رابط اليوتيوب:</label>
+              <input
+                type="text"
+                value={editValue.link}
+                onChange={(e) => setEditValue(prev => ({ ...prev, link: e.target.value }))}
+                className="home-edit-input"
+                placeholder="مثال: https://www.youtube.com/watch?v=HDBTmALzv-8"
+                dir="ltr"
+              />
+              <small className="input-hint">يمكنك إدخال أي نوع من روابط يوتيوب (رابط المشاهدة أو رابط مختصر)</small>
+            </div>
+          )}
+          
+          <div className="home-edit-buttons">
             <button 
-              onClick={handleSaveEdit} 
-              className="save-btn"
-              disabled={!editValue.title || !editValue.link}
+              onClick={handleEditVideo} 
+              className="home-edit-save-btn"
+              disabled={!editValue.title || (editValue.type === 'youtube' && !editValue.link)}
             >
               حفظ
             </button>
@@ -1141,7 +1081,7 @@ const getHeaderTitle = useCallback(() => {
                 setEditValue(null);
                 setEditingItem(null);
               }} 
-              className="cancel-btn"
+              className="home-edit-cancel-btn"
             >
               إلغاء
             </button>
@@ -1178,6 +1118,32 @@ const getHeaderTitle = useCallback(() => {
                 إلغاء
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showDeleteConfirmModal && (
+      <div className="delete-confirm-modal-overlay">
+        <div className="delete-confirm-modal">
+          <h3>تأكيد الحذف</h3>
+          <p>هل أنت متأكد من حذف هذا الفيديو؟</p>
+          <div className="delete-confirm-actions">
+            <button
+              className="delete-confirm-btn confirm"
+              onClick={confirmDeleteVideo}
+            >
+              نعم، احذف
+            </button>
+            <button
+              className="delete-confirm-btn cancel"
+              onClick={() => {
+                setShowDeleteConfirmModal(false);
+                setVideoToDelete(null);
+              }}
+            >
+              إلغاء
+            </button>
           </div>
         </div>
       </div>
