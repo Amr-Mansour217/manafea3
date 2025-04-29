@@ -10,27 +10,33 @@ import axios from 'axios';
 function Another() {
   const { t, i18n } = useTranslation();
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // بيانات المواقع الافتراضية مفصولة للتنظيم
+  const defaultWebsites = {
+    ar: [
+      { id: 1, name: "سنن.كوم", url: "https://sunnah.com/" },
+      { id: 2, name: "الباحث الإسلامي", url: "https://www.islamicfinder.org/" },
+      { id: 3, name: "القرآن الكريم", url: "https://www.quran.com/" },
+      { id: 4, name: "الدليل إلى القرآن الكريم", url: "https://guidetoquran.com/ar" }
+    ],
+    en: [
+      { id: 1, name: "Sunnah.com", url: "https://sunnah.com/" },
+      { id: 2, name: "IslamicFinder", url: "https://www.islamicfinder.org/" },
+      { id: 3, name: "Quran.com", url: "https://www.quran.com/" },
+      { id: 4, name: "Guide to Quran", url: "https://guidetoquran.com/" }
+    ],
+    fr: [
+      { id: 1, name: "Sunnah.com", url: "https://sunnah.com/" },
+      { id: 2, name: "IslamicFinder", url: "https://www.islamicfinder.org/fr/" },
+      { id: 3, name: "Le Saint Coran", url: "https://www.quran.com/" }
+    ]
+  };
+  
+  // تحسين استرداد بيانات المواقع من التخزين المحلي
   const [websites, setWebsites] = useState(() => {
     const savedWebsites = localStorage.getItem('websites');
-    return savedWebsites ? JSON.parse(savedWebsites) : {
-      ar: [
-        { id: 1, name: "سنن.كوم", url: "https://sunnah.com/" },
-        { id: 2, name: "الباحث الإسلامي", url: "https://www.islamicfinder.org/" },
-        { id: 3, name: "القرآن الكريم", url: "https://www.quran.com/" },
-        { id: 4, name: "الدليل إلى القرآن الكريم", url: "https://guidetoquran.com/ar" }
-      ],
-      en: [
-        { id: 1, name: "Sunnah.com", url: "https://sunnah.com/" },
-        { id: 2, name: "IslamicFinder", url: "https://www.islamicfinder.org/" },
-        { id: 3, name: "Quran.com", url: "https://www.quran.com/" },
-        { id: 4, name: "Guide to Quran", url: "https://guidetoquran.com/" }
-      ],
-      fr: [
-        { id: 1, name: "Sunnah.com", url: "https://sunnah.com/" },
-        { id: 2, name: "IslamicFinder", url: "https://www.islamicfinder.org/fr/" },
-        { id: 3, name: "Le Saint Coran", url: "https://www.quran.com/" }
-      ]
-    };
+    // استخدام البيانات المخزنة محلياً إن وجدت، وإلا استخدام البيانات الافتراضية
+    return savedWebsites ? JSON.parse(savedWebsites) : defaultWebsites;
   });
 
   const [texts, setTexts] = useState(() => {
@@ -101,30 +107,50 @@ function Another() {
       setShowAddModal(false);
       setNewWebsite({ name: '', url: '' });
     } catch (error) {
-      console.error('Error adding website:', error);
-      alert(error.message);
+      // console.error('Error adding website:', error);
+      // alert(error.message);
     }
   };
 
+  // إعادة هيكلة دالة جلب المواقع
   const fetchWebsites = async () => {
     try {
-      const response = await axios.get('https://elmanafea.shop/websites');
+      const currentLang = i18n.language;
+      // إضافة معلمة اللغة إلى الطلب
+      const response = await axios.get(`https://elmanafea.shop/websites?lang=${currentLang}`);
       const data = response.data;
-      console.log('Fetched websites:', data);
+      console.log(`Fetched websites for ${currentLang}:`, data);
 
       if (Array.isArray(data)) {
-        const updatedWebsites = data.map(site => ({
-          id: site._id,
-          name: site.name,
-          url: site.url
+        // تحسين هيكلة البيانات المستلمة
+        const websitesData = data.map(site => ({
+          id: site._id || site.id,
+          name: site.name || site.title, // التعامل مع الاسم من أي خاصية متاحة
+          url: site.url,
+          language: currentLang
         }));
-        setWebsites({ ...websites, [i18n.language]: updatedWebsites });
+
+        // تحديث حالة المواقع مع الحفاظ على بيانات اللغات الأخرى
+        setWebsites(prevWebsites => {
+          // دمج البيانات الجديدة مع الحفاظ على البيانات السابقة للغات الأخرى
+          const updatedWebsites = {
+            ...prevWebsites,
+            [currentLang]: websitesData
+          };
+          
+          // حفظ البيانات المحدثة في التخزين المحلي
+          localStorage.setItem('websites', JSON.stringify(updatedWebsites));
+          
+          return updatedWebsites;
+        });
       }
     } catch (error) {
       console.error('Error fetching websites:', error);
+      // في حالة الخطأ، الاحتفاظ بالبيانات الحالية
     }
   };
 
+  // استدعاء دالة جلب المواقع عند تغيير اللغة
   useEffect(() => {
     fetchWebsites();
   }, [i18n.language]);

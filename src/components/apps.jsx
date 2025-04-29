@@ -4,11 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faPlus, faPenToSquare } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import Header from './header';
-// import AthanPro from "./imgs/athanPro.png";
-// import HisnAlMuslim from "./imgs/hisnAlMuslim.png";
-// import IQuran from "./imgs/iQuran.png";
-// import Islam360 from "./imgs/islam360.png";
-// import MuslimPro from "./imgs/muslimPro.png";
 import './apps.css' 
 import Footer from './footer';
 
@@ -245,39 +240,82 @@ function Apps() {
 
   const handleAddApp = async () => {
     try {
+      // 1. التحقق من البيانات المطلوبة
       if (!newApp.name || !newApp.link || !newApp.image) {
         alert('الرجاء إدخال جميع البيانات المطلوبة');
         return;
       }
 
+      // 2. التحقق من توكن المسؤول
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        return;
+      }
+
+      // 3. إنشاء كائن FormData جديد تماماً
       const formData = new FormData();
+
+      // 4. إضافة البيانات بشكل صحيح للكائن
       formData.append('photo', newApp.image);
       formData.append('title', newApp.name);
       formData.append('url', newApp.link);
       formData.append('platform', newApp.category);
 
-      const response = await axios.post('https://elmanafea.shop/admin/addapp', formData, {
+      console.log('Attempting to add app with data:', {
+        title: newApp.name,
+        url: newApp.link,
+        platform: newApp.category,
+        photo: "[File object]"
+      });
+
+      // 5. إجراء الطلب POST مع التأكد من الإعدادات الصحيحة
+      const response = await axios({
+        method: 'post',
+        url: 'https://elmanafea.shop/admin/addapp',
+        data: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (response.status !== 200) {
-        throw new Error('فشل في إضافة التطبيق');
+      console.log('Server response:', response);
+
+      // 6. التحقق من نجاح الطلب
+      if (response.status === 200 || response.status === 201) {
+        await fetchApps(newApp.category);
+        setShowAddModal(false);
+        setNewApp({
+          name: '',
+          image: null,
+          link: '',
+          category: 'android'
+        });
+        
+        alert('تمت إضافة التطبيق بنجاح');
+      } else {
+        throw new Error(`استجابة غير متوقعة: ${response.status}`);
       }
-
-      await fetchApps(newApp.category);
-      setShowAddModal(false);
-      setNewApp({
-        name: '',
-        image: null,
-        link: '',
-        category: 'android'
-      });
-
     } catch (error) {
-      console.error('Error:', error);
-      alert(error.message);
+      console.error('Error adding app:', error);
+      console.error('Request details:', error.config);
+      console.error('Response data:', error.response?.data);
+      console.error('Response status:', error.response?.status);
+      
+      // 7. عرض رسالة خطأ أكثر تفصيلاً
+      let errorMessage = 'حدث خطأ أثناء إضافة التطبيق';
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = 'الرابط غير صحيح (404) - تأكد من صحة عنوان API';
+        } else if (error.response.status === 403) {
+          errorMessage = 'ليس لديك صلاحيات كافية (403) - تأكد من تسجيل الدخول كمسؤول';
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = `خطأ من الخادم: ${error.response.data.message}`;
+        }
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -289,16 +327,18 @@ function Apps() {
 
       if (Array.isArray(data)) {
         const updatedApps = data.map(app => ({
-          id: app._id,
-          name: app.title || '',
-          image: app.photo ? `https://elmanafea.shop/${app.photo.startsWith('/') ? app.photo.slice(1) : app.photo}` : '',
-          link: app.url || '',
-          category: platform
+          id: app._id, // المعرف
+          name: app.title || '', // العنوان
+          image: app.photo ? `https://elmanafea.shop/${app.photo.startsWith('/') ? app.photo.slice(1) : app.photo}` : '', // الصورة
+          link: app.url || '', // الرابط
+          category: app.platform || platform // التصنيف
         }));
+        console.log('Formatted apps:', updatedApps);
         setApps(updatedApps);
       }
     } catch (error) {
       console.error('Error fetching apps:', error);
+      alert('حدث خطأ أثناء استرجاع التطبيقات');
     }
   };
 
@@ -433,20 +473,36 @@ function Apps() {
 
   const handleDeleteApp = async (appId, category) => {
     try {
+      const confirmDelete = window.confirm('هل أنت متأكد من حذف هذا التطبيق؟');
+      if (!confirmDelete) {
+        return;
+      }
+
+      console.log(`Attempting to delete app with ID: ${appId} from category: ${category}`);
+      
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        return;
+      }
+
       const response = await axios.delete(`https://elmanafea.shop/admin/deleteapp/${appId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${adminToken}`
         }
       });
 
-      if (response.status !== 200) {
+      console.log('Delete response:', response);
+
+      if (response.status === 200) {
+        setApps(prevApps => prevApps.filter(app => app.id !== appId));
+        alert('تم حذف التطبيق بنجاح');
+      } else {
         throw new Error('فشل في حذف التطبيق');
       }
-
-      await fetchApps(category);
     } catch (error) {
       console.error('Error deleting app:', error);
-      alert(error.message);
+      alert(error.response?.data?.message || error.message || 'حدث خطأ في عملية الحذف');
     }
   };
 
@@ -574,11 +630,7 @@ function Apps() {
                     <button onClick={() => setEditingApp(app)}>
                       <FontAwesomeIcon icon={faEdit} />
                     </button>
-                    <button onClick={() => {
-                      if(window.confirm('هل أنت متأكد من حذف هذا التطبيق؟')) {
-                        handleDeleteApp(app.id, app.category);
-                      }
-                    }}>
+                    <button onClick={() => handleDeleteApp(app.id, app.category)}>
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
                   </div>
