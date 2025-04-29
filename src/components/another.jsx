@@ -11,32 +11,9 @@ function Another() {
   const { t, i18n } = useTranslation();
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // بيانات المواقع الافتراضية مفصولة للتنظيم
-  const defaultWebsites = {
-    ar: [
-      { id: 1, name: "سنن.كوم", url: "https://sunnah.com/" },
-      { id: 2, name: "الباحث الإسلامي", url: "https://www.islamicfinder.org/" },
-      { id: 3, name: "القرآن الكريم", url: "https://www.quran.com/" },
-      { id: 4, name: "الدليل إلى القرآن الكريم", url: "https://guidetoquran.com/ar" }
-    ],
-    en: [
-      { id: 1, name: "Sunnah.com", url: "https://sunnah.com/" },
-      { id: 2, name: "IslamicFinder", url: "https://www.islamicfinder.org/" },
-      { id: 3, name: "Quran.com", url: "https://www.quran.com/" },
-      { id: 4, name: "Guide to Quran", url: "https://guidetoquran.com/" }
-    ],
-    fr: [
-      { id: 1, name: "Sunnah.com", url: "https://sunnah.com/" },
-      { id: 2, name: "IslamicFinder", url: "https://www.islamicfinder.org/fr/" },
-      { id: 3, name: "Le Saint Coran", url: "https://www.quran.com/" }
-    ]
-  };
-  
-  // تحسين استرداد بيانات المواقع من التخزين المحلي
   const [websites, setWebsites] = useState(() => {
     const savedWebsites = localStorage.getItem('websites');
-    // استخدام البيانات المخزنة محلياً إن وجدت، وإلا استخدام البيانات الافتراضية
-    return savedWebsites ? JSON.parse(savedWebsites) : defaultWebsites;
+    return savedWebsites ? JSON.parse(savedWebsites) : [];
   });
 
   const [texts, setTexts] = useState(() => {
@@ -62,7 +39,6 @@ function Another() {
     url: ''
   });
 
-  // تحقق من حالة المشرف
   useEffect(() => {
     const checkAdmin = () => {
       const token = localStorage.getItem('adminToken');
@@ -73,7 +49,6 @@ function Another() {
     return () => window.removeEventListener('storage', checkAdmin);
   }, []);
 
-  // حفظ التغييرات في localStorage
   useEffect(() => {
     localStorage.setItem('websites', JSON.stringify(websites));
   }, [websites]);
@@ -103,7 +78,7 @@ function Another() {
         throw new Error('فشل في إضافة الموقع');
       }
 
-      await fetchWebsites();
+      fetchWebsites();
       setShowAddModal(false);
       setNewWebsite({ name: '', url: '' });
     } catch (error) {
@@ -112,48 +87,47 @@ function Another() {
     }
   };
 
-  // إعادة هيكلة دالة جلب المواقع
   const fetchWebsites = async () => {
     try {
-      const currentLang = i18n.language;
-      // إضافة معلمة اللغة إلى الطلب
-      const response = await axios.get(`https://elmanafea.shop/websites?lang=${currentLang}`);
-      const data = response.data;
-      console.log(`Fetched websites for ${currentLang}:`, data);
-
-      if (Array.isArray(data)) {
-        // تحسين هيكلة البيانات المستلمة
-        const websitesData = data.map(site => ({
-          id: site._id || site.id,
-          name: site.name || site.title, // التعامل مع الاسم من أي خاصية متاحة
-          url: site.url,
-          language: currentLang
+      console.log('Fetching all websites after update');
+      
+      // إضافة timestamp لمنع التخزين المؤقت
+      const timestamp = new Date().getTime();
+      const response = await axios.get(`https://elmanafea.shop/websites?_t=${timestamp}`);
+      console.log('API Response after update:', response.data);
+      
+      let websitesData = [];
+      
+      if (Array.isArray(response.data)) {
+        websitesData = response.data.map(site => ({
+          id: site._id,
+          name: site.name,
+          url: site.url
         }));
-
-        // تحديث حالة المواقع مع الحفاظ على بيانات اللغات الأخرى
-        setWebsites(prevWebsites => {
-          // دمج البيانات الجديدة مع الحفاظ على البيانات السابقة للغات الأخرى
-          const updatedWebsites = {
-            ...prevWebsites,
-            [currentLang]: websitesData
-          };
-          
-          // حفظ البيانات المحدثة في التخزين المحلي
-          localStorage.setItem('websites', JSON.stringify(updatedWebsites));
-          
-          return updatedWebsites;
-        });
+      } else if (response.data && typeof response.data === 'object') {
+        const possibleArrayData = Object.values(response.data).find(val => Array.isArray(val));
+        if (possibleArrayData) {
+          websitesData = possibleArrayData.map(site => ({
+            id: site._id || site.id,
+            name: site.name || site.title,
+            url: site.url
+          }));
+        }
       }
+      
+      console.log('Processed websites data:', websitesData);
+      
+      setWebsites(websitesData);
+      localStorage.setItem('websites', JSON.stringify(websitesData));
     } catch (error) {
       console.error('Error fetching websites:', error);
-      // في حالة الخطأ، الاحتفاظ بالبيانات الحالية
+      setWebsites([]);
     }
   };
 
-  // استدعاء دالة جلب المواقع عند تغيير اللغة
   useEffect(() => {
     fetchWebsites();
-  }, [i18n.language]);
+  }, []);
 
   const handleUpdateWebsite = async () => {
     if (!editingWebsite.name || !editingWebsite.url) {
@@ -162,24 +136,55 @@ function Another() {
     }
 
     try {
-      const response = await axios.put(`https://elmanafea.shop/admin/updatewebsites/${editingWebsite.id}`, {
-        title: editingWebsite.name,
-        url: editingWebsite.url
-      }, {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        return;
+      }
+
+      console.log(`Updating website with ID: ${editingWebsite.id}`);
+      
+      // إرسال طلب PUT للخادم مع الحقول المطلوبة
+      const response = await axios({
+        method: 'put',
+        url: `https://elmanafea.shop/admin/updatewebsites/${editingWebsite.id}`,
+        data: {
+          name: editingWebsite.name,   // إرسال الاسم في حقل name بدلاً من title
+          url: editingWebsite.url,     // إرسال الرابط في حقل url
+          lang: i18n.language
+        },
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
         }
       });
 
-      if (response.status !== 200) {
+      console.log('Update response:', response.data);
+
+      if (response.status === 200) {
+        // تحديث البيانات محلياً بعد الاستجابة الناجحة من الخادم
+        setWebsites(prevWebsites => {
+          const updatedWebsites = prevWebsites.map(site => 
+            site.id === editingWebsite.id 
+              ? {...site, name: editingWebsite.name, url: editingWebsite.url} 
+              : site
+          );
+          
+          // حفظ التغييرات في التخزين المحلي
+          localStorage.setItem('websites', JSON.stringify(updatedWebsites));
+          return updatedWebsites;
+        });
+        
+        // إغلاق نافذة التعديل
+        setEditingWebsite(null);
+        alert('تم تحديث الموقع بنجاح');
+      } else {
         throw new Error('فشل في تحديث الموقع');
       }
-
-      await fetchWebsites();
-      setEditingWebsite(null);
     } catch (error) {
       console.error('Error updating website:', error);
-      alert(error.message);
+      console.error('Response data:', error.response?.data);
+      alert(error.response?.data?.message || 'حدث خطأ في تحديث الموقع');
     }
   };
 
@@ -196,7 +201,7 @@ function Another() {
           throw new Error('فشل في حذف الموقع');
         }
 
-        await fetchWebsites();
+        fetchWebsites();
       } catch (error) {
         console.error('Error deleting website:', error);
         alert(error.message);
@@ -204,26 +209,170 @@ function Another() {
     }
   };
 
-  const handleUpdateText = () => {
+  // تعديل دالة تحديث النصوص لتتعامل مع طلبات API
+  const handleUpdateText = async () => {
     if (!tempText) {
       alert('من فضلك أدخل النص');
       return;
     }
 
-    const currentLang = i18n.language;
-    setTexts({
-      ...texts,
-      [currentLang]: {
-        ...texts[currentLang],
-        [editingField]: tempText
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        return;
       }
-    });
-    setEditingField(null);
-    setTempText('');
+
+      const currentLang = i18n.language;
+      
+      // في حالة تحديث العنوان، نرسل طلب POST للـ endpoint المطلوب
+      if (editingField === 'title') {
+        // إرسال طلب POST للخادم لتحديث العنوان
+        const response = await axios({
+          method: 'post',
+          url: 'https://elmanafea.shop/admin/head',
+          data: {
+            title: tempText,  // إرسال العنوان في حقل title
+            lang: currentLang // إرسال اللغة في حقل lang
+          },
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Update title response:', response.data);
+        
+        if (response.status === 200) {
+          // بعد التحديث الناجح، نقوم بطلب GET للحصول على البيانات المحدثة
+          await fetchWebsiteHeader();
+          alert('تم تحديث العنوان بنجاح');
+        }
+      } 
+      // في حالة تحديث الوصف، نرسل طلب POST للـ endpoint المخصص له
+      else if (editingField === 'description') {
+        // إرسال طلب POST للخادم لتحديث الوصف
+        const response = await axios({
+          method: 'post',
+          // تصحيح اسم الإندبوينت من websecondheader إلى websitesecondheader
+          url: 'https://elmanafea.shop/admin/websecondheader',
+          data: {
+            title: tempText,  
+            lang: currentLang 
+          },
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Update description response:', response.data);
+        
+        if (response.status === 200) {
+          // بعد التحديث الناجح، نقوم بطلب GET للحصول على البيانات المحدثة
+          await fetchWebsiteSecondHeader();
+          alert('تم تحديث الوصف بنجاح');
+        }
+      }
+      else {
+        // تحديث محلي للنصوص الأخرى
+        setTexts({
+          ...texts,
+          [currentLang]: {
+            ...texts[currentLang],
+            [editingField]: tempText
+          }
+        });
+      }
+      
+      // إغلاق نافذة التعديل
+      setEditingField(null);
+      setTempText('');
+    } catch (error) {
+      console.error('Error updating text:', error);
+      alert(error.response?.data?.message || 'حدث خطأ في تحديث النص');
+    }
   };
+
+  // دالة جديدة لجلب عنوان الصفحة من الخادم
+  const fetchWebsiteHeader = async () => {
+    try {
+      const currentLang = i18n.language;
+      const response = await axios.get(`https://elmanafea.shop/websitesheader?lang=${currentLang}`);
+      console.log('Website header response:', response.data);
+      
+      if (response.data?.title) {
+        // تحديث العنوان في state
+        setTexts(prevTexts => ({
+          ...prevTexts,
+          [currentLang]: {
+            ...prevTexts[currentLang],
+            title: response.data.title
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching website header:', error);
+    }
+  };
+
+  // دالة جديدة لجلب عنوان الصفحة الثانوي من الخادم
+  const fetchWebsiteSecondHeader = async () => {
+    try {
+      const currentLang = i18n.language;
+      const response = await axios.get(`https://elmanafea.shop/websecondheader?lang=${currentLang}`);
+      console.log('Website second header response:', response.data);
+      
+      // التعامل مع هيكل البيانات الصحيح
+      if (response.data?.second_header?.title) {
+        // تحديث الوصف في state
+        setTexts(prevTexts => ({
+          ...prevTexts,
+          [currentLang]: {
+            ...prevTexts[currentLang],
+            description: response.data.second_header.title
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching website second header:', error);
+    }
+  };
+
+  // استدعاء دوال الجلب عند تحميل المكون أو تغيير اللغة
+  useEffect(() => {
+    fetchWebsiteHeader();
+    fetchWebsiteSecondHeader();
+  }, [i18n.language]);
 
   const getFaviconUrl = (websiteUrl) => {
     return `https://www.google.com/s2/favicons?domain=${websiteUrl}&sz=64`;
+  };
+
+  const renderWebsites = () => {
+    if (!websites || !Array.isArray(websites)) {
+      console.error('websites is not an array:', websites);
+      return null;
+    }
+    
+    return websites.map(site => (
+      <div key={site.id} className="website-item">
+        {isAdmin && (
+          <div className="admin-controls">
+            <button onClick={() => setEditingWebsite(site)}>
+              <FontAwesomeIcon icon={faEdit} />
+            </button>
+            <button onClick={() => handleDeleteWebsite(site.id)}>
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </div>
+        )}
+        <a href={site.url} target="_blank" rel="noopener noreferrer">
+          <img src={getFaviconUrl(site.url)} alt={site.name} />
+          <p>{site.name}</p>
+        </a>
+      </div>
+    ));
   };
 
   return (
@@ -269,30 +418,12 @@ function Another() {
                 </div>
               </div>
             )}
-            
-            {(websites[i18n.language] || []).map(site => (
-              <div key={site.id} className="website-item">
-                {isAdmin && (
-                  <div className="admin-controls">
-                    <button onClick={() => setEditingWebsite(site)}>
-                      <FontAwesomeIcon icon={faEdit} />
-                    </button>
-                    <button onClick={() => handleDeleteWebsite(site.id)}>
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
-                )}
-                <a href={site.url} target="_blank" rel="noopener noreferrer">
-                  <img src={getFaviconUrl(site.url)} alt={site.name} />
-                  <p>{site.name}</p>
-                </a>
-              </div>
-            ))}
+          
+            {renderWebsites()}
           </div>
         </div>
       </div>
 
-      {/* Modal إضافة موقع */}
       {showAddModal && (
         <div className="modal">
           <div className="modal-content">
@@ -324,7 +455,6 @@ function Another() {
         </div>
       )}
 
-      {/* Modal تعديل موقع */}
       {editingWebsite && (
         <div className="modal">
           <div className="modal-content">
@@ -356,7 +486,6 @@ function Another() {
         </div>
       )}
 
-      {/* Modal تعديل النص */}
       {editingField && (
         <div className="another-edit-overlay">
           <div className="another-edit-wrapper">

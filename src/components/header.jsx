@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './header.css';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './imgs/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGlobe, faChevronDown, faBars, faTimes, faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
+import { faGlobe, faChevronDown, faBars, faTimes, faEllipsisVertical, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { changeLanguage } from './i18n';
 
 function Header() {
@@ -44,6 +44,7 @@ function Header() {
   const [editingScrollingIndex, setEditingScrollingIndex] = useState(null);
   const languageRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -132,6 +133,14 @@ function Header() {
     });
   };
 
+  const handleSignOut = () => {
+    localStorage.removeItem('adminToken');
+    setIsAdmin(false);
+    alert(t('تم تسجيل الخروج بنجاح'));
+    window.dispatchEvent(new Event('storage'));
+    navigate('/');
+  };
+
   return (
     <>
       <header className={i18n.dir()}>
@@ -184,25 +193,35 @@ function Header() {
               </li>
             ))}
           </ul>
-          <div className="language-dropdown" ref={languageRef}>
-            <button className="language-btn" onClick={toggleLanguageMenu}>
-              <FontAwesomeIcon icon={faGlobe} />
-              {t('العربية')}
-              <FontAwesomeIcon icon={faChevronDown} />
-            </button>
-            <div className={`language-content ${isLanguageOpen ? 'show' : ''}`}>
-              <a onClick={() => handleLanguageChange('ar')}>العربية</a>
-              <a onClick={() => handleLanguageChange('en')}>English</a>
-              <a onClick={() => handleLanguageChange('fr')}>Français</a>
-              <a onClick={() => handleLanguageChange('tr')}>Türkçe</a>
-              <a onClick={() => handleLanguageChange('id')}>Bahasa</a>
-              <a onClick={() => handleLanguageChange('ru')}>русский</a>
-              <a onClick={() => handleLanguageChange('hi')}>हिंदी</a>
-              <a onClick={() => handleLanguageChange('ur')}>اردو</a>
-              <a onClick={() => handleLanguageChange('bn')}>বাংলা</a>
-              <a onClick={() => handleLanguageChange('zh')}>中国人</a>
-              <a onClick={() => handleLanguageChange('tl')}>filipino</a>
-              <a onClick={() => handleLanguageChange('fa')}>فارسی</a>
+          
+          <div className="nav-actions">
+            {isAdmin && (
+              <button className="sign-out-btn" onClick={handleSignOut}>
+                <FontAwesomeIcon icon={faSignOutAlt} />
+                {t('تسجيل الخروج')}
+              </button>
+            )}
+            
+            <div className="language-dropdown" ref={languageRef}>
+              <button className="language-btn" onClick={toggleLanguageMenu}>
+                <FontAwesomeIcon icon={faGlobe} />
+                {t('العربية')}
+                <FontAwesomeIcon icon={faChevronDown} />
+              </button>
+              <div className={`language-content ${isLanguageOpen ? 'show' : ''}`}>
+                <a onClick={() => handleLanguageChange('ar')}>العربية</a>
+                <a onClick={() => handleLanguageChange('en')}>English</a>
+                <a onClick={() => handleLanguageChange('fr')}>Français</a>
+                <a onClick={() => handleLanguageChange('tr')}>Türkçe</a>
+                <a onClick={() => handleLanguageChange('id')}>Bahasa</a>
+                <a onClick={() => handleLanguageChange('ru')}>русский</a>
+                <a onClick={() => handleLanguageChange('hi')}>हिंदी</a>
+                <a onClick={() => handleLanguageChange('ur')}>اردو</a>
+                <a onClick={() => handleLanguageChange('bn')}>বাংলা</a>
+                <a onClick={() => handleLanguageChange('zh')}>中国人</a>
+                <a onClick={() => handleLanguageChange('tl')}>filipino</a>
+                <a onClick={() => handleLanguageChange('fa')}>فارسی</a>
+              </div>
             </div>
           </div>
         </nav>

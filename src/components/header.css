@@ -578,3 +578,42 @@ a {
   background: var(--primary-color);
   color: white;
 }
+
+/* إضافة لملف header.css */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.sign-out-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.sign-out-btn:hover {
+  background-color: #d32f2f;
+}
+
+/* تعديل للشاشات الصغيرة */
+@media (max-width: 768px) {
+  .nav-actions {
+    position: absolute;
+    top: 10px;
+    right: 70px;
+  }
+  
+  .sign-out-btn {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
