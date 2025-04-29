@@ -39,6 +39,9 @@ function Another() {
     url: ''
   });
 
+  const [websiteToDelete, setWebsiteToDelete] = useState(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+
   useEffect(() => {
     const checkAdmin = () => {
       const token = localStorage.getItem('adminToken');
@@ -57,6 +60,15 @@ function Another() {
     localStorage.setItem('anotherTexts', JSON.stringify(texts));
   }, [texts]);
 
+  const normalizeUrl = (url) => {
+    if (!url) return '';
+    url = url.trim();
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return `https://${url}`;
+  };
+
   const handleAddWebsite = async () => {
     if (!newWebsite.name || !newWebsite.url) {
       alert('من فضلك أدخل جميع البيانات المطلوبة');
@@ -64,9 +76,13 @@ function Another() {
     }
 
     try {
+      const formattedUrl = normalizeUrl(newWebsite.url);
+      
+      setShowAddModal(false);
+      
       const response = await axios.post('https://elmanafea.shop/admin/addwebsite', {
         name: newWebsite.name,
-        url: newWebsite.url,
+        url: formattedUrl,
         language: i18n.language
       }, {
         headers: {
@@ -74,16 +90,23 @@ function Another() {
         }
       });
 
-      if (response.status !== 200) {
-        throw new Error('فشل في إضافة الموقع');
-      }
+      console.log('Add website response:', response);
 
-      fetchWebsites();
-      setShowAddModal(false);
-      setNewWebsite({ name: '', url: '' });
+      if (response.status >= 200 && response.status < 300) {
+        setNewWebsite({ name: '', url: '' });
+        fetchWebsites();
+        alert('تمت إضافة الموقع بنجاح');
+      }
     } catch (error) {
-      // console.error('Error adding website:', error);
-      // alert(error.message);
+      console.error('Error adding website:', error);
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(error.response.data.message);
+      } else {
+        alert('حدث خطأ في إضافة الموقع');
+      }
+      
+      setShowAddModal(true);
     }
   };
 
@@ -91,7 +114,6 @@ function Another() {
     try {
       console.log('Fetching all websites after update');
       
-      // إضافة timestamp لمنع التخزين المؤقت
       const timestamp = new Date().getTime();
       const response = await axios.get(`https://elmanafea.shop/websites?_t=${timestamp}`);
       console.log('API Response after update:', response.data);
@@ -135,6 +157,8 @@ function Another() {
       return;
     }
 
+    const formattedUrl = normalizeUrl(editingWebsite.url);
+    
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
@@ -144,13 +168,12 @@ function Another() {
 
       console.log(`Updating website with ID: ${editingWebsite.id}`);
       
-      // إرسال طلب PUT للخادم مع الحقول المطلوبة
       const response = await axios({
         method: 'put',
         url: `https://elmanafea.shop/admin/updatewebsites/${editingWebsite.id}`,
         data: {
-          name: editingWebsite.name,   // إرسال الاسم في حقل name بدلاً من title
-          url: editingWebsite.url,     // إرسال الرابط في حقل url
+          name: editingWebsite.name,
+          url: formattedUrl,
           lang: i18n.language
         },
         headers: {
@@ -162,20 +185,17 @@ function Another() {
       console.log('Update response:', response.data);
 
       if (response.status === 200) {
-        // تحديث البيانات محلياً بعد الاستجابة الناجحة من الخادم
         setWebsites(prevWebsites => {
           const updatedWebsites = prevWebsites.map(site => 
             site.id === editingWebsite.id 
-              ? {...site, name: editingWebsite.name, url: editingWebsite.url} 
+              ? {...site, name: editingWebsite.name, url: formattedUrl} 
               : site
           );
           
-          // حفظ التغييرات في التخزين المحلي
           localStorage.setItem('websites', JSON.stringify(updatedWebsites));
           return updatedWebsites;
         });
         
-        // إغلاق نافذة التعديل
         setEditingWebsite(null);
         alert('تم تحديث الموقع بنجاح');
       } else {
@@ -188,28 +208,34 @@ function Another() {
     }
   };
 
-  const handleDeleteWebsite = async (id) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا الموقع؟')) {
-      try {
-        const response = await axios.delete(`https://elmanafea.shop/admin/deletewebsites/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          }
-        });
+  const handleDeleteWebsite = (website) => {
+    setWebsiteToDelete(website);
+    setShowDeleteConfirmModal(true);
+  };
 
-        if (response.status !== 200) {
-          throw new Error('فشل في حذف الموقع');
+  const confirmDeleteWebsite = async () => {
+    try {
+      const response = await axios.delete(`https://elmanafea.shop/admin/deletewebsites/${websiteToDelete.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         }
+      });
 
-        fetchWebsites();
-      } catch (error) {
-        console.error('Error deleting website:', error);
-        alert(error.message);
+      if (response.status !== 200) {
+        throw new Error('فشل في حذف الموقع');
       }
+
+      setShowDeleteConfirmModal(false);
+      setWebsiteToDelete(null);
+      
+      fetchWebsites();
+      alert('تم حذف الموقع بنجاح');
+    } catch (error) {
+      console.error('Error deleting website:', error);
+      alert(error.message);
     }
   };
 
-  // تعديل دالة تحديث النصوص لتتعامل مع طلبات API
   const handleUpdateText = async () => {
     if (!tempText) {
       alert('من فضلك أدخل النص');
@@ -225,15 +251,13 @@ function Another() {
 
       const currentLang = i18n.language;
       
-      // في حالة تحديث العنوان، نرسل طلب POST للـ endpoint المطلوب
       if (editingField === 'title') {
-        // إرسال طلب POST للخادم لتحديث العنوان
         const response = await axios({
           method: 'post',
           url: 'https://elmanafea.shop/admin/head',
           data: {
-            title: tempText,  // إرسال العنوان في حقل title
-            lang: currentLang // إرسال اللغة في حقل lang
+            title: tempText,
+            lang: currentLang
           },
           headers: {
             'Authorization': `Bearer ${adminToken}`,
@@ -244,17 +268,12 @@ function Another() {
         console.log('Update title response:', response.data);
         
         if (response.status === 200) {
-          // بعد التحديث الناجح، نقوم بطلب GET للحصول على البيانات المحدثة
           await fetchWebsiteHeader();
           alert('تم تحديث العنوان بنجاح');
         }
-      } 
-      // في حالة تحديث الوصف، نرسل طلب POST للـ endpoint المخصص له
-      else if (editingField === 'description') {
-        // إرسال طلب POST للخادم لتحديث الوصف
+      } else if (editingField === 'description') {
         const response = await axios({
           method: 'post',
-          // تصحيح اسم الإندبوينت من websecondheader إلى websitesecondheader
           url: 'https://elmanafea.shop/admin/websecondheader',
           data: {
             title: tempText,  
@@ -269,13 +288,10 @@ function Another() {
         console.log('Update description response:', response.data);
         
         if (response.status === 200) {
-          // بعد التحديث الناجح، نقوم بطلب GET للحصول على البيانات المحدثة
           await fetchWebsiteSecondHeader();
           alert('تم تحديث الوصف بنجاح');
         }
-      }
-      else {
-        // تحديث محلي للنصوص الأخرى
+      } else {
         setTexts({
           ...texts,
           [currentLang]: {
@@ -285,7 +301,6 @@ function Another() {
         });
       }
       
-      // إغلاق نافذة التعديل
       setEditingField(null);
       setTempText('');
     } catch (error) {
@@ -294,7 +309,6 @@ function Another() {
     }
   };
 
-  // دالة جديدة لجلب عنوان الصفحة من الخادم
   const fetchWebsiteHeader = async () => {
     try {
       const currentLang = i18n.language;
@@ -302,7 +316,6 @@ function Another() {
       console.log('Website header response:', response.data);
       
       if (response.data?.title) {
-        // تحديث العنوان في state
         setTexts(prevTexts => ({
           ...prevTexts,
           [currentLang]: {
@@ -316,16 +329,13 @@ function Another() {
     }
   };
 
-  // دالة جديدة لجلب عنوان الصفحة الثانوي من الخادم
   const fetchWebsiteSecondHeader = async () => {
     try {
       const currentLang = i18n.language;
       const response = await axios.get(`https://elmanafea.shop/websecondheader?lang=${currentLang}`);
       console.log('Website second header response:', response.data);
       
-      // التعامل مع هيكل البيانات الصحيح
       if (response.data?.second_header?.title) {
-        // تحديث الوصف في state
         setTexts(prevTexts => ({
           ...prevTexts,
           [currentLang]: {
@@ -339,7 +349,6 @@ function Another() {
     }
   };
 
-  // استدعاء دوال الجلب عند تحميل المكون أو تغيير اللغة
   useEffect(() => {
     fetchWebsiteHeader();
     fetchWebsiteSecondHeader();
@@ -362,7 +371,7 @@ function Another() {
             <button onClick={() => setEditingWebsite(site)}>
               <FontAwesomeIcon icon={faEdit} />
             </button>
-            <button onClick={() => handleDeleteWebsite(site.id)}>
+            <button onClick={() => handleDeleteWebsite(site)}>
               <FontAwesomeIcon icon={faTrash} />
             </button>
           </div>
@@ -440,8 +449,8 @@ function Another() {
                 required
               />
               <input
-                type="url"
-                placeholder="رابط الموقع *"
+                type="text"
+                placeholder="رابط الموقع * (مثال: elmanafea.com أو https://example.com)"
                 value={newWebsite.url}
                 onChange={e => setNewWebsite({...newWebsite, url: e.target.value})}
                 required
@@ -471,8 +480,8 @@ function Another() {
                 required
               />
               <input
-                type="url"
-                placeholder="رابط الموقع *"
+                type="text"
+                placeholder="رابط الموقع * (مثال: elmanafea.com أو https://example.com)"
                 value={editingWebsite.url}
                 onChange={e => setEditingWebsite({...editingWebsite, url: e.target.value})}
                 required
@@ -520,6 +529,33 @@ function Another() {
           </div>
         </div>
       )}
+
+      {showDeleteConfirmModal && websiteToDelete && (
+        <div className="delete-confirm-modal-overlay">
+          <div className="delete-confirm-modal">
+            <h3>تأكيد الحذف</h3>
+            <p>هل أنت متأكد من حذف موقع "{websiteToDelete.name}"؟</p>
+            <div className="delete-confirm-buttons">
+              <button 
+                className="delete-confirm-btn"
+                onClick={confirmDeleteWebsite}
+              >
+                نعم، احذف
+              </button>
+              <button 
+                className="delete-cancel-btn"
+                onClick={() => {
+                  setShowDeleteConfirmModal(false);
+                  setWebsiteToDelete(null);
+                }}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Footer/>
     </div>
   );

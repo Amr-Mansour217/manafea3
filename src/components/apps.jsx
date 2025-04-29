@@ -75,11 +75,13 @@ function Apps() {
   const [editingField, setEditingField] = useState(null);
   const [tempText, setTempText] = useState('');
   const [headerText, setHeaderText] = useState('');
-  const [editingHeader, setEditingHeader] = useState(false);
   const [editingHeaderText, setEditingHeaderText] = useState('');
   const [descriptionText, setDescriptionText] = useState('');
-  const [editingDescription, setEditingDescription] = useState(false);
   const [editingDescriptionText, setEditingDescriptionText] = useState('');
+  const [appToDelete, setAppToDelete] = useState(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showTitleEditModal, setShowTitleEditModal] = useState(false);
+  const [showDescriptionEditModal, setShowDescriptionEditModal] = useState(false);
 
   const resizeImage = async (file) => {
     return new Promise((resolve) => {
@@ -405,7 +407,7 @@ function Apps() {
 
       if (response.status === 200) {
         setHeaderText(editingHeaderText);
-        setEditingHeader(false);
+        setShowTitleEditModal(false);
         alert('تم تحديث العنوان بنجاح');
       }
     } catch (error) {
@@ -437,7 +439,7 @@ function Apps() {
 
       if (response.status === 200) {
         setDescriptionText(editingDescriptionText);
-        setEditingDescription(false);
+        setShowDescriptionEditModal(false);
         alert('تم تحديث الوصف بنجاح');
       }
     } catch (error) {
@@ -471,22 +473,22 @@ function Apps() {
     setTempText('');
   };
 
-  const handleDeleteApp = async (appId, category) => {
-    try {
-      const confirmDelete = window.confirm('هل أنت متأكد من حذف هذا التطبيق؟');
-      if (!confirmDelete) {
-        return;
-      }
+  const handleDeleteApp = (app) => {
+    setAppToDelete(app);
+    setShowDeleteConfirmModal(true);
+  };
 
-      console.log(`Attempting to delete app with ID: ${appId} from category: ${category}`);
-      
+  const confirmDeleteApp = async () => {
+    try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
         alert('يرجى تسجيل الدخول كمشرف أولاً');
         return;
       }
 
-      const response = await axios.delete(`https://elmanafea.shop/admin/deleteapp/${appId}`, {
+      console.log(`Attempting to delete app with ID: ${appToDelete.id} from category: ${appToDelete.category}`);
+      
+      const response = await axios.delete(`https://elmanafea.shop/admin/deleteapp/${appToDelete.id}`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -495,7 +497,9 @@ function Apps() {
       console.log('Delete response:', response);
 
       if (response.status === 200) {
-        setApps(prevApps => prevApps.filter(app => app.id !== appId));
+        setApps(prevApps => prevApps.filter(app => app.id !== appToDelete.id));
+        setShowDeleteConfirmModal(false);
+        setAppToDelete(null);
         alert('تم حذف التطبيق بنجاح');
       } else {
         throw new Error('فشل في حذف التطبيق');
@@ -503,6 +507,9 @@ function Apps() {
     } catch (error) {
       console.error('Error deleting app:', error);
       alert(error.response?.data?.message || error.message || 'حدث خطأ في عملية الحذف');
+    } finally {
+      setShowDeleteConfirmModal(false);
+      setAppToDelete(null);
     }
   };
 
@@ -513,62 +520,32 @@ function Apps() {
       <Header />
 
       <div className="videos-header">
-        {editingHeader ? (
-          <div className="edit-header-container">
-            <input
-              type="text"
-              value={editingHeaderText}
-              onChange={(e) => setEditingHeaderText(e.target.value)}
-              className="edit-header-input"
+        <div className="header-container">
+          <h1>{headerText || t('مكتبة التطبيقات الإسلامية')}</h1>
+          {isAdmin && (
+            <FontAwesomeIcon
+              icon={faPenToSquare}
+              className="edit-icon"
+              onClick={() => {
+                setEditingHeaderText(headerText || t('مكتبة التطبيقات الإسلامية'));
+                setShowTitleEditModal(true);
+              }}
             />
-            <div className="edit-header-buttons">
-              <button onClick={handleUpdateHeader}>حفظ</button>
-              <button onClick={() => setEditingHeader(false)}>إلغاء</button>
-            </div>
-          </div>
-        ) : (
-          <div className="header-container">
-            <h1>{headerText || t('مكتبة التطبيقات الإسلامية')}</h1>
-            {isAdmin && (
-              <FontAwesomeIcon
-                icon={faPenToSquare}
-                className="edit-icon"
-                onClick={() => {
-                  setEditingHeaderText(headerText);
-                  setEditingHeader(true);
-                }}
-              />
-            )}
-          </div>
-        )}
-        {editingDescription ? (
-          <div className="edit-header-container">
-            <input
-              type="text"
-              value={editingDescriptionText}
-              onChange={(e) => setEditingDescriptionText(e.target.value)}
-              className="edit-header-input"
+          )}
+        </div>
+        <div className="header-container">
+          <p>{descriptionText || t('مجموعة مميزة من التطبيقات الإسلامية المفيدة')}</p>
+          {isAdmin && (
+            <FontAwesomeIcon
+              icon={faPenToSquare}
+              className="edit-icon"
+              onClick={() => {
+                setEditingDescriptionText(descriptionText || t('مجموعة مميزة من التطبيقات الإسلامية المفيدة'));
+                setShowDescriptionEditModal(true);
+              }}
             />
-            <div className="edit-header-buttons">
-              <button onClick={handleUpdateDescription}>حفظ</button>
-              <button onClick={() => setEditingDescription(false)}>إلغاء</button>
-            </div>
-          </div>
-        ) : (
-          <div className="header-container">
-            <p>{descriptionText || t('مجموعة مميزة من التطبيقات الإسلامية المفيدة')}</p>
-            {isAdmin && (
-              <FontAwesomeIcon
-                icon={faPenToSquare}
-                className="edit-icon"
-                onClick={() => {
-                  setEditingDescriptionText(descriptionText);
-                  setEditingDescription(true);
-                }}
-              />
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {editingField && (
@@ -630,7 +607,7 @@ function Apps() {
                     <button onClick={() => setEditingApp(app)}>
                       <FontAwesomeIcon icon={faEdit} />
                     </button>
-                    <button onClick={() => handleDeleteApp(app.id, app.category)}>
+                    <button onClick={() => handleDeleteApp(app)}>
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
                   </div>
@@ -760,6 +737,94 @@ function Apps() {
             <div className="modal-buttons">
               <button onClick={handleUpdateApp}>حفظ</button>
               <button onClick={() => setEditingApp(null)}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTitleEditModal && (
+        <div className="app-edit-modal-overlay">
+          <div className="app-edit-modal">
+            <h3>تعديل العنوان الرئيسي</h3>
+            <div className="app-edit-modal-content">
+              <input
+                type="text"
+                value={editingHeaderText}
+                onChange={(e) => setEditingHeaderText(e.target.value)}
+                className="app-edit-input"
+                dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}
+              />
+              <div className="app-edit-modal-actions">
+                <button 
+                  className="app-save-btn"
+                  onClick={handleUpdateHeader}
+                >
+                  حفظ
+                </button>
+                <button 
+                  className="app-cancel-btn"
+                  onClick={() => setShowTitleEditModal(false)}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDescriptionEditModal && (
+        <div className="app-edit-modal-overlay">
+          <div className="app-edit-modal">
+            <h3>تعديل وصف الصفحة</h3>
+            <div className="app-edit-modal-content">
+              <input
+                type="text"
+                value={editingDescriptionText}
+                onChange={(e) => setEditingDescriptionText(e.target.value)}
+                className="app-edit-input"
+                dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}
+              />
+              <div className="app-edit-modal-actions">
+                <button 
+                  className="app-save-btn"
+                  onClick={handleUpdateDescription}
+                >
+                  حفظ
+                </button>
+                <button 
+                  className="app-cancel-btn"
+                  onClick={() => setShowDescriptionEditModal(false)}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirmModal && appToDelete && (
+        <div className="app-delete-confirm-modal-overlay">
+          <div className="app-delete-confirm-modal">
+            <h3>تأكيد الحذف</h3>
+            <p>هل أنت متأكد من حذف تطبيق "{appToDelete.name}"؟</p>
+            <div className="app-delete-confirm-buttons">
+              <button 
+                className="app-delete-confirm-btn"
+                onClick={confirmDeleteApp}
+              >
+                نعم، احذف
+              </button>
+              <button 
+                className="app-delete-cancel-btn"
+                onClick={() => {
+                  setShowDeleteConfirmModal(false);
+                  setAppToDelete(null);
+                }}
+              >
+                إلغاء
+              </button>
             </div>
           </div>
         </div>
