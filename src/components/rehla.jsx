@@ -446,11 +446,10 @@ const Rehla = () => {
           throw new Error('No admin token found');
         }
         
-        await axios.post(
-          `https://elmanafea.shop/admin/rehlacontentitems`,
+        await axios.put(
+          `https://elmanafea.shop/admin/rehlaupdatesubtitle/${id}`,
           {
-            contentItems: newContent.content,
-            lang: i18n.language
+            content: newContent.content
           },
           {
             headers: {
@@ -604,7 +603,7 @@ const Rehla = () => {
       
       if (section && section.type === 'text') {
         await axios.delete(
-          `https://elmanafea.shop/admin/rehlacontentitems/${id}`,
+          `https://elmanafea.shop/admin/rehladeletesubtitle/${id}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -653,12 +652,7 @@ const Rehla = () => {
       addSection(modalType, tempValue);
       setIsAddingSection(false);
     } else {
-      if (modalType === 'text') {
-        updateSection(editingSection.id, { content: tempValue });
-      } else {
-        deleteSection(editingSection.id);
-        addSection('image', tempValue);
-      }
+      updateSection(editingSection.id, modalType === 'text' ? { content: tempValue } : { imageUrl: tempValue });
     }
     setShowEditModal(false);
     setEditingSection(null);
