@@ -1148,7 +1148,6 @@ const getHeaderTitle = useCallback(() => {
         </div>
       </div>
     )}
-
     <Footer />
     </>
   );

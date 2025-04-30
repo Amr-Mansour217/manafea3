@@ -223,6 +223,142 @@ input[dir="ltr"]::placeholder {
   margin-bottom: 1rem;
 }
 
+.question-content {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.question-view-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.question-edit-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.question-edit-input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-right: 10px;
+  direction: rtl;
+}
+
+.question-edit-btn {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 5px;
+  margin-right: 5px;
+}
+
+.question-edit-btn:hover {
+  color: #333;
+}
+
+.question-edit-btn.save-btn {
+  color: #28a745;
+}
+
+.question-edit-btn.save-btn:hover {
+  color: #218838;
+}
+
+.question-edit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #09f;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.admin-token-section {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.token-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.token-toggle-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.token-toggle-btn:hover {
+  background-color: #5a6268;
+}
+
+.mosabaqa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-excel-btn {
+  background-color: #1D6F42; /* Excel green color */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.admin-excel-btn:hover {
+  background-color: #185a36;
+}
+
+.admin-excel-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.admin-excel-btn .loading-spinner {
+  width: 12px;
+  height: 12px;
+}
+
 @media (max-width: 768px) {
   .mosabaqa-container {
     max-width: 100%;

@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faEdit, faSave, faFileExcel, faDownload } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
 import Header from './header';
 import Footer from './footer';
 import './mosabaqa.css';
 import { countryCodes } from './countryCodes';
-// import { useTranslation } from 'react-i18next';
-
-
 
 const Mosabaqa = () => {
-  const { t, i18n } = useTranslation(); // إضافة i18n
+  const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     answer: '',
@@ -20,17 +18,46 @@ const Mosabaqa = () => {
     email: '',
     country: ''
   });
+  const [question, setQuestion] = useState('ما هو أول مسجد بني في الإسلام؟');
+  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [showCountryCodes, setShowCountryCodes] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredCountries, setFilteredCountries] = useState(countryCodes);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    fetchQuestion();
+  }, [i18n.language]);
+
+  useEffect(() => {
+    const checkAdmin = () => {
+      const token = localStorage.getItem('adminToken');
+      setIsAdmin(!!token);
+    };
+    checkAdmin();
+  }, []);
+
+  const fetchQuestion = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`https://elmanafea.shop/questions?lang=${i18n.language}`);
+      if (response.data && response.data.question) {
+        setQuestion(response.data.question);
+      }
+    } catch (err) {
+      console.error('Error fetching question:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     
     if (name === 'phone') {
-      // السماح فقط بالأرقام مع حد أقصى 14 رقم
       const numbersOnly = value.replace(/[^0-9]/g, '').slice(0, 14);
       setFormData({ ...formData, [name]: numbersOnly });
     } else {
@@ -48,7 +75,6 @@ const Mosabaqa = () => {
 
   const handleCountrySearch = (e) => {
     const value = e.target.value;
-    // السماح فقط بالأرقام وعلامة + مع حد أقصى 4 أرقام
     const numbersOnly = value.replace(/[^0-9]/g, '').slice(0, 4);
     const validValue = '+' + numbersOnly;
     
@@ -63,6 +89,59 @@ const Mosabaqa = () => {
     setShowCountryCodes(true);
   };
 
+  const toggleQuestionEdit = async () => {
+    if (isEditingQuestion) {
+      try {
+        setIsLoading(true);
+        
+        const token = localStorage.getItem('adminToken');
+        
+        if (!token) {
+          throw {
+            response: {
+              status: 401,
+              data: { message: 'No authentication token found.' }
+            }
+          };
+        }
+        
+        await axios.post('https://elmanafea.shop/admin/question', {
+          question: question,
+          lang: i18n.language
+        }, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        await fetchQuestion();
+        setError(''); // Clear any previous errors on success
+      } catch (err) {
+        console.error('Error updating question:', err);
+        
+        // Handle specific error codes
+        if (err.response) {
+          if (err.response.status === 401) {
+            setError(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
+          } else if (err.response.status === 403) {
+            setError(t('غير مصرح بالتعديل. الرجاء تسجيل الدخول كمسؤول'));
+          } else {
+            setError(t('حدث خطأ في تحديث السؤال'));
+          }
+        } else {
+          setError(t('حدث خطأ في الاتصال بالخادم'));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    setIsEditingQuestion(!isEditingQuestion);
+  };
+
+  const handleQuestionChange = (e) => {
+    setQuestion(e.target.value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
@@ -71,18 +150,89 @@ const Mosabaqa = () => {
     }
     
     try {
+      setIsLoading(true);
+      
+      // Prepare the full phone number with country code
+      const fullPhoneNumber = formData.countryCode + formData.phone;
+      
+      // Send data to backend
+      await axios.post('https://elmanafea.shop/answer', {
+        name: formData.name,
+        phone: fullPhoneNumber,
+        email: formData.email || ' ', // Send empty string if email is not provided
+        country: formData.country || '',
+        answer: formData.answer,
+        lang: i18n.language
+      });
+      
+      // Show success modal
       setIsModalOpen(true);
+      
+      // Reset form after 3 seconds
       setTimeout(() => {
         setIsModalOpen(false);
         setFormData({ name: '', answer: '', countryCode: '+966', phone: '', email: '', country: '' });
       }, 3000);
-    } catch (error) {
-      setError(t('حدث خطأ في إرسال البيانات'));
+      
+      setError(''); // Clear any previous errors
+    } catch (err) {
+      console.error('Error submitting participation:', err);
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(t(err.response.data.message));
+      } else {
+        setError(t('حدث خطأ في إرسال البيانات'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('adminToken');
+      
+      if (!token) {
+        setError(t('الرجاء تسجيل الدخول كمسؤول'));
+        return;
+      }
+      
+      // Make GET request with responseType blob to handle file download
+      const response = await axios.get('https://elmanafea.shop/admin/answers', {
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // Create a temporary link element and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `answers_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
+      setError('');
+    } catch (err) {
+      console.error('Error downloading Excel:', err);
+      if (err.response && err.response.status === 401) {
+        setError(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
+      } else {
+        setError(t('حدث خطأ في تحميل الملف'));
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const getTextDirection = (text) => {
-    // التحقق من اللغة الحالية
     if (['ar', 'fa', 'ur'].includes(i18n.language)) {
       return 'rtl';
     }
@@ -94,10 +244,59 @@ const Mosabaqa = () => {
       <Header />
       <div className="mosabaqa-container">
         <div className="mosabaqa-form">
-          <h2>{t('المسابقة الرمضانية')}</h2>
+          <div className="mosabaqa-header">
+            <h2>{t('المسابقة الرمضانية')}</h2>
+            {isAdmin && (
+              <button 
+                className="admin-excel-btn"
+                onClick={handleDownloadExcel}
+                disabled={isLoading}
+                title={t('تحميل إجابات المشاركين')}
+              >
+                <FontAwesomeIcon icon={faFileExcel} />
+                <span>{t('تحميل الإجابات')}</span>
+                {isLoading && <span className="loading-spinner"></span>}
+              </button>
+            )}
+          </div>
+
           <div className="question-section">
             <h3>{t('السؤال')}:</h3>
-            <p>{t('ما هو أول مسجد بني في الإسلام؟')}</p>
+            <div className="question-content">
+              {isEditingQuestion ? (
+                <div className="question-edit-container">
+                  <input
+                    type="text"
+                    value={question}
+                    onChange={handleQuestionChange}
+                    className="question-edit-input"
+                  />
+                  <button 
+                    className="question-edit-btn save-btn"
+                    onClick={toggleQuestionEdit}
+                    title={t('حفظ')}
+                    disabled={isLoading}
+                  >
+                    <FontAwesomeIcon icon={faSave} />
+                    {isLoading && <span className="loading-spinner"></span>}
+                  </button>
+                </div>
+              ) : (
+                <div className="question-view-container">
+                  <p>{question}</p>
+                  {isAdmin && (
+                    <button 
+                      className="question-edit-btn"
+                      onClick={() => setIsEditingQuestion(true)}
+                      title={t('تعديل السؤال')}
+                      disabled={isLoading}
+                    >
+                      <FontAwesomeIcon icon={faEdit} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
             <div className="form-group">
               <label>{t('الإجابة')}</label>
