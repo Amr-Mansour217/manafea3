@@ -21,9 +21,9 @@ function Quran() {
       fa: "https://drive.google.com/file/d/1S5Ovsgd5qLALjFLG_DgJ53MNDkUG5W8G/preview",
     };
   });
+  const [loadingPdf, setLoadingPdf] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [loadingPdf, setLoadingPdf] = useState(false);
 
   const languageNames = {
     ar: "العربية",
@@ -58,28 +58,28 @@ function Quran() {
     localStorage.setItem('pdfFiles', JSON.stringify(pdfFiles));
   }, [pdfFiles]);
 
-  // useEffect(() => {
-  //   const fetchQuranData = async () => {
-  //     try {
-  //       const response = await fetch(`https://elmanafea.shop/quran?lang=${i18n.language}`);
-  //       const data = await response.json();
-  //       console.log('API Response:', data); // للتأكد من البيانات
+  useEffect(() => {
+    const fetchLatestBook = async () => {
+      try {
+        const response = await axios.get(`https://elmanafea.shop/quran?lang=${i18n.language}`);
+        console.log('Response Data:', response.data);
+        const books = response.data.books;
+        if (books && books.length > 0) {
+          const latestBook = books[books.length - 1];
+          const { _id, langs, filename, fileUrl } = latestBook;
+          setPdfFiles(prev => ({
+            ...prev,
+            [i18n.language]: fileUrl
+          }));
+          console.log('Latest Book:', { _id, langs, filename, fileUrl });
+        }
+      } catch (error) {
+        console.error('Error fetching latest book:', error);
+      }
+    };
 
-  //       // الطريقة الجديدة للتعامل مع البيانات
-  //       if (data && data.path) {
-  //         const pdfUrl = `https://elmanafea.shop${data.path}`;
-  //         setPdfFiles(prev => ({
-  //           ...prev,
-  //           [i18n.language]: pdfUrl
-  //         }));
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching Quran data:', error);
-  //     }
-  //   };
-
-  //   fetchQuranData();
-  // }, [i18n.language]);
+    fetchLatestBook();
+  }, [i18n.language]);
 
   const handleFileUpload = async (language, event) => {
     const file = event.target.files[0];
@@ -96,7 +96,7 @@ function Quran() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('lang', i18n.language);
+      formData.append('langs', `"${language}"`);
 
       const response = await axios.post(
         'https://elmanafea.shop/admin/uploadquran',
@@ -116,7 +116,7 @@ function Quran() {
           const pdfUrl = `https://elmanafea.shop${uploadData.path}`;
           setPdfFiles(prev => ({
             ...prev,
-            [i18n.language]: pdfUrl
+            [language]: pdfUrl
           }));
         }
       } else {
@@ -166,8 +166,9 @@ function Quran() {
           {loadingPdf ? (
             <div className="loading-message">جاري تحميل الملف...</div>
           ) : pdfFiles[i18n.language] ? (
+            console.log('PDF URL:', pdfFiles[i18n.language]),
             <iframe 
-              src={pdfFiles[i18n.language]}
+              src={`https://elmanafea.shop${pdfFiles[i18n.language]}`}
               width="100%" 
               height="100%" 
               className="pdf-embed"
@@ -175,6 +176,7 @@ function Quran() {
               onError={() => {
                 setLoadingPdf(false);
                 setUploadError('فشل في تحميل الملف');
+                console.error('Error loading PDF:', pdfFiles[i18n.language]);
               }}
             />
           ) : (
