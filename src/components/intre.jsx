@@ -534,9 +534,18 @@ function Intre() {
   };
 
   const handleBookClick = (book) => {
-    const encodedUrl = encodeURIComponent(book.link);
-    const encodedTitle = encodeURIComponent(book.title);
-    navigate(`/book-viewer/${encodedUrl}/${encodedTitle}`);
+    if (!book.link) {
+      alert('رابط الكتاب غير متوفر');
+      return;
+    }
+
+    // Convert relative link to absolute URL
+    const absoluteLink = book.link.startsWith('http') ? book.link : `https://elmanafea.shop${book.link}`;
+    const encodedLink = encodeURIComponent(absoluteLink.trim());
+    const encodedTitle = encodeURIComponent(book.title.trim() || 'كتاب بدون عنوان');
+
+    console.log('Navigating to:', `/book-viewer/${encodedLink}/${encodedTitle}`); // Debug log
+    navigate(`/book-viewer/${encodedLink}/${encodedTitle}`);
   };
 
   return (

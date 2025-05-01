@@ -164,11 +164,14 @@ function Quran() {
         
         <div className="pdf-viewer">
           {loadingPdf ? (
-            <div className="loading-message">جاري تحميل الملف...</div>
+            <div className="loading-message">
+              <div className="loader"></div>
+              جاري تحميل الملف...
+            </div>
           ) : pdfFiles[i18n.language] ? (
             console.log('PDF URL:', pdfFiles[i18n.language]),
             <iframe 
-              src={`https://elmanafea.shop${pdfFiles[i18n.language]}`}
+              src={`https://docs.google.com/gview?url=https://elmanafea.shop${pdfFiles[i18n.language]}&embedded=true`}
               width="100%" 
               height="100%" 
               className="pdf-embed"

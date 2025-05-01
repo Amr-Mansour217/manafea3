@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from './imgs/logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGlobe, faChevronDown, faBars, faTimes, faEllipsisVertical, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faGlobe, faChevronDown, faBars, faTimes, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { changeLanguage } from './i18n';
 
 function Header() {
@@ -162,14 +162,6 @@ function Header() {
                 ))}
               </div>
             </div>
-            
-            {isAdmin && (
-              <FontAwesomeIcon 
-                icon={faEllipsisVertical} 
-                className="edit-icon scroll-edit-icon"
-                onClick={() => setIsScrollingModalOpen(true)}
-              />
-            )}
             
             <Link to="/" className="logo-link">
               <img src={Logo} alt="منافع" className="logo" draggable="false"/>

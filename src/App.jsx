@@ -70,7 +70,7 @@ function App() {
           <Route path="/admin" element={<Form />} />
           <Route path="/rehlatAlHag" element={<Rehla />} />
           <Route path="/mosabaqatManafea" element={<Mosabaqa />} />
-          <Route path="/book-viewer/:bookUrl/:title" element={<BookViewer />} />
+          <Route path="/book-viewer/:link/:title" element={<BookViewer />} />
         </Routes>
       </Router>
     </div>

@@ -1,93 +1,82 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import './BookViewer.css';
+import { useTranslation } from 'react-i18next';
 
-const BookViewer = () => {
-  const { bookUrl, title } = useParams();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+function BookViewer() {
+  const { link, title } = useParams();
+  const [loadingPdf, setLoadingPdf] = useState(true);
   const [error, setError] = useState(null);
-
-  // تنظيف وفك تشفير المسار
-  const cleanUrl = (url) => {
-    try {
-      // إزالة أي تشفير مزدوج
-      let cleaned = decodeURIComponent(decodeURIComponent(url));
-      // التأكد من أن المسار يبدأ بـ /
-      if (!cleaned.startsWith('/')) {
-        cleaned = '/' + cleaned;
-      }
-      return cleaned;
-    } catch (e) {
-      console.error('Error decoding URL:', e);
-      return url;
-    }
-  };
-
-  const decodedUrl = cleanUrl(bookUrl);
-  const decodedTitle = decodeURIComponent(title);
-  const fullUrl = `https://elmanafea.shop${decodedUrl}`;
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const objectElement = document.querySelector('.book-viewer-iframe');
-    if (objectElement) {
-      objectElement.onload = () => {
-        setLoading(false);
-        setError(null);
-      };
-      objectElement.onerror = () => {
-        setLoading(false);
-        setError('حدث خطأ في تحميل الملف. يرجى المحاولة مرة أخرى.');
-      };
-    }
+    console.log('Received link:', link); // Debug log
+    console.log('Received title:', title); // Debug log
+  }, [link, title]);
 
-    // تنظيف عند إزالة المكون
-    return () => {
-      if (objectElement) {
-        objectElement.onload = null;
-        objectElement.onerror = null;
-      }
-    };
-  }, [fullUrl]);
+  let decodedLink = link && link !== 'undefined' ? decodeURIComponent(link) : null;
+
+  // Ensure the link is absolute
+  if (decodedLink && !decodedLink.startsWith('http')) {
+    decodedLink = `https://elmanafea.shop${decodedLink}`;
+  }
+
+  if (!decodedLink) {
+    console.error('Decoded link is invalid:', decodedLink); // Debug log
+    return <div className="error-message">{t('رابط الكتاب غير متوفر')}</div>;
+  }
+
+  const googleDocsViewerUrl = `https://docs.google.com/gview?url=${decodedLink}&embedded=true`;
+  console.log('Google Docs Viewer URL:', googleDocsViewerUrl); // Debug log
 
   return (
-    <div className="book-viewer-container">
-      <div className="book-viewer-header">
-        <button onClick={() => navigate(-1)} className="back-button">
-          <FontAwesomeIcon icon={faArrowLeft} /> العودة
-        </button>
-        <h1>{decodedTitle}</h1>
-      </div>
-      <div className="book-viewer-content">
-        {loading && (
-          <div className="loading-spinner">
-            جاري تحميل الكتاب...
-          </div>
-        )}
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-        <object
-          data={fullUrl}
-          type="application/pdf"
-          className="book-viewer-iframe"
-          aria-label={decodedTitle}
+    <div className="book-viewer">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>{decodeURIComponent(title || t('كتاب بدون عنوان'))}</h1>
+        <button 
+          className="back-button" 
+          onClick={() => navigate(-1)} // Navigate back to the previous page
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#007BFF',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+          }}
         >
-          <p>
-            متصفحك لا يدعم عرض ملفات PDF. يمكنك{' '}
-            <a href={fullUrl} target="_blank" rel="noopener noreferrer">
-              تحميل الملف
-            </a>{' '}
-            لعرضه.
-          </p>
-        </object>
+          {t('العودة')}
+        </button>
+      </div>
+      <div className="pdf-viewer" style={{ height: 'calc(100vh - 100px)', overflow: 'hidden' }}>
+        {loadingPdf && (
+          <div className="loading-message">
+            <div className="loader"></div>
+            {t('جاري تحميل الملف...')}
+          </div>
+        )}
+        {error ? (
+          <div className="error-message">
+            {t('فشل في تحميل الملف')}
+          </div>
+        ) : (
+          <iframe
+            src={googleDocsViewerUrl}
+            width="100%"
+            height="150%"
+            className="pdf-embed"
+            title="Book Viewer"
+            onLoad={() => setLoadingPdf(false)}
+            onError={() => {
+              setLoadingPdf(false);
+              setError(true);
+              console.error('Error loading PDF:', decodedLink);
+            }}
+          />
+        )}
       </div>
     </div>
   );
-};
+}
 
-export default BookViewer; 
+export default BookViewer;
