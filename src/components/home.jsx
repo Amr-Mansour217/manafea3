@@ -362,7 +362,7 @@ const Home = () => {
         formData.append('youtubeEmbedUrl', formatYoutubeUrl(newVideoData.youtubeEmbedUrl));
       } else {
         formData.append('videoType', 'upload');
-        formData.append('videoPath', newVideoData.videoFile);
+        formData.append('video', newVideoData.videoFile);
       }
 
       const response = await axios.post('https://elmanafea.shop/admin/homeuploadvideo', 
@@ -730,6 +730,30 @@ const getHeaderTitle = useCallback(() => {
   return texts[i18n.language]?.hero?.title || texts.ar.hero.title;
 }, [headerData, texts, i18n.language]);
 
+const downloadFeedbacks = async () => {
+  try {
+    const response = await axios.get('https://elmanafea.shop/admin/feedbacks', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        'Content-Type': 'application/json'
+      },
+      responseType: 'blob' // Ensure the response is treated as a binary file
+    });
+
+    // Create a link to download the file
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'feedbacks.xlsx');
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode.removeChild(link);
+  } catch (error) {
+    console.error('Error downloading feedbacks:', error);
+    toast.error('حدث خطأ أثناء تحميل ملف التعليقات');
+  }
+};
+
   return (
     <>
     <Header />
@@ -862,6 +886,65 @@ const getHeaderTitle = useCallback(() => {
       </div>
     </div>
 
+    <main className="rating-section">
+        <h2 className="rating-section-title">{t('شاركنا رأيك')}</h2>
+        <div className="stars-container">
+          {[1, 2, 3, 4, 5].map((index) => (
+            <IoStar
+              key={index}
+              className={`star ${(hoverRating || stars) >= index ? 'active' : ''}`}  
+              onClick={() => handleStarClick(index)}
+              onMouseEnter={() => handleStarHover(index)}
+              onMouseLeave={handleStarLeave}
+            />
+          ))}
+        </div>
+        <form className="feedback-form" onSubmit={handleSubmit}>
+          <textarea
+            placeholder={t("اكتب تعليقك هنا...")}
+            value={comment}  
+            onChange={handleCommentChange}  
+          ></textarea>
+          <button type="submit" className="submit-btn">{t("إرسال التقييم")}</button>
+        </form>
+
+        {isAdmin && (
+          <div className="admin-download-btn-container">
+            <button className="admin-download-btn" onClick={downloadFeedbacks}>
+              {t('تحميل التعليقات')}
+            </button>
+          </div>
+        )}
+    </main>
+    {isModalOpen && (
+      <div className="modal-overlay">
+        <div className="success-modal">
+          <div className="success-icon">
+            <FontAwesomeIcon icon={faCheckCircle} />
+          </div>
+          <h3 className="modal-title">{t('تم بنجاح!')}</h3>
+          <p className="modal-message">{t('تم إرسال تقييمك بنجاح، شكراً لك!')}</p>
+          <button className="modal-close-btn" onClick={closeModal}>
+            {t('إغلاق')}
+          </button>
+        </div>
+      </div>
+    )}
+    {isErrorModalOpen && (
+      <div className="modal-overlay">
+        <div className="error-modal">
+          <div className="error-icon">
+            <FontAwesomeIcon icon={faCircleXmark} />
+          </div>
+          <h3 className="modal-title">{t('خطأ!')}</h3>
+          <p className="modal-message">{errorMessage}</p>
+          <button className="modal-close-btn" onClick={closeErrorModal}>
+            {t('إغلاق')}
+          </button>
+        </div>
+      </div>
+    )}
+
     {showAddVideoModal && (
       <div className="home-video-modal-overlay">
         <div className="home-video-modal">
@@ -981,57 +1064,6 @@ const getHeaderTitle = useCallback(() => {
               إلغاء
             </button>
           </div>
-        </div>
-      </div>
-    )}
-
-    <main className="rating-section">
-        <h2 className="rating-section-title">{t('شاركنا رأيك')}</h2>
-        <div className="stars-container">
-          {[1, 2, 3, 4, 5].map((index) => (
-            <IoStar
-              key={index}
-              className={`star ${(hoverRating || stars) >= index ? 'active' : ''}`}  
-              onClick={() => handleStarClick(index)}
-              onMouseEnter={() => handleStarHover(index)}
-              onMouseLeave={handleStarLeave}
-            />
-          ))}
-        </div>
-        <form className="feedback-form" onSubmit={handleSubmit}>
-          <textarea
-            placeholder={t("اكتب تعليقك هنا...")}
-            value={comment}  
-            onChange={handleCommentChange}  
-          ></textarea>
-          <button type="submit" className="submit-btn">{t("إرسال التقييم")}</button>
-        </form>
-    </main>
-    {isModalOpen && (
-      <div className="modal-overlay">
-        <div className="success-modal">
-          <div className="success-icon">
-            <FontAwesomeIcon icon={faCheckCircle} />
-          </div>
-          <h3 className="modal-title">{t('تم بنجاح!')}</h3>
-          <p className="modal-message">{t('تم إرسال تقييمك بنجاح، شكراً لك!')}</p>
-          <button className="modal-close-btn" onClick={closeModal}>
-            {t('إغلاق')}
-          </button>
-        </div>
-      </div>
-    )}
-    {isErrorModalOpen && (
-      <div className="modal-overlay">
-        <div className="error-modal">
-          <div className="error-icon">
-            <FontAwesomeIcon icon={faCircleXmark} />
-          </div>
-          <h3 className="modal-title">{t('خطأ!')}</h3>
-          <p className="modal-message">{errorMessage}</p>
-          <button className="modal-close-btn" onClick={closeErrorModal}>
-            {t('إغلاق')}
-          </button>
         </div>
       </div>
     )}
