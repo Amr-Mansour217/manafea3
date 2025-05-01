@@ -879,7 +879,7 @@ const downloadFeedbacks = async () => {
       <div className="more-btn-container">
         <div className="editable-container">
           <a href="/videos" className="more-btn">
-            {getHeroText('section', 'more')}
+            {t('عرض المزيد من الدروس')}
             <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faArrowRight : faArrowLeft} />
           </a>
         </div>

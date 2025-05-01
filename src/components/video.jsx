@@ -7,6 +7,7 @@ import Footer from './footer'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronRight, faChevronLeft, faTrash, faPlus, faPenToSquare, faCog } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
+import { Document, Page } from 'react-pdf';
 
 const translations = {
     categories: {
@@ -117,6 +118,15 @@ const translations = {
             seerah: 'سیره نبوی',
             hadith: 'حدیث',
             akhlaq: 'اخلاق'
+        },
+        ha: {
+            all: 'Dukkan Bidiyo',
+            aqeedah: 'Aqidah',
+            fiqh: 'Fiqh',
+            tafseer: "Fassarar Alkur'ani",
+            seerah: 'Tarihin Annabi',
+            hadith: 'Hadith',
+            akhlaq: 'Hali'
         }
     },
     featuredTitle: {
@@ -131,7 +141,8 @@ const translations = {
         bn: 'নির্বাচিত ভিডিও',
         zh: '精选视频',
         tl: 'Mga Piling Video',
-        fa: 'ویدیوهای منتخب'
+        fa: 'ویدیوهای منتخب',
+        ha: 'Zababbun Bidiyo'
     }
 };
 
@@ -179,6 +190,8 @@ function Videos(){
 
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState(null);
+
+    const [pdfFiles, setPdfFiles] = useState([]);
 
     useEffect(() => {
         const checkAuth = () => {
@@ -815,6 +828,21 @@ function Videos(){
     // التنقل بين الصفحات
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+    const fetchPdfFiles = async () => {
+        try {
+            const response = await axios.get(`https://elmanafea.shop/pdfs?lang=${i18n.language}`);
+            if (response.data.pdfs) {
+                setPdfFiles(response.data.pdfs);
+            }
+        } catch (error) {
+            console.error('Error fetching PDFs:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchPdfFiles();
+    }, [i18n.language]);
+
     if (isLoading) {
         return <div>Loading...</div>;
     }
@@ -1325,6 +1353,20 @@ function Videos(){
                     </div>
                 </div>
             )}
+
+            <section className="pdf-section">
+                <h2>{t('PDF Documents')}</h2>
+                <div className="pdf-grid">
+                    {pdfFiles.map((pdf, index) => (
+                        <div className="pdf-card" key={index}>
+                            <Document file={pdf.url} onLoadError={console.error}>
+                                <Page pageNumber={1} width={300} />
+                            </Document>
+                            <h3 className="pdf-title">{pdf.title}</h3>
+                        </div>
+                    ))}
+                </div>
+            </section>
             <Footer />
         </>
     );

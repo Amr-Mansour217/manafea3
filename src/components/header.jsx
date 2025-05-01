@@ -208,7 +208,7 @@ function Header() {
                 {t('العربية')}
                 <FontAwesomeIcon icon={faChevronDown} />
               </button>
-              <div className={`language-content ${isLanguageOpen ? 'show' : ''}`}>
+              <div className={`language-content ${isLanguageOpen ? 'show' : ''}`} style={{ maxHeight: '530px', overflowY: 'auto' }}>
                 <a onClick={() => handleLanguageChange('ar')}>العربية</a>
                 <a onClick={() => handleLanguageChange('en')}>English</a>
                 <a onClick={() => handleLanguageChange('fr')}>Français</a>
@@ -221,6 +221,7 @@ function Header() {
                 <a onClick={() => handleLanguageChange('zh')}>中国人</a>
                 <a onClick={() => handleLanguageChange('tl')}>filipino</a>
                 <a onClick={() => handleLanguageChange('fa')}>فارسی</a>
+                <a onClick={() => handleLanguageChange('ha')}>Hausa</a>
               </div>
             </div>
           </div>
