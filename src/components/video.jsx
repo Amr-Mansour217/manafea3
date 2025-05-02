@@ -1355,7 +1355,6 @@ function Videos(){
             )}
 
             <section className="pdf-section">
-                <h2>{t('PDF Documents')}</h2>
                 <div className="pdf-grid">
                     {pdfFiles.map((pdf, index) => (
                         <div className="pdf-card" key={index}>

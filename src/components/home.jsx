@@ -61,6 +61,7 @@ const Home = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false); // State to track download progress
 
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
@@ -141,14 +142,14 @@ const Home = () => {
       console.log('Image response:', response.data);
 
       if (response.data?.image) {
-        // تكوين الرابط الكامل للصورة
+        // Ensure the full image URL is constructed
         const fullImageUrl = response.data.image.startsWith('http') 
           ? response.data.image 
           : `https://elmanafea.shop${response.data.image}`;
 
         console.log('Full image URL:', fullImageUrl);
 
-        // تحديث الخلفيات لجميع اللغات
+        // Update backgrounds for all languages, including Hausa
         const newBackgrounds = {
           ar: fullImageUrl,
           en: fullImageUrl,
@@ -161,7 +162,8 @@ const Home = () => {
           bn: fullImageUrl,
           zh: fullImageUrl,
           tl: fullImageUrl,
-          fa: fullImageUrl
+          fa: fullImageUrl,
+          ha: fullImageUrl // Added Hausa language
         };
 
         setHeroBackgrounds(newBackgrounds);
@@ -732,6 +734,7 @@ const getHeaderTitle = useCallback(() => {
 
 const downloadFeedbacks = async () => {
   try {
+    setIsDownloading(true); // Start loader
     const response = await axios.get('https://elmanafea.shop/admin/feedbacks', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
@@ -751,6 +754,8 @@ const downloadFeedbacks = async () => {
   } catch (error) {
     console.error('Error downloading feedbacks:', error);
     toast.error('حدث خطأ أثناء تحميل ملف التعليقات');
+  } finally {
+    setIsDownloading(false); // Stop loader
   }
 };
 
@@ -910,8 +915,18 @@ const downloadFeedbacks = async () => {
 
         {isAdmin && (
           <div className="admin-download-btn-container">
-            <button className="admin-download-btn" onClick={downloadFeedbacks}>
-              {t('تحميل التعليقات')}
+            <button 
+              className={`admin-download-btn ${isDownloading ? 'downloading' : ''}`} 
+              onClick={downloadFeedbacks}
+              disabled={isDownloading} // Disable button while downloading
+            >
+              {isDownloading ? (
+                <>
+                  <span className="loader"></span> تحميل...
+                </>
+              ) : (
+                t('تحميل التعليقات')
+              )}
             </button>
           </div>
         )}

@@ -1142,17 +1142,35 @@ body {
 }
 
 .admin-download-btn {
-  background-color: green;
+  background-color: #007bff;
   color: white;
-  padding: 10px 20px;
   border: none;
-  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 16px;
   cursor: pointer;
+  border-radius: 4px;
   transition: background-color 0.3s ease;
 }
 
-.admin-download-btn:hover {
-  background-color: darkgreen;
+.admin-download-btn.downloading {
+  background-color: #5a9bf5; /* Lighter shade during download */
+  cursor: not-allowed;
+}
+
+.admin-download-btn .loader {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .admin-download-btn-container {

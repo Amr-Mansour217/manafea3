@@ -3,26 +3,16 @@ import { useTranslation } from 'react-i18next';
 import Header from "./header";
 import './quran.css';
 import axios from 'axios';
+import { Worker, Viewer } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/core/lib/styles/index.css';
 
 function Quran() {
   const { i18n, t } = useTranslation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [pdfFiles, setPdfFiles] = useState(() => {
     const savedPdfs = localStorage.getItem('pdfFiles');
-    return savedPdfs ? JSON.parse(savedPdfs) : {
-      tr: "https://drive.google.com/file/d/1V0HyOVAkOrtz2yY1VYdZc0dR4R8dGXF9/preview",
-      id: "https://drive.google.com/file/d/1-qf38Mpy8Jecq3yBNF-RjIHFfuqUwel2/preview",
-      ru: "https://drive.google.com/file/d/1LvI9Kmu5zL9qIKMUMEGTFJvs0L2WdeaX/preview",
-      hi: "https://drive.google.com/file/d/1KrQgZikrcutPZIluVIXw_iRDRiPU8dzZ/preview",
-      ur: "https://drive.google.com/file/d/1idprM_h9RVn4qIM8sEDzMQzwj9yu-9Ug/preview",
-      bn: "https://drive.google.com/file/d/11Zc48u0kXVbXygRKULKXTByWc2gy0GH5/preview",
-      zh: "https://drive.google.com/file/d/1rIHTX7fPKXn8dRfuJCGtJsYiUW95wu0x/preview",
-      tl: "https://drive.google.com/file/d/10MgsQrx6RX3M2xYuvj5FEd6u22MFSg9-/preview",
-      fa: "https://drive.google.com/file/d/1S5Ovsgd5qLALjFLG_DgJ53MNDkUG5W8G/preview",
-    };
+    return savedPdfs ? JSON.parse(savedPdfs) : {};
   });
-  const [loadingPdf, setLoadingPdf] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
   const languageNames = {
@@ -38,6 +28,7 @@ function Quran() {
     zh: "中文",
     tl: "Tagalog",
     fa: "فارسی",
+    ha: "Hausa" // Added Hausa language
   };
 
   useEffect(() => {
@@ -62,16 +53,13 @@ function Quran() {
     const fetchLatestBook = async () => {
       try {
         const response = await axios.get(`https://elmanafea.shop/quran?lang=${i18n.language}`);
-        console.log('Response Data:', response.data);
         const books = response.data.books;
         if (books && books.length > 0) {
           const latestBook = books[books.length - 1];
-          const { _id, langs, filename, fileUrl } = latestBook;
           setPdfFiles(prev => ({
             ...prev,
-            [i18n.language]: fileUrl
+            [i18n.language]: latestBook.fileUrl
           }));
-          console.log('Latest Book:', { _id, langs, filename, fileUrl });
         }
       } catch (error) {
         console.error('Error fetching latest book:', error);
@@ -90,9 +78,6 @@ function Quran() {
       return;
     }
 
-    setIsUploading(true);
-    setUploadError('');
-    
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -110,23 +95,23 @@ function Quran() {
       );
 
       const uploadData = response.data;
-      
-      if (uploadData.success) {
-        if (uploadData.path) {
-          const pdfUrl = `https://elmanafea.shop${uploadData.path}`;
-          setPdfFiles(prev => ({
-            ...prev,
-            [language]: pdfUrl
-          }));
-        }
+      if (uploadData.success && uploadData.path) {
+        const pdfUrl = `https://elmanafea.shop${uploadData.path}`;
+        setPdfFiles(prev => ({
+          ...prev,
+          [language]: pdfUrl
+        }));
+        alert('تم رفع الملف بنجاح');
+        window.location.reload(); // Reload the page after successful upload
       } else {
-        throw new Error(uploadData.message || 'فشل في رفع الملف');
+        // Handle cases where the response indicates failure
+        alert(uploadData.message || 'فشل في رفع الملف');
       }
     } catch (error) {
       console.error('Error:', error);
+      alert(error.response?.data?.message || 'حدث خطأ أثناء رفع الملف'); // Alert for failure
       setUploadError(error.response?.data?.message || error.message || 'حدث خطأ أثناء رفع الملف');
     } finally {
-      setIsUploading(false);
       event.target.value = '';
     }
   };
@@ -147,14 +132,10 @@ function Quran() {
                   onChange={(e) => handleFileUpload(lang, e)}
                   id={`file-${lang}`}
                   style={{ display: 'none' }}
-                  disabled={isUploading}
                 />
                 <div className="button-group">
-                  <label 
-                    htmlFor={`file-${lang}`} 
-                    className={`upload-btn ${isUploading ? 'uploading' : ''}`}
-                  >
-                    {isUploading ? 'جاري الرفع...' : 'رفع ملف PDF'}
+                  <label htmlFor={`file-${lang}`} className="upload-btn">
+                    رفع ملف PDF
                   </label>
                 </div>
               </div>
@@ -163,25 +144,12 @@ function Quran() {
         )}
         
         <div className="pdf-viewer">
-          {loadingPdf ? (
-            <div className="loading-message">
-              <div className="loader"></div>
-              جاري تحميل الملف...
-            </div>
-          ) : pdfFiles[i18n.language] ? (
-            console.log('PDF URL:', pdfFiles[i18n.language]),
-            <iframe 
-              src={`https://docs.google.com/gview?url=https://elmanafea.shop${pdfFiles[i18n.language]}&embedded=true`}
-              width="100%" 
-              height="100%" 
-              className="pdf-embed"
-              onLoad={() => setLoadingPdf(false)}
-              onError={() => {
-                setLoadingPdf(false);
-                setUploadError('فشل في تحميل الملف');
-                console.error('Error loading PDF:', pdfFiles[i18n.language]);
-              }}
-            />
+          {pdfFiles[i18n.language] ? (
+            <Worker workerUrl={`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`}>
+              <Viewer
+                fileUrl={pdfFiles[i18n.language]?.startsWith('http') ? pdfFiles[i18n.language] : `https://elmanafea.shop${pdfFiles[i18n.language]}`}
+              />
+            </Worker>
           ) : (
             <div className="no-pdf-message">
               لا يوجد ملف PDF للغة المحددة
