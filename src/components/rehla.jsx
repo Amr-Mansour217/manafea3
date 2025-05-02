@@ -25,6 +25,7 @@ const Rehla = () => {
   const [tempVideoFile, setTempVideoFile] = useState(null);
   const [tempImageFile, setTempImageFile] = useState(null);
   const [modalType, setModalType] = useState('');
+  const [isVideoLoading, setIsVideoLoading] = useState(true); // State to track video loading
   const [textStyle, setTextStyle] = useState({
     fontSize: '16px',
     color: '#000000',
@@ -677,16 +678,23 @@ const Rehla = () => {
     } else {
       return (
         <div className="video-container">
-          <iframe 
-            src={"https://elmanafea.shop" + content.videoUrl}
+          {isVideoLoading && (
+            <div className="video-loader">
+              <span className="loader"></span>
+              <p>{t('جاري تحميل الفيديو...')}</p>
+            </div>
+          )}
+          <video
             className="rehla-video"
-            title={t('فيديو رحلة الحج')}
-            width="100%" 
-            height="100%"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          ></iframe>
+            controls
+            preload="auto" // Enables buffering
+            onCanPlay={() => setIsVideoLoading(false)} // Hide loader when video is ready to play
+            onWaiting={() => setIsVideoLoading(true)} // Show loader when buffering
+            onPlaying={() => setIsVideoLoading(false)} // Hide loader when playback starts
+          >
+            <source src={"https://elmanafea.shop" + content.videoUrl} type="video/mp4" />
+            {t('متصفحك لا يدعم تشغيل الفيديو')}
+          </video>
         </div>
       );
     }
