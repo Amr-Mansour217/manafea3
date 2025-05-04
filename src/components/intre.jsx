@@ -9,6 +9,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { showToast } from './Toast'; // استيراد دالة showToast
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -206,7 +207,7 @@ function Intre() {
       }
     } catch (error) {
       console.error('Error updating header:', error);
-      alert(error.response?.data?.message || 'Failed to update header');
+      showToast.error(error.response?.data?.message || 'Failed to update header');
     }
   };
 
@@ -260,11 +261,11 @@ function Intre() {
             };
           });
           setBooks(formattedBooks);
-          alert('تم حذف الكتاب بنجاح');
+          showToast.deleted('تم حذف الكتاب بنجاح');
         }
       } catch (error) {
         console.error('Error deleting book:', error);
-        alert('حدث خطأ أثناء حذف الكتاب');
+        showToast.error('حدث خطأ أثناء حذف الكتاب');
       }
     }
   };
@@ -334,13 +335,13 @@ function Intre() {
         
         setShowEditModal(false);
         setEditingBook(null);
-        alert('تم تحديث الكتاب بنجاح');
+        showToast.edited('تم تحديث الكتاب بنجاح');
       } else {
         throw new Error(response.data?.message || 'Failed to update book');
       }
     } catch (error) {
       console.error('Error updating book:', error);
-      alert(error.response?.data?.message || 'حدث خطأ في تحديث الكتاب');
+      showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث الكتاب');
     }
   };
 
@@ -348,13 +349,13 @@ function Intre() {
     const file = event.target.files[0];
     if (file) {
       if (file.type !== 'application/pdf') {
-        alert('يرجى اختيار ملف PDF فقط');
+        showToast.error('يرجى اختيار ملف PDF فقط');
         event.target.value = '';
         return;
       }
       
       if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        alert('حجم الملف كبير جداً. الحد الأقصى هو 50 ميجابايت');
+        showToast.error('حجم الملف كبير جداً. الحد الأقصى هو 50 ميجابايت');
         event.target.value = '';
         return;
       }
@@ -384,23 +385,23 @@ function Intre() {
   const handleAdd = async () => {
     try {
       if (!newBook.title.trim()) {
-        alert('من فضلك أدخل عنوان الكتاب');
+        showToast.error('من فضلك أدخل عنوان الكتاب');
         return;
       }
       
       if (!newBook.file) {
-        alert('من فضلك اختر ملف PDF');
+        showToast.error('من فضلك اختر ملف PDF');
         return;
       }
 
       if (newBook.file.type !== 'application/pdf') {
-        alert('يرجى اختيار ملف PDF فقط');
+        showToast.error('يرجى اختيار ملف PDF فقط');
         return;
       }
 
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        alert('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى');
+        showToast.error('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى');
         return;
       }
 
@@ -448,7 +449,7 @@ function Intre() {
         setShowAddModal(false);
         setNewBook({ title: '', file: null, image: null });
         setUploadProgress(0);
-        alert('تم إضافة الكتاب بنجاح');
+        showToast.added('تم إضافة الكتاب بنجاح');
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -464,7 +465,7 @@ function Intre() {
         }
       }
       
-      alert(errorMessage);
+      showToast.error(errorMessage);
       setUploadProgress(0);
     }
   };
@@ -529,13 +530,13 @@ function Intre() {
       }
     } catch (error) {
       console.error('Error updating video header:', error);
-      alert(error.response?.data?.message || 'Failed to update header');
+      showToast.error(error.response?.data?.message || 'Failed to update header');
     }
   };
 
   const handleBookClick = (book) => {
     if (!book.link) {
-      alert('رابط الكتاب غير متوفر');
+      showToast.error('رابط الكتاب غير متوفر');
       return;
     }
 
@@ -711,7 +712,7 @@ function Intre() {
                       const file = e.target.files[0];
                       if (file) {
                         if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                          alert('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
+                          showToast.error('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
                           e.target.value = '';
                           return;
                         }
@@ -799,7 +800,7 @@ function Intre() {
                         const file = e.target.files[0];
                         if (file) {
                           if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                            alert('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
+                            showToast.error('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
                             e.target.value = '';
                             return;
                           }

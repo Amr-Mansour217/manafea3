@@ -15,6 +15,7 @@ import Form from './components/admin';
 import Rehla from './components/rehla';
 import Mosabaqa from './components/mosabaqa';
 import BookViewer from './components/BookViewer';
+import Toast from './components/Toast'; // استيراد مكون Toast
 
 function App() {
   const { i18n } = useTranslation();
@@ -57,7 +58,8 @@ function App() {
   }
   
   return (
-    <div dir={direction} >
+    <div dir={direction}>
+      <Toast /> {/* إضافة مكون Toast هنا لكي يظهر في كل الصفحات */}
       <Router basename={import.meta.env.BASE_URL}> 
         <Routes>
           <Route path="/" element={<Home />} />

@@ -4,10 +4,12 @@ import { useTranslation } from 'react-i18next';
 import './video.css';
 import Header from './header'
 import Footer from './footer'
+import Louder from './louder';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronRight, faChevronLeft, faTrash, faPlus, faPenToSquare, faCog } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { Document, Page } from 'react-pdf';
+import { showToast } from './Toast'; // استيراد دالة showToast
 
 const translations = {
     categories: {
@@ -521,11 +523,11 @@ function Videos(){
             if (response.status === 200) {
                 await fetchCategoriesData();
                 setNewCategory({ id: '', name: '' });
-                alert('تمت الإضافة بنجاح');
+                showToast.added(`تم إضافة تصنيف "${newCategory.name}" بنجاح`);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert(error.response?.data?.message || 'حدث خطأ في عملية الإضافة');
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الإضافة');
         } finally {
             setIsSavingCategory(false);
         }
@@ -544,7 +546,7 @@ function Videos(){
 
     const handleUpdateCategory = async () => {
         if (!editingCategory?._id) {
-            alert('لا يمكن تحديث التصنيف، معرف التصنيف غير موجود');
+            showToast.error('لا يمكن تحديث التصنيف، معرف التصنيف غير موجود');
             return;
         }
 
@@ -576,11 +578,11 @@ function Videos(){
                 await fetchCategoriesData();
                 setEditingCategory(null);
                 setNewCategory({ id: '', name: '' });
-                alert('تم التحديث بنجاح');
+                showToast.edited(`تم تحديث تصنيف "${newCategory.name}" بنجاح`);
             }
         } catch (error) {
             console.error('Error updating category:', error.response?.data || error);
-            alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
         } finally {
             setIsSavingCategory(false);
         }
@@ -598,6 +600,40 @@ function Videos(){
 
         setCategoryToDelete(categoryToDelete);
         setShowDeleteConfirmModal(true);
+    };
+
+    const handleConfirmDeleteCategory = async () => {
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                alert('يرجى تسجيل الدخول كمشرف أولاً');
+                return;
+            }
+
+            const response = await axios.delete(
+                `https://elmanafea.shop/admin/removecategory/${categoryToDelete._id}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    data: {
+                        lang: i18n.language
+                    }
+                }
+            );
+
+            if (response.status === 200) {
+                await fetchCategoriesData();
+                showToast.deleted(`تم حذف التصنيف "${categoryToDelete.name}" بنجاح`);
+            }
+        } catch (error) {
+            console.error('Error deleting category:', error.response?.data || error);
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
+        } finally {
+            setShowDeleteConfirmModal(false);
+            setCategoryToDelete(null);
+        }
     };
 
     const handleAddVideo = async () => {
@@ -653,13 +689,13 @@ function Videos(){
                     setVideos(formattedVideos);
                 }
 
+                showToast.added(`تم إضافة فيديو "${newVideoData.title}" بنجاح`);
                 setNewVideoData({ title: '', link: '', type: '', category: 'all' });
                 setSelectedFile(null);
-                alert('تم رفع الفيديو بنجاح');
             }
         } catch (error) {
             console.error('Error uploading video:', error.response?.data || error.message);
-            alert(error.response?.data?.message || 'حدث خطأ في عملية رفع الفيديو');
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية رفع الفيديو');
             setShowAddVideoModal(true);
         } finally {
             setIsUploading(false);
@@ -703,12 +739,12 @@ function Videos(){
 
             if (response.status === 200) {
                 await fetchVideos();
+                showToast.edited(`تم تحديث فيديو "${editingVideo.title}" بنجاح`);
                 setEditingVideo(null);
-                alert('تم تحديث الفيديو بنجاح');
             }
         } catch (error) {
             console.error('Error updating video:', error);
-            alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
         } finally {
             setIsSavingEdit(false);
         }
@@ -742,11 +778,11 @@ function Videos(){
 
             if (response.status === 200) {
                 await fetchVideos();
-                alert('تم حذف الفيديو بنجاح');
+                showToast.deleted('تم حذف الفيديو بنجاح');
             }
         } catch (error) {
             console.error('Error deleting video:', error);
-            alert(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
         }
     };
 
@@ -780,7 +816,7 @@ function Videos(){
                 if (response.status === 200) {
                     await fetchVideoHeaderData();
                     setEditingText(null);
-                    alert('تم التحديث بنجاح');
+                    showToast.edited('تم تحديث العنوان بنجاح');
                 }
             } else if (editingText.type === 'description') {
                 const response = await axios.post('https://elmanafea.shop/admin/vidsecondheader', 
@@ -798,12 +834,12 @@ function Videos(){
                 if (response.status === 200) {
                     await fetchVideoSecondHeaderData();
                     setEditingText(null);
-                    alert('تم التحديث بنجاح');
+                    showToast.edited('تم تحديث الوصف بنجاح');
                 }
             }
         } catch (error) {
             console.error('Error:', error);
-            alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
         } finally {
             setIsSavingText(false);
         }
@@ -844,7 +880,7 @@ function Videos(){
     }, [i18n.language]);
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <div>{<Louder/>}</div>;
     }
     
     return (
@@ -887,17 +923,6 @@ function Videos(){
                                         : category.name
                                     }
                                 </a>
-                                {isAdmin && category.id === 'all' && (
-                                    <FontAwesomeIcon 
-                                        icon={faPenToSquare} 
-                                        className="edit-icon"
-                                        onClick={() => handleEditTextClick(
-                                            allVideosTitle[i18n.language]?.all || translations.categories[i18n.language].all,
-                                            'allVideos'
-                                        )}
-                                        style={{ marginLeft: '10px', cursor: 'pointer', color: '#007bff' }}
-                                    />
-                                )}
                             </div>
                             {isAdmin && category.id !== 'all' && (
                                 <div className="category-actions">
@@ -1304,39 +1329,7 @@ function Videos(){
                         <div className="delete-confirm-actions">
                             <button
                                 className="delete-confirm-btn confirm"
-                                onClick={async () => {
-                                    try {
-                                        const adminToken = localStorage.getItem('adminToken');
-                                        if (!adminToken) {
-                                            alert('يرجى تسجيل الدخول كمشرف أولاً');
-                                            return;
-                                        }
-
-                                        const response = await axios.delete(
-                                            `https://elmanafea.shop/admin/removecategory/${categoryToDelete._id}`,
-                                            {
-                                                headers: {
-                                                    'Authorization': `Bearer ${adminToken}`,
-                                                    'Content-Type': 'application/json'
-                                                },
-                                                data: {
-                                                    lang: i18n.language
-                                                }
-                                            }
-                                        );
-
-                                        if (response.status === 200) {
-                                            await fetchCategoriesData();
-                                            alert('تم حذف التصنيف بنجاح');
-                                        }
-                                    } catch (error) {
-                                        console.error('Error deleting category:', error.response?.data || error);
-                                        alert(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
-                                    } finally {
-                                        setShowDeleteConfirmModal(false);
-                                        setCategoryToDelete(null);
-                                    }
-                                }}
+                                onClick={handleConfirmDeleteCategory}
                             >
                                 نعم، احذف
                             </button>
