@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import Header from "./header";
 import './quran.css';
 import axios from 'axios';
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import '@react-pdf-viewer/core/lib/styles/index.css';
 
 function Quran() {
   const { i18n, t } = useTranslation();
+  const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [pdfFiles, setPdfFiles] = useState(() => {
     const savedPdfs = localStorage.getItem('pdfFiles');
@@ -28,7 +28,11 @@ function Quran() {
     zh: "中文",
     tl: "Tagalog",
     fa: "فارسی",
-    ha: "Hausa" // Added Hausa language
+    ha: "Hausa"
+  };
+
+  const isMobileOrTablet = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   };
 
   useEffect(() => {
@@ -36,10 +40,10 @@ function Quran() {
       const token = localStorage.getItem('adminToken');
       setIsAdmin(!!token);
     };
-    
+
     checkAdmin();
     window.addEventListener('storage', checkAdmin);
-    
+
     return () => {
       window.removeEventListener('storage', checkAdmin);
     };
@@ -68,6 +72,26 @@ function Quran() {
 
     fetchLatestBook();
   }, [i18n.language]);
+
+  useEffect(() => {
+    if (!isAdmin && pdfFiles[i18n.language]) {
+      openPdf();
+    }
+  }, [pdfFiles, i18n.language]);
+
+  const openPdf = () => { // Prevent automatic opening for admins
+
+    const pdfUrl = pdfFiles[i18n.language]?.startsWith('http')
+      ? pdfFiles[i18n.language]
+      : `https://elmanafea.shop${pdfFiles[i18n.language]}`;
+
+    if (!pdfUrl) {
+      alert('لا يوجد ملف PDF للغة المحددة');
+      return;
+    }
+
+    window.open(pdfUrl, '_blank');
+  };
 
   const handleFileUpload = async (language, event) => {
     const file = event.target.files[0];
@@ -102,14 +126,13 @@ function Quran() {
           [language]: pdfUrl
         }));
         alert('تم رفع الملف بنجاح');
-        window.location.reload(); // Reload the page after successful upload
+        window.location.reload();
       } else {
-        // Handle cases where the response indicates failure
         alert(uploadData.message || 'فشل في رفع الملف');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(error.response?.data?.message || 'حدث خطأ أثناء رفع الملف'); // Alert for failure
+      alert(error.response?.data?.message || 'حدث خطأ أثناء رفع الملف');
       setUploadError(error.response?.data?.message || error.message || 'حدث خطأ أثناء رفع الملف');
     } finally {
       event.target.value = '';
@@ -143,19 +166,7 @@ function Quran() {
           </div>
         )}
         
-        <div className="pdf-viewer">
-          {pdfFiles[i18n.language] ? (
-            <Worker workerUrl={`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`}>
-              <Viewer
-                fileUrl={pdfFiles[i18n.language]?.startsWith('http') ? pdfFiles[i18n.language] : `https://elmanafea.shop${pdfFiles[i18n.language]}`}
-              />
-            </Worker>
-          ) : (
-            <div className="no-pdf-message">
-              لا يوجد ملف PDF للغة المحددة
-            </div>
-          )}
-        </div>
+
       </div>
     </>
   );
