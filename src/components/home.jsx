@@ -8,6 +8,7 @@ import { IoStar } from "react-icons/io5";
 import Header from './header'
 import Footer from './footer'
 import { toast } from 'react-hot-toast';
+import { showToast } from './Toast'; // استيراد دالة showToast
 
 const Home = () => {
   const { t, i18n } = useTranslation();
@@ -342,7 +343,7 @@ const Home = () => {
 
   const handleAddVideo = async () => {
     if (!newVideoData.title || (!newVideoData.youtubeEmbedUrl && !newVideoData.videoFile)) {
-      toast.error('الرجاء إدخال جميع البيانات المطلوبة');
+      showToast.error('الرجاء إدخال جميع البيانات المطلوبة');
       return;
     }
 
@@ -351,7 +352,7 @@ const Home = () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        toast.error('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
         return;
       }
 
@@ -379,7 +380,7 @@ const Home = () => {
 
       if (response.data.success) {
         await fetchVideos();
-        toast.success('تم إضافة الفيديو بنجاح');
+        showToast.added(`تم إضافة فيديو "${newVideoData.title}" بنجاح`);
         setShowAddVideoModal(false);
         setNewVideoData({ 
           title: '', 
@@ -390,7 +391,7 @@ const Home = () => {
       }
     } catch (error) {
       console.error('Error uploading video:', error);
-      toast.error(error.response?.data?.message || 'حدث خطأ أثناء رفع الفيديو');
+      showToast.error(error.response?.data?.message || 'حدث خطأ أثناء رفع الفيديو');
     }
   };
 
@@ -422,13 +423,13 @@ const Home = () => {
 
   const handleEditVideo = async (video) => {
     if (!editValue.title) {
-      toast.error('الرجاء إدخال عنوان الفيديو');
+      showToast.error('الرجاء إدخال عنوان الفيديو');
       return;
     }
     
     // تتحقق من نوع الفيديو وطلب الرابط إذا كان يوتيوب فقط
     if (editValue.type === 'youtube' && !editValue.link) {
-      toast.error('الرجاء إدخال رابط الفيديو');
+      showToast.error('الرجاء إدخال رابط الفيديو');
       return;
     }
 
@@ -437,7 +438,7 @@ const Home = () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        toast.error('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
         return;
       }
 
@@ -471,7 +472,7 @@ const Home = () => {
 
       if (response.status === 200) {
         await fetchVideos();
-        toast.success('تم تحديث الفيديو بنجاح');
+        showToast.edited(`تم تحديث فيديو "${editValue.title}" بنجاح`);
         setEditModalOpen(false);
         setEditValue(null);
         setEditingItem(null);
@@ -481,7 +482,7 @@ const Home = () => {
       if (error.response) {
         console.error('تفاصيل الخطأ:', error.response.status, error.response.data);
       }
-      toast.error(error.response?.data?.message || 'حدث خطأ أثناء تحديث الفيديو');
+      showToast.error(error.response?.data?.message || 'حدث خطأ أثناء تحديث الفيديو');
     }
   };
 
@@ -494,7 +495,7 @@ const Home = () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        toast.error('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
         return;
       }
 
@@ -513,11 +514,11 @@ const Home = () => {
 
       if (response.status === 200) {
         await fetchVideos();
-        toast.success('تم حذف الفيديو بنجاح');
+        showToast.deleted('تم حذف الفيديو بنجاح');
       }
     } catch (error) {
       console.error('Error deleting video:', error);
-      toast.error(error.response?.data?.message || 'حدث خطأ أثناء حذف الفيديو');
+      showToast.error(error.response?.data?.message || 'حدث خطأ أثناء حذف الفيديو');
     } finally {
       setShowDeleteConfirmModal(false);
       setVideoToDelete(null);
@@ -606,17 +607,17 @@ const handleSaveEdit = async () => {
       });
 
       if (response.data.success) {
-        toast.success('تم تحديث الفيديو بنجاح');
+        showToast.edited('تم تحديث الفيديو بنجاح');
         await fetchVideos();  // تحديث قائمة الفيديوهات
         setEditModalOpen(false);
         setEditingItem(null);
         setEditValue(null);
       } else {
-        toast.error('حدث خطأ أثناء تحديث الفيديو');
+        showToast.error('حدث خطأ أثناء تحديث الفيديو');
       }
     } catch (error) {
       console.error('Error updating video:', error);
-      toast.error(error.response?.data?.message || 'حدث خطأ أثناء تحديث الفيديو');
+      showToast.error(error.response?.data?.message || 'حدث خطأ أثناء تحديث الفيديو');
     }
   } else if (editingItem?.section === 'hero') {
     try {
@@ -642,6 +643,7 @@ const handleSaveEdit = async () => {
 
         if (response.status === 200) {
           await fetchHeaderData();
+          showToast.edited('تم تحديث العنوان الرئيسي بنجاح');
         }
       } else if (editingItem.key === 'description') {
         // تحديث العنوان الفرعي
@@ -657,16 +659,16 @@ const handleSaveEdit = async () => {
 
         if (response.status === 200) {
           await fetchSecondHeaderData();
+          showToast.edited('تم تحديث الوصف بنجاح');
         }
       }
       
       setEditModalOpen(false);
       setEditingItem(null);
-      alert('تم التحديث بنجاح');
       
     } catch (error) {
       console.error('Error:', error);
-      alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+      showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
     }
   } else if (editingItem?.section === 'section' && editingItem?.key === 'title') {
     try {
@@ -693,11 +695,11 @@ const handleSaveEdit = async () => {
         await fetchLessonWord();
         setEditModalOpen(false);
         setEditingItem(null);
-        alert('تم التحديث بنجاح');
+        showToast.edited('تم تحديث عنوان القسم بنجاح');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+      showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
     }
   }
 
@@ -751,9 +753,10 @@ const downloadFeedbacks = async () => {
     document.body.appendChild(link);
     link.click();
     link.parentNode.removeChild(link);
+    showToast.success('تم تحميل التعليقات بنجاح');
   } catch (error) {
     console.error('Error downloading feedbacks:', error);
-    toast.error('حدث خطأ أثناء تحميل ملف التعليقات');
+    showToast.error('حدث خطأ أثناء تحميل ملف التعليقات');
   } finally {
     setIsDownloading(false); // Stop loader
   }

@@ -6,6 +6,7 @@ import axios from 'axios';
 import Header from './header';
 import './apps.css' 
 import Footer from './footer';
+import { showToast } from './Toast'; // استيراد دالة showToast
 
 function Apps() {
   const { t, i18n } = useTranslation();
@@ -242,36 +243,23 @@ function Apps() {
 
   const handleAddApp = async () => {
     try {
-      // 1. التحقق من البيانات المطلوبة
       if (!newApp.name || !newApp.link || !newApp.image) {
-        alert('الرجاء إدخال جميع البيانات المطلوبة');
+        showToast.error('الرجاء إدخال جميع البيانات المطلوبة');
         return;
       }
 
-      // 2. التحقق من توكن المسؤول
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
         return;
       }
 
-      // 3. إنشاء كائن FormData جديد تماماً
       const formData = new FormData();
-
-      // 4. إضافة البيانات بشكل صحيح للكائن
       formData.append('photo', newApp.image);
       formData.append('title', newApp.name);
       formData.append('url', newApp.link);
       formData.append('platform', newApp.category);
 
-      console.log('Attempting to add app with data:', {
-        title: newApp.name,
-        url: newApp.link,
-        platform: newApp.category,
-        photo: "[File object]"
-      });
-
-      // 5. إجراء الطلب POST مع التأكد من الإعدادات الصحيحة
       const response = await axios({
         method: 'post',
         url: 'https://elmanafea.shop/admin/addapp',
@@ -282,11 +270,9 @@ function Apps() {
         },
       });
 
-      console.log('Server response:', response);
-
-      // 6. التحقق من نجاح الطلب
       if (response.status === 200 || response.status === 201) {
         await fetchApps(newApp.category);
+        showToast.added(`تم إضافة تطبيق "${newApp.name}" بنجاح`);
         setShowAddModal(false);
         setNewApp({
           name: '',
@@ -294,30 +280,10 @@ function Apps() {
           link: '',
           category: 'android'
         });
-        
-        alert('تمت إضافة التطبيق بنجاح');
-      } else {
-        throw new Error(`استجابة غير متوقعة: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error adding app:', error);
-      console.error('Request details:', error.config);
-      console.error('Response data:', error.response?.data);
-      console.error('Response status:', error.response?.status);
-      
-      // 7. عرض رسالة خطأ أكثر تفصيلاً
-      let errorMessage = 'حدث خطأ أثناء إضافة التطبيق';
-      if (error.response) {
-        if (error.response.status === 404) {
-          errorMessage = 'الرابط غير صحيح (404) - تأكد من صحة عنوان API';
-        } else if (error.response.status === 403) {
-          errorMessage = 'ليس لديك صلاحيات كافية (403) - تأكد من تسجيل الدخول كمسؤول';
-        } else if (error.response.data && error.response.data.message) {
-          errorMessage = `خطأ من الخادم: ${error.response.data.message}`;
-        }
-      }
-      
-      alert(errorMessage);
+      console.error('Error:', error);
+      showToast.error(error.response?.data?.message || 'حدث خطأ في إضافة التطبيق');
     }
   };
 
@@ -325,22 +291,20 @@ function Apps() {
     try {
       const response = await axios.get(`https://elmanafea.shop/apps?platform=${platform}`);
       const data = response.data;
-      console.log('Fetched apps:', data);
 
       if (Array.isArray(data)) {
         const updatedApps = data.map(app => ({
-          id: app._id, // المعرف
-          name: app.title || '', // العنوان
-          image: app.photo ? `https://elmanafea.shop/${app.photo.startsWith('/') ? app.photo.slice(1) : app.photo}` : '', // الصورة
-          link: app.url || '', // الرابط
-          category: app.platform || platform // التصنيف
+          id: app._id,
+          name: app.title || '',
+          image: app.photo ? `https://elmanafea.shop/${app.photo.startsWith('/') ? app.photo.slice(1) : app.photo}` : '',
+          link: app.url || '',
+          category: app.platform || platform
         }));
-        console.log('Formatted apps:', updatedApps);
         setApps(updatedApps);
       }
     } catch (error) {
       console.error('Error fetching apps:', error);
-      alert('حدث خطأ أثناء استرجاع التطبيقات');
+      showToast.error('حدث خطأ أثناء استرجاع التطبيقات');
     }
   };
 
@@ -353,7 +317,7 @@ function Apps() {
     if (file) {
       setEditingApp(prev => ({
         ...prev,
-        image: file // Store the actual file
+        image: file
       }));
     }
   };
@@ -372,15 +336,14 @@ function Apps() {
         }
       });
 
-      if (response.status !== 200) {
-        throw new Error('فشل في تحديث التطبيق');
+      if (response.status === 200) {
+        await fetchApps(editingApp.category);
+        showToast.edited(`تم تحديث تطبيق "${editingApp.name}" بنجاح`);
+        setEditingApp(null);
       }
-
-      await fetchApps(editingApp.category);
-      setEditingApp(null);
     } catch (error) {
       console.error('Error:', error);
-      alert(error.message);
+      showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث التطبيق');
     }
   };
 
@@ -388,7 +351,7 @@ function Apps() {
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
         return;
       }
 
@@ -408,11 +371,11 @@ function Apps() {
       if (response.status === 200) {
         setHeaderText(editingHeaderText);
         setShowTitleEditModal(false);
-        alert('تم تحديث العنوان بنجاح');
+        showToast.edited('تم تحديث العنوان بنجاح');
       }
     } catch (error) {
       console.error('Error updating header:', error);
-      alert(error.response?.data?.message || 'حدث خطأ في تحديث العنوان');
+      showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث العنوان');
     }
   };
 
@@ -420,7 +383,7 @@ function Apps() {
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
         return;
       }
 
@@ -440,11 +403,11 @@ function Apps() {
       if (response.status === 200) {
         setDescriptionText(editingDescriptionText);
         setShowDescriptionEditModal(false);
-        alert('تم تحديث الوصف بنجاح');
+        showToast.edited('تم تحديث الوصف بنجاح');
       }
     } catch (error) {
       console.error('Error updating description:', error);
-      alert(error.response?.data?.message || 'حدث خطأ في تحديث الوصف');
+      showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث الوصف');
     }
   };
 
@@ -473,43 +436,34 @@ function Apps() {
     setTempText('');
   };
 
-  const handleDeleteApp = (app) => {
-    setAppToDelete(app);
-    setShowDeleteConfirmModal(true);
-  };
-
-  const confirmDeleteApp = async () => {
+  const handleDeleteApp = async (appId) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
         return;
       }
 
-      console.log(`Attempting to delete app with ID: ${appToDelete.id} from category: ${appToDelete.category}`);
-      
-      const response = await axios.delete(`https://elmanafea.shop/admin/deleteapp/${appToDelete.id}`, {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
+      if (!window.confirm('هل أنت متأكد من حذف هذا التطبيق؟')) {
+        return;
+      }
 
-      console.log('Delete response:', response);
+      const response = await axios.delete(
+        `https://elmanafea.shop/admin/deleteapp/${appId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`
+          }
+        }
+      );
 
       if (response.status === 200) {
-        setApps(prevApps => prevApps.filter(app => app.id !== appToDelete.id));
-        setShowDeleteConfirmModal(false);
-        setAppToDelete(null);
-        alert('تم حذف التطبيق بنجاح');
-      } else {
-        throw new Error('فشل في حذف التطبيق');
+        await fetchApps(activeCategory);
+        showToast.deleted('تم حذف التطبيق بنجاح');
       }
     } catch (error) {
       console.error('Error deleting app:', error);
-      alert(error.response?.data?.message || error.message || 'حدث خطأ في عملية الحذف');
-    } finally {
-      setShowDeleteConfirmModal(false);
-      setAppToDelete(null);
+      showToast.error(error.response?.data?.message || 'حدث خطأ في حذف التطبيق');
     }
   };
 
@@ -607,7 +561,7 @@ function Apps() {
                     <button onClick={() => setEditingApp(app)}>
                       <FontAwesomeIcon icon={faEdit} />
                     </button>
-                    <button onClick={() => handleDeleteApp(app)}>
+                    <button onClick={() => handleDeleteApp(app.id)}>
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
                   </div>
@@ -812,7 +766,7 @@ function Apps() {
             <div className="app-delete-confirm-buttons">
               <button 
                 className="app-delete-confirm-btn"
-                onClick={confirmDeleteApp}
+                onClick={() => handleDeleteApp(appToDelete.id)}
               >
                 نعم، احذف
               </button>
