@@ -484,7 +484,7 @@ function Videos(){
             text: currentText,
             type: type
         });
-        setEditModalOpen(true);
+        setEditModalOpen(true); // تأكد من تعيين هذه القيمة إلى true لفتح النافذة المنبثقة
     };
 
     const handleDeleteCategory = (categoryId) => {
