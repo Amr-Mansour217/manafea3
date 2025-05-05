@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faPlus, faPenToSquare, faAnglesLeft, faAnglesRight } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faPlus, faPenToSquare, faAnglesLeft, faAnglesRight, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import './intractivefiles.css';
 import Header from "./header";
 import Footer from './footer';
@@ -909,10 +909,14 @@ function Intre() {
           <div className="pagination">
             <ul>
               {pageNumbers.length > 4 && currentPage > 1 && (
-                <li><a onClick={() => paginate(1)}>&lt;&lt;</a></li>
+                <li><a onClick={() => paginate(1)}>
+                  <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faAnglesLeft : faAnglesRight} />
+                </a></li>
               )}
               {pageNumbers.length > 4 && currentPage > 1 && (
-                <li><a onClick={() => paginate(currentPage - 1)}>&lt;</a></li>
+                <li><a onClick={() => paginate(currentPage - 1)}>
+                  <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faChevronLeft : faChevronRight} />
+                </a></li>
               )}
               {(() => {
                 // Calculate which page numbers to show (sliding window of 4)
@@ -945,10 +949,14 @@ function Intre() {
                 ));
               })()}
               {pageNumbers.length > 4 && currentPage < pageNumbers.length && (
-                <li><a onClick={() => paginate(currentPage + 1)}>&gt;</a></li>
+                <li><a onClick={() => paginate(currentPage + 1)}>
+                  <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faChevronRight : faChevronLeft} />
+                </a></li>
               )}
               {pageNumbers.length > 4 && currentPage < pageNumbers.length && (
-                <li><a onClick={() => paginate(pageNumbers.length)}>&gt;&gt;</a></li>
+                <li><a onClick={() => paginate(pageNumbers.length)}>
+                  <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faAnglesRight : faAnglesLeft} />
+                </a></li>
               )}
             </ul>
           </div>
