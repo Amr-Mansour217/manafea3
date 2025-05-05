@@ -43,6 +43,7 @@ function Header() {
   const [scrollingEditValue, setScrollingEditValue] = useState("");
   const [editingScrollingIndex, setEditingScrollingIndex] = useState(null);
   const languageRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -51,13 +52,20 @@ function Header() {
       if (languageRef.current && !languageRef.current.contains(event.target)) {
         setIsLanguageOpen(false);
       }
+      
+      if (isMobileMenuOpen && 
+          mobileMenuRef.current && 
+          !mobileMenuRef.current.contains(event.target) &&
+          !event.target.closest('.mobile-menu-btn')) {
+        setIsMobileMenuOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [isMobileMenuOpen]);
 
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
@@ -172,7 +180,10 @@ function Header() {
           <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
             <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
           </button>
-          <ul className={`nav-menu ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+          <ul 
+            className={`nav-menu ${isMobileMenuOpen ? 'mobile-open' : ''}`}
+            ref={mobileMenuRef}
+          >
             {navItems.map((item) => (
               <li key={item.path}>
                 <Link
