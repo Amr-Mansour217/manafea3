@@ -6,6 +6,7 @@ import Header from './header';
 import './another.css';
 import Footer from './footer';
 import axios from 'axios';
+import { showToast } from './Toast'; // Import the Toast component
 
 function Another() {
   const { t, i18n } = useTranslation();
@@ -71,7 +72,7 @@ function Another() {
 
   const handleAddWebsite = async () => {
     if (!newWebsite.name || !newWebsite.url) {
-      alert('من فضلك أدخل جميع البيانات المطلوبة');
+      showToast.error(t('من فضلك أدخل جميع البيانات المطلوبة'));
       return;
     }
 
@@ -95,15 +96,15 @@ function Another() {
       if (response.status >= 200 && response.status < 300) {
         setNewWebsite({ name: '', url: '' });
         fetchWebsites();
-        alert('تمت إضافة الموقع بنجاح');
+        showToast.success(t('تمت الإضافة بنجاح'));
       }
     } catch (error) {
       console.error('Error adding website:', error);
       
       if (error.response && error.response.data && error.response.data.message) {
-        alert(error.response.data.message);
+        showToast.error(t(error.response.data.message));
       } else {
-        alert('حدث خطأ في إضافة الموقع');
+        showToast.error(t('حدث خطأ في إضافة الموقع'));
       }
       
       setShowAddModal(true);
@@ -143,6 +144,7 @@ function Another() {
       localStorage.setItem('websites', JSON.stringify(websitesData));
     } catch (error) {
       console.error('Error fetching websites:', error);
+      showToast.error(t('حدث خطأ في جلب المواقع'));
       setWebsites([]);
     }
   };
@@ -153,7 +155,7 @@ function Another() {
 
   const handleUpdateWebsite = async () => {
     if (!editingWebsite.name || !editingWebsite.url) {
-      alert('من فضلك أدخل جميع البيانات المطلوبة');
+      showToast.error(t('من فضلك أدخل جميع البيانات المطلوبة'));
       return;
     }
 
@@ -162,7 +164,7 @@ function Another() {
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error(t('يرجى تسجيل الدخول كمشرف أولاً'));
         return;
       }
 
@@ -197,14 +199,14 @@ function Another() {
         });
         
         setEditingWebsite(null);
-        alert('تم تحديث الموقع بنجاح');
+        showToast.edited(t('تم التعديل بنجاح'));
       } else {
         throw new Error('فشل في تحديث الموقع');
       }
     } catch (error) {
       console.error('Error updating website:', error);
       console.error('Response data:', error.response?.data);
-      alert(error.response?.data?.message || 'حدث خطأ في تحديث الموقع');
+      showToast.error(t(error.response?.data?.message || 'حدث خطأ في تحديث الموقع'));
     }
   };
 
@@ -229,23 +231,23 @@ function Another() {
       setWebsiteToDelete(null);
       
       fetchWebsites();
-      alert('تم حذف الموقع بنجاح');
+      showToast.deleted(t('تم الحذف بنجاح'));
     } catch (error) {
       console.error('Error deleting website:', error);
-      alert(error.message);
+      showToast.error(t(error.message));
     }
   };
 
   const handleUpdateText = async () => {
     if (!tempText) {
-      alert('من فضلك أدخل النص');
+      showToast.error(t('من فضلك أدخل النص'));
       return;
     }
 
     try {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        alert('يرجى تسجيل الدخول كمشرف أولاً');
+        showToast.error(t('يرجى تسجيل الدخول كمشرف أولاً'));
         return;
       }
 
@@ -269,7 +271,7 @@ function Another() {
         
         if (response.status === 200) {
           await fetchWebsiteHeader();
-          alert('تم تحديث العنوان بنجاح');
+          showToast.success(t('تمت العملية بنجاح'));
         }
       } else if (editingField === 'description') {
         const response = await axios({
@@ -289,7 +291,7 @@ function Another() {
         
         if (response.status === 200) {
           await fetchWebsiteSecondHeader();
-          alert('تم تحديث الوصف بنجاح');
+          showToast.success(t('تمت العملية بنجاح'));
         }
       } else {
         setTexts({
@@ -305,7 +307,7 @@ function Another() {
       setTempText('');
     } catch (error) {
       console.error('Error updating text:', error);
-      alert(error.response?.data?.message || 'حدث خطأ في تحديث النص');
+      showToast.error(t(error.response?.data?.message || 'حدث خطأ في تحديث النص'));
     }
   };
 
@@ -326,6 +328,7 @@ function Another() {
       }
     } catch (error) {
       console.error('Error fetching website header:', error);
+      showToast.error(t('حدث خطأ في جلب العنوان'));
     }
   };
 
@@ -346,6 +349,7 @@ function Another() {
       }
     } catch (error) {
       console.error('Error fetching website second header:', error);
+      showToast.error(t('حدث خطأ في جلب الوصف'));
     }
   };
 

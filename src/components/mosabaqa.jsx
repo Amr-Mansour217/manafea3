@@ -7,6 +7,7 @@ import Header from './header';
 import Footer from './footer';
 import './mosabaqa.css';
 import { countryCodes } from './countryCodes';
+import { showToast } from './Toast'; // Import showToast component
 
 const Mosabaqa = () => {
   const { t, i18n } = useTranslation();
@@ -97,6 +98,7 @@ const Mosabaqa = () => {
         const token = localStorage.getItem('adminToken');
         
         if (!token) {
+          showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
           throw {
             response: {
               status: 401,
@@ -115,21 +117,21 @@ const Mosabaqa = () => {
         });
         
         await fetchQuestion();
-        setError(''); // Clear any previous errors on success
+        showToast.success(t('تم تحديث السؤال بنجاح')); // Success toast
       } catch (err) {
         console.error('Error updating question:', err);
         
-        // Handle specific error codes
+        // Handle specific error codes with Toast
         if (err.response) {
           if (err.response.status === 401) {
-            setError(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
+            showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
           } else if (err.response.status === 403) {
-            setError(t('غير مصرح بالتعديل. الرجاء تسجيل الدخول كمسؤول'));
+            showToast.error(t('غير مصرح بالتعديل. الرجاء تسجيل الدخول كمسؤول'));
           } else {
-            setError(t('حدث خطأ في تحديث السؤال'));
+            showToast.error(t('حدث خطأ في تحديث السؤال'));
           }
         } else {
-          setError(t('حدث خطأ في الاتصال بالخادم'));
+          showToast.error(t('حدث خطأ في الاتصال بالخادم'));
         }
       } finally {
         setIsLoading(false);
@@ -145,7 +147,7 @@ const Mosabaqa = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
-      setError(t('الرجاء إدخال الاسم ورقم الهاتف'));
+      showToast.error(t('الرجاء إدخال الاسم ورقم الهاتف')); // Replace setError with showToast
       return;
     }
     
@@ -165,22 +167,21 @@ const Mosabaqa = () => {
         lang: i18n.language
       });
       
-      // Show success modal
+      // Show success modal and success toast
       setIsModalOpen(true);
+      showToast.success(t('تم إرسال مشاركتك بنجاح!'));
       
       // Reset form after 3 seconds
       setTimeout(() => {
         setIsModalOpen(false);
         setFormData({ name: '', answer: '', countryCode: '+966', phone: '', email: '', country: '' });
       }, 3000);
-      
-      setError(''); // Clear any previous errors
     } catch (err) {
       console.error('Error submitting participation:', err);
       if (err.response && err.response.data && err.response.data.message) {
-        setError(t(err.response.data.message));
+        showToast.error(t(err.response.data.message)); // Use showToast instead of setError
       } else {
-        setError(t('حدث خطأ في إرسال البيانات'));
+        showToast.error(t('حدث خطأ في إرسال البيانات'));
       }
     } finally {
       setIsLoading(false);
@@ -193,7 +194,7 @@ const Mosabaqa = () => {
       const token = localStorage.getItem('adminToken');
       
       if (!token) {
-        setError(t('الرجاء تسجيل الدخول كمسؤول'));
+        showToast.error(t('الرجاء تسجيل الدخول كمسؤول'));
         return;
       }
       
@@ -219,13 +220,13 @@ const Mosabaqa = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
       
-      setError('');
+      showToast.success(t('تم تنزيل الملف بنجاح')); // Success toast for download
     } catch (err) {
       console.error('Error downloading Excel:', err);
       if (err.response && err.response.status === 401) {
-        setError(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
+        showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
       } else {
-        setError(t('حدث خطأ في تحميل الملف'));
+        showToast.error(t('حدث خطأ في تحميل الملف'));
       }
     } finally {
       setIsLoading(false);
@@ -385,11 +386,9 @@ const Mosabaqa = () => {
                 placeholder={t('ادخل بريدك الإلكتروني')}
               />
             </div>
-
-            {error && <div className="error-message">{t(error)}</div>}
             
-            <button type="submit" className="submit-btn">
-              {t('إرسال المشاركة')}
+            <button type="submit" className="submit-btn" disabled={isLoading}>
+              {isLoading ? t('جاري الإرسال...') : t('إرسال المشاركة')}
             </button>
           </form>
         </div>

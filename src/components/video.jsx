@@ -6,7 +6,7 @@ import Header from './header'
 import Footer from './footer'
 import Louder from './louder';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronRight, faChevronLeft, faTrash, faPlus, faPenToSquare, faCog } from '@fortawesome/free-solid-svg-icons';
+import { faChevronRight, faChevronLeft, faTrash, faPlus, faPenToSquare, faCog, faAnglesLeft, faAnglesRight } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { Document, Page } from 'react-pdf';
 import { showToast } from './Toast'; // استيراد دالة showToast
@@ -1028,24 +1028,61 @@ function Videos(){
 
                 <div className="pagination">
                     <ul>
-                        {currentPage > 1 && (
+                        {pageNumbers.length > 4 && currentPage > 1 && (
+                            <li>
+                                <a onClick={() => paginate(1)}>
+                                    <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faAnglesLeft : faAnglesRight} />
+                                </a>
+                            </li>
+                        )}
+                        {pageNumbers.length > 4 && currentPage > 1 && (
                             <li>
                                 <a onClick={() => paginate(currentPage - 1)}>
                                     <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faChevronLeft : faChevronRight} />
                                 </a>
                             </li>
                         )}
-                        {pageNumbers.map(number => (
-                            <li key={number}>
-                                <a onClick={() => paginate(number)} className={currentPage === number ? 'active' : ''}>
-                                    {number}
-                                </a>
-                            </li>
-                        ))}
-                        {currentPage < pageNumbers.length && (
+                        {(() => {
+                            // Calculate which page numbers to show (sliding window of 4)
+                            let startPage, endPage;
+                            
+                            if (pageNumbers.length <= 4) {
+                                // Less than 4 pages, show all
+                                startPage = 0;
+                                endPage = pageNumbers.length;
+                            } else if (currentPage <= 2) {
+                                // Near the start, show first 4 pages
+                                startPage = 0;
+                                endPage = 4;
+                            } else if (currentPage >= pageNumbers.length - 1) {
+                                // Near the end, show last 4 pages
+                                startPage = pageNumbers.length - 4;
+                                endPage = pageNumbers.length;
+                            } else {
+                                // In the middle, show current and surrounding pages
+                                startPage = currentPage - 2;
+                                endPage = currentPage + 2;
+                            }
+                            
+                            return pageNumbers.slice(startPage, endPage).map(number => (
+                                <li key={number}>
+                                    <a onClick={() => paginate(number)} className={currentPage === number ? 'active' : ''}>
+                                        {number}
+                                    </a>
+                                </li>
+                            ));
+                        })()}
+                        {pageNumbers.length > 4 && currentPage < pageNumbers.length && (
                             <li>
                                 <a onClick={() => paginate(currentPage + 1)}>
                                     <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faChevronRight : faChevronLeft} />
+                                </a>
+                            </li>
+                        )}
+                        {pageNumbers.length > 4 && currentPage < pageNumbers.length && (
+                            <li>
+                                <a onClick={() => paginate(pageNumbers.length)}>
+                                    <FontAwesomeIcon icon={i18n.dir() === 'ltr' ? faAnglesRight : faAnglesLeft} />
                                 </a>
                             </li>
                         )}

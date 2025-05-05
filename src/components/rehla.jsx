@@ -6,6 +6,7 @@ import axios from 'axios';
 import Header from './header';
 import Footer from './footer';
 import './rehla.css';
+import { showToast } from './Toast'; // Import showToast component
 
 const Rehla = () => {
   const { t, i18n } = useTranslation();
@@ -31,19 +32,19 @@ const Rehla = () => {
     color: '#000000',
     fontWeight: 'normal'
   });
-  const [apiError, setApiError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [imgs, setImgs] = useState([]);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [sectionToDelete, setSectionToDelete] = useState(null);
+  const [showVideoDeleteConfirm, setShowVideoDeleteConfirm] = useState(false);
 
-  // Add a function to determine text direction
   const getDirection = () => {
-    // RTL languages: Arabic, Persian, Hebrew, Urdu
     const rtlLanguages = ['ar', 'fa', 'he', 'ur'];
-    const langCode = i18n.language.split('-')[0]; // Get base language code
+    const langCode = i18n.language.split('-')[0];
     return rtlLanguages.includes(langCode) ? 'rtl' : 'ltr';
   };
 
@@ -51,7 +52,6 @@ const Rehla = () => {
     const adminToken = localStorage.getItem('adminToken');
     setIsAdmin(!!adminToken);
 
-    // Set document direction based on language
     document.documentElement.dir = getDirection();
     document.body.dir = getDirection();
 
@@ -65,7 +65,6 @@ const Rehla = () => {
 
   const fetchVideoData = () => {
     setIsLoading(true);
-    setApiError('');
     
     axios.get(`https://elmanafea.shop/rehlavideos?lang=${i18n.language}`)
       .then(response => {
@@ -97,7 +96,7 @@ const Rehla = () => {
       })
       .catch(err => {
         console.error('Error fetching video data:', err);
-        setApiError(t('حدث خطأ أثناء جلب بيانات الفيديو'));
+        showToast.error(t('حدث خطأ أثناء جلب بيانات الفيديو'));
       })
       .finally(() => {
         setIsLoading(false);
@@ -109,21 +108,17 @@ const Rehla = () => {
     
     axios.get(`https://elmanafea.shop/rehla/media?lang=${i18n.language}`)
       .then(response => {
-        console.log('Content API response:', response.data);
-        
         if (response.data && response.data.contentItems) {
           const contentItems = response.data.contentItems;
           
-          // Process both text and image items and preserve original order from backend
           const allSections = contentItems.map((item, index) => {
-            // Use index as ordering key to preserve backend order
             if (item.type === 'image') {
               return {
                 id: item._id,
                 type: 'image',
                 imageUrl: `https://elmanafea.shop${item.content}`,
                 createdAt: item.createdAt,
-                index: index // Store original position
+                index: index
               };
             } else if (item.type === 'subtitle') {
               return {
@@ -131,25 +126,23 @@ const Rehla = () => {
                 type: 'text',
                 content: item.content,
                 createdAt: item.createdAt,
-                index: index // Store original position
+                index: index
               };
             }
             return null;
           }).filter(item => item !== null);
           
-          // Extract images for the image grid but maintain backend order
           const imageItems = contentItems
             .filter(item => item.type === 'image')
             .map((item, index) => ({
               id: item._id,
               url: `https://elmanafea.shop${item.content}`,
               createdAt: item.createdAt,
-              index: index // Store original position
+              index: index
             }));
           
           setImgs(imageItems);
           
-          // Preserve the exact ordering from the backend
           setContent(prevContent => ({
             ...prevContent,
             sections: allSections
@@ -167,7 +160,6 @@ const Rehla = () => {
   const handleVideoChange = () => {
     setTempValue('');
     setTempVideoFile(null);
-    setApiError('');
     setShowVideoModal(true);
   };
 
@@ -186,24 +178,21 @@ const Rehla = () => {
       const imageUrl = URL.createObjectURL(file);
       setTempValue(imageUrl);
       setTempImageFile(file);
-      console.log('Selected Image File:', file);
-      console.log('Created Image URL:', imageUrl);
     }
   };
 
   const handleSaveVideo = () => {
     if (!tempVideoFile) {
-      setApiError(t('الرجاء اختيار ملف فيديو'));
+      showToast.error(t('الرجاء اختيار ملف فيديو'));
       return;
     }
 
     setIsUploading(true);
-    setApiError('');
 
     const token = localStorage.getItem('adminToken');
 
     if (!token) {
-      setApiError('No admin token found');
+      showToast.error(t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى'));
       setIsUploading(false);
       return;
     }
@@ -233,13 +222,14 @@ const Rehla = () => {
         setShowVideoModal(false);
         setTempValue('');
         setTempVideoFile(null);
+        showToast.added(t('تم رفع الفيديو بنجاح'));
       })
       .catch(err => {
         console.error('Error uploading video:', err);
         if (err.response && err.response.data && err.response.data.message) {
-          setApiError(t(err.response.data.message));
+          showToast.error(t(err.response.data.message));
         } else {
-          setApiError(t('حدث خطأ أثناء رفع الفيديو'));
+          showToast.error(t('حدث خطأ أثناء رفع الفيديو'));
         }
       })
       .finally(() => {
@@ -248,17 +238,16 @@ const Rehla = () => {
   };
 
   const handleDeleteVideo = () => {
-    if (!window.confirm(t('هل أنت متأكد من حذف الفيديو؟'))) {
-      return;
-    }
+    setShowVideoDeleteConfirm(true);
+  };
 
+  const confirmVideoDelete = () => {
     setIsLoading(true);
-    setApiError('');
 
     const token = localStorage.getItem('adminToken');
 
     if (!token) {
-      setApiError('No admin token found');
+      showToast.error(t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى'));
       setIsLoading(false);
       return;
     }
@@ -278,18 +267,20 @@ const Rehla = () => {
           videoId: ''
         }));
 
+        showToast.deleted(t('تم حذف الفيديو بنجاح'));
         return fetchVideoData();
       })
       .catch(err => {
         console.error('Error deleting video:', err);
         if (err.response && err.response.data && err.response.data.message) {
-          setApiError(t(err.response.data.message));
+          showToast.error(t(err.response.data.message));
         } else {
-          setApiError(t('حدث خطأ أثناء حذف الفيديو'));
+          showToast.error(t('حدث خطأ أثناء حذف الفيديو'));
         }
       })
       .finally(() => {
         setIsLoading(false);
+        setShowVideoDeleteConfirm(false);
       });
   };
 
@@ -307,7 +298,7 @@ const Rehla = () => {
       
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        setApiError('No admin token found');
+        showToast.error(t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى'));
         setIsLoading(false);
         return;
       }
@@ -326,60 +317,56 @@ const Rehla = () => {
       )
         .then(response => {
           axios.get(`https://elmanafea.shop/rehla/media?lang=${i18n.language}`)
-      .then(response => {
-        console.log('Content API response:', response.data);
-        
-        if (response.data && response.data.contentItems) {
-          const contentItems = response.data.contentItems;
-          
-          // Process both text and image items and preserve original order from backend
-          const allSections = contentItems.map((item, index) => {
-            // Use index as ordering key to preserve backend order
-            if (item.type === 'image') {
-              return {
-                id: item._id,
-                type: 'image',
-                imageUrl: `https://elmanafea.shop${item.content}`,
-                createdAt: item.createdAt,
-                index: index // Store original position
-              };
-            } else if (item.type === 'subtitle') {
-              return {
-                id: item._id,
-                type: 'text',
-                content: item.content,
-                createdAt: item.createdAt,
-                index: index // Store original position
-              };
-            }
-            return null;
-          }).filter(item => item !== null);
-          
-          // Extract images for the image grid but maintain backend order
-          const imageItems = contentItems
-            .filter(item => item.type === 'image')
-            .map((item, index) => ({
-              id: item._id,
-              url: `https://elmanafea.shop${item.content}`,
-              createdAt: item.createdAt,
-              index: index // Store original position
-            }));
-          
-          setImgs(imageItems);
-          
-          // Preserve the exact ordering from the backend
-          setContent(prevContent => ({
-            ...prevContent,
-            sections: allSections
-          }));
-        }
-      })        })
+            .then(response => {
+              if (response.data && response.data.contentItems) {
+                const contentItems = response.data.contentItems;
+                
+                const allSections = contentItems.map((item, index) => {
+                  if (item.type === 'image') {
+                    return {
+                      id: item._id,
+                      type: 'image',
+                      imageUrl: `https://elmanafea.shop${item.content}`,
+                      createdAt: item.createdAt,
+                      index: index
+                    };
+                  } else if (item.type === 'subtitle') {
+                    return {
+                      id: item._id,
+                      type: 'text',
+                      content: item.content,
+                      createdAt: item.createdAt,
+                      index: index
+                    };
+                  }
+                  return null;
+                }).filter(item => item !== null);
+                
+                const imageItems = contentItems
+                  .filter(item => item.type === 'image')
+                  .map((item, index) => ({
+                    id: item._id,
+                    url: `https://elmanafea.shop${item.content}`,
+                    createdAt: item.createdAt,
+                    index: index
+                  }));
+                
+                setImgs(imageItems);
+                
+                setContent(prevContent => ({
+                  ...prevContent,
+                  sections: allSections
+                }));
+              }
+              showToast.added(t('تم إضافة النص بنجاح'));
+            })        
+        })
         .catch(err => {
           console.error('Error adding text section:', err);
           if (err.response && err.response.data && err.response.data.message) {
-            setApiError(t(err.response.data.message));
+            showToast.error(t(err.response.data.message));
           } else {
-            setApiError(t('حدث خطأ أثناء إضافة قسم النص'));
+            showToast.error(t('حدث خطأ أثناء إضافة قسم النص'));
           }
         })
         .finally(() => {
@@ -387,11 +374,10 @@ const Rehla = () => {
         });
     } else {
       setIsLoading(true);
-      console.log('Adding image section with:', { type, contentValue, tempImageFile });
       
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        setApiError('No admin token found');
+        showToast.error(t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى'));
         setIsLoading(false);
         return;
       }
@@ -399,11 +385,8 @@ const Rehla = () => {
       let formData = new FormData();
       formData.append('lang', i18n.language);
 
-      // Prepare image data from either file or URL
       if (tempImageFile) {
-        // Case 1: Direct file upload
         formData.append('image', tempImageFile);
-        console.log('Uploading image file:', tempImageFile);
         
         axios.post(
           'https://elmanafea.shop/admin/rehlauploadimage',
@@ -417,69 +400,62 @@ const Rehla = () => {
         )
           .then(response => {
             axios.get(`https://elmanafea.shop/rehla/media?lang=${i18n.language}`)
-      .then(response => {
-        console.log('Content API response:', response.data);
-        
-        if (response.data && response.data.contentItems) {
-          const contentItems = response.data.contentItems;
-          
-          // Process both text and image items and preserve original order from backend
-          const allSections = contentItems.map((item, index) => {
-            // Use index as ordering key to preserve backend order
-            if (item.type === 'image') {
-              return {
-                id: item._id,
-                type: 'image',
-                imageUrl: `https://elmanafea.shop${item.content}`,
-                createdAt: item.createdAt,
-                index: index // Store original position
-              };
-            } else if (item.type === 'subtitle') {
-              return {
-                id: item._id,
-                type: 'text',
-                content: item.content,
-                createdAt: item.createdAt,
-                index: index // Store original position
-              };
-            }
-            return null;
-          }).filter(item => item !== null);
-          
-          // Extract images for the image grid but maintain backend order
-          const imageItems = contentItems
-            .filter(item => item.type === 'image')
-            .map((item, index) => ({
-              id: item._id,
-              url: `https://elmanafea.shop${item.content}`,
-              createdAt: item.createdAt,
-              index: index // Store original position
-            }));
-          
-          setImgs(imageItems);
-          
-          // Preserve the exact ordering from the backend
-          setContent(prevContent => ({
-            ...prevContent,
-            sections: allSections
-          }));
-        }
-      })
+              .then(response => {
+                if (response.data && response.data.contentItems) {
+                  const contentItems = response.data.contentItems;
+                  
+                  const allSections = contentItems.map((item, index) => {
+                    if (item.type === 'image') {
+                      return {
+                        id: item._id,
+                        type: 'image',
+                        imageUrl: `https://elmanafea.shop${item.content}`,
+                        createdAt: item.createdAt,
+                        index: index
+                      };
+                    } else if (item.type === 'subtitle') {
+                      return {
+                        id: item._id,
+                        type: 'text',
+                        content: item.content,
+                        createdAt: item.createdAt,
+                        index: index
+                      };
+                    }
+                    return null;
+                  }).filter(item => item !== null);
+                  
+                  const imageItems = contentItems
+                    .filter(item => item.type === 'image')
+                    .map((item, index) => ({
+                      id: item._id,
+                      url: `https://elmanafea.shop${item.content}`,
+                      createdAt: item.createdAt,
+                      index: index
+                    }));
+                  
+                  setImgs(imageItems);
+                  
+                  setContent(prevContent => ({
+                    ...prevContent,
+                    sections: allSections
+                  }));
+                }
+                showToast.added(t('تم إضافة الصورة بنجاح'));
+              })
           })
           .catch(err => {
             console.error('Error adding image section:', err);
-            console.log('Error response:', err.response?.data);
             if (err.response && err.response.data && err.response.data.message) {
-              setApiError(t(err.response.data.message));
+              showToast.error(t(err.response.data.message));
             } else {
-              setApiError(t('حدث خطأ أثناء إضافة قسم الصورة'));
+              showToast.error(t('حدث خطأ أثناء إضافة قسم الصورة'));
             }
           })
           .finally(() => {
             setIsLoading(false);
           });
       } else if (contentValue) {
-        // Case 2: URL-based upload
         fetch(contentValue)
           .then(response => {
             if (!response.ok) throw new Error('Failed to fetch image');
@@ -501,8 +477,6 @@ const Rehla = () => {
             );
           })
           .then(response => {
-            console.log('Image upload response:', response.data);
-            
             if (response.data && response.data.imageUrl) {
               const newImage = {
                 id: response.data.id || Date.now(),
@@ -521,42 +495,32 @@ const Rehla = () => {
                 ...prevContent,
                 sections: [...prevContent.sections, newImageSection]
               }));
+              showToast.added(t('تم إضافة الصورة بنجاح'));
             }
           })
           .catch(error => {
             console.error('Error creating file from URL:', error);
-            setApiError(t('رجاء اختيار ملف صورة صحيح أو إدخال رابط صحيح'));
+            showToast.error(t('رجاء اختيار ملف صورة صحيح أو إدخال رابط صحيح'));
           })
           .finally(() => {
             setIsLoading(false);
           });
       } else {
-        setApiError(t('الرجاء اختيار صورة أو إدخال رابط'));
+        showToast.error(t('الرجاء اختيار صورة أو إدخال رابط'));
         setIsLoading(false);
       }
     }
   };
 
-  const addSectionWithCorrectOrder = (newSection) => {
-    setContent(prevContent => {
-      // Add the new section at the end (newest item)
-      return {
-        ...prevContent,
-        sections: [...prevContent.sections, {...newSection, index: prevContent.sections.length}]
-      };
-    });
-  };
-
   const updateSection = (id, newContent) => {
     const section = content.sections.find(s => s.id === id);
-    console.log('Updating section:', { id, section, newContent });
     
     if (section && section.type === 'text') {
       setIsLoading(true);
       
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        setApiError('No admin token found');
+        showToast.error(t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى'));
         setIsLoading(false);
         return;
       }
@@ -579,13 +543,14 @@ const Rehla = () => {
               section.id === id ? { ...section, ...newContent } : section
             )
           });
+          showToast.edited(t('تم تحديث النص بنجاح'));
         })
         .catch(err => {
           console.error('Error updating text section:', err);
           if (err.response && err.response.data && err.response.data.message) {
-            setApiError(t(err.response.data.message));
+            showToast.error(t(err.response.data.message));
           } else {
-            setApiError(t('حدث خطأ أثناء تحديث قسم النص'));
+            showToast.error(t('حدث خطأ أثناء تحديث قسم النص'));
           }
         })
         .finally(() => {
@@ -593,11 +558,10 @@ const Rehla = () => {
         });
     } else if (section && section.type === 'image') {
       setIsLoading(true);
-      console.log('Updating image section with:', { tempImageFile, newContent });
       
       const token = localStorage.getItem('adminToken');
       if (!token) {
-        setApiError('No admin token found');
+        showToast.error(t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى'));
         setIsLoading(false);
         return;
       }
@@ -618,8 +582,6 @@ const Rehla = () => {
           }
         )
           .then(response => {
-            console.log('Image update response:', response.data);
-            
             if (response.data && response.data.imageUrl) {
               const updatedImageSection = {
                 id: response.data._id || id,
@@ -636,14 +598,15 @@ const Rehla = () => {
               }));
               
               setImgs(prev => prev.map(img => img.id === id ? { id, url: response.data.imageUrl } : img));
+              showToast.edited(t('تم تحديث الصورة بنجاح'));
             }
           })
           .catch(err => {
             console.error('Error updating image section:', err);
             if (err.response && err.response.data && err.response.data.message) {
-              setApiError(t(err.response.data.message));
+              showToast.error(t(err.response.data.message));
             } else {
-              setApiError(t('حدث خطأ أثناء تحديث الصورة'));
+              showToast.error(t('حدث خطأ أثناء تحديث الصورة'));
             }
           })
           .finally(() => {
@@ -688,11 +651,12 @@ const Rehla = () => {
               }));
               
               setImgs(prev => prev.map(img => img.id === id ? { id, url: uploadResponse.data.imageUrl } : img));
+              showToast.edited(t('تم تحديث الصورة بنجاح'));
             }
           })
           .catch(error => {
             console.error('Error updating image from URL:', error);
-            setApiError(t('حدث خطأ أثناء تحديث الصورة من الرابط'));
+            showToast.error(t('حدث خطأ أثناء تحديث الصورة من الرابط'));
           })
           .finally(() => {
             setIsLoading(false);
@@ -711,24 +675,27 @@ const Rehla = () => {
   };
 
   const deleteSection = (id) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذا القسم؟')) {
-      return;
-    }
+    setSectionToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmSectionDelete = () => {
+    if (!sectionToDelete) return;
     
-    const section = content.sections.find(s => s.id === id);
+    const section = content.sections.find(s => s.id === sectionToDelete);
     
     setIsLoading(true);
     
     const token = localStorage.getItem('adminToken');
     if (!token) {
-      setApiError('No admin token found');
+      showToast.error(t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى'));
       setIsLoading(false);
       return;
     }
     
     if (section && section.type === 'text') {
       axios.delete(
-        `https://elmanafea.shop/admin/rehladeletesubtitle/${id}`,
+        `https://elmanafea.shop/admin/rehladeletesubtitle/${sectionToDelete}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -738,23 +705,26 @@ const Rehla = () => {
         .then(() => {
           setContent({
             ...content,
-            sections: content.sections.filter(section => section.id !== id)
+            sections: content.sections.filter(section => section.id !== sectionToDelete)
           });
+          showToast.deleted(t('تم حذف النص بنجاح'));
         })
         .catch(err => {
           console.error('Error deleting section:', err);
           if (err.response && err.response.data && err.response.data.message) {
-            setApiError(t(err.response.data.message));
+            showToast.error(t(err.response.data.message));
           } else {
-            setApiError(t('حدث خطأ أثناء حذف القسم'));
+            showToast.error(t('حدث خطأ أثناء حذف القسم'));
           }
         })
         .finally(() => {
           setIsLoading(false);
+          setShowDeleteConfirm(false);
+          setSectionToDelete(null);
         });
     } else if (section && section.type === 'image') {
       axios.delete(
-        `https://elmanafea.shop/admin/rehladeleteimage/${id}`,
+        `https://elmanafea.shop/admin/rehladeleteimage/${sectionToDelete}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -764,21 +734,24 @@ const Rehla = () => {
         .then(() => {
           setContent({
             ...content,
-            sections: content.sections.filter(section => section.id !== id)
+            sections: content.sections.filter(section => section.id !== sectionToDelete)
           });
           
-          setImgs(prev => prev.filter(img => img.id !== id));
+          setImgs(prev => prev.filter(img => img.id !== sectionToDelete));
+          showToast.deleted(t('تم حذف الصورة بنجاح'));
         })
         .catch(err => {
           console.error('Error deleting section:', err);
           if (err.response && err.response.data && err.response.data.message) {
-            setApiError(t(err.response.data.message));
+            showToast.error(t(err.response.data.message));
           } else {
-            setApiError(t('حدث خطأ أثناء حذف القسم'));
+            showToast.error(t('حدث خطأ أثناء حذف القسم'));
           }
         })
         .finally(() => {
           setIsLoading(false);
+          setShowDeleteConfirm(false);
+          setSectionToDelete(null);
         });
     }
   };
@@ -829,10 +802,10 @@ const Rehla = () => {
           <video
             className="rehla-video"
             controls
-            preload="auto" // Enables buffering
-            onCanPlay={() => setIsVideoLoading(false)} // Hide loader when video is ready to play
-            onWaiting={() => setIsVideoLoading(true)} // Show loader when buffering
-            onPlaying={() => setIsVideoLoading(false)} // Hide loader when playback starts
+            preload="auto"
+            onCanPlay={() => setIsVideoLoading(false)}
+            onWaiting={() => setIsVideoLoading(true)}
+            onPlaying={() => setIsVideoLoading(false)}
           >
             <source src={"https://elmanafea.shop" + content.videoUrl} type="video/mp4" />
             {t('متصفحك لا يدعم تشغيل الفيديو')}
@@ -843,7 +816,6 @@ const Rehla = () => {
   };
 
   const renderOrderedContent = () => {
-    // Sort content sections by index to ensure proper ordering
     const orderedSections = [...content.sections].sort((a, b) => a.index - b.index);
     
     return (
@@ -884,7 +856,6 @@ const Rehla = () => {
           )}
         </div>
 
-        {/* Content sections in their original backend order */}
         {isAdmin ? (
           <div className={`admin-content-sections dir-${getDirection()}`}>
             {[...content.sections].sort((a, b) => a.index - b.index).map((section) => (
@@ -930,7 +901,7 @@ const Rehla = () => {
             ))}
           </div>
         ) : (
-          renderOrderedContent() // Use the ordered content for users
+          renderOrderedContent()
         )}
         
         {isAdmin && (
@@ -966,8 +937,6 @@ const Rehla = () => {
                 </div>
               )}
 
-              {apiError && <div className="api-error">{apiError}</div>}
-
               {tempVideoFile && (
                 <div className="video-preview">
                   <video controls width="100%" height="150">
@@ -990,7 +959,6 @@ const Rehla = () => {
                 setShowVideoModal(false);
                 setTempValue('');
                 setTempVideoFile(null);
-                setApiError('');
               }} className="cancel-btn">
                 {t('إلغاء')}
               </button>
@@ -1060,6 +1028,55 @@ const Rehla = () => {
                   setTempImageFile(null);
                   setIsAddingSection(false);
                 }} 
+                className="cancel-btn"
+              >
+                {t('إلغاء')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>{t('تأكيد الحذف')}</h3>
+            <p>{t('هل أنت متأكد من حذف هذا القسم؟')}</p>
+            <div className="modal-buttons">
+              <button 
+                onClick={confirmSectionDelete} 
+                className="delete-btn"
+              >
+                {t('نعم، حذف')}
+              </button>
+              <button 
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setSectionToDelete(null);
+                }} 
+                className="cancel-btn"
+              >
+                {t('إلغاء')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVideoDeleteConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>{t('تأكيد الحذف')}</h3>
+            <p>{t('هل أنت متأكد من حذف هذا الفيديو؟')}</p>
+            <div className="modal-buttons">
+              <button 
+                onClick={confirmVideoDelete} 
+                className="delete-btn"
+              >
+                {t('نعم، حذف')}
+              </button>
+              <button 
+                onClick={() => setShowVideoDeleteConfirm(false)} 
                 className="cancel-btn"
               >
                 {t('إلغاء')}

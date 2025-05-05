@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faPlus, faPenToSquare } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faPlus, faPenToSquare, faAnglesLeft, faAnglesRight } from '@fortawesome/free-solid-svg-icons';
 import './intractivefiles.css';
 import Header from "./header";
 import Footer from './footer';
@@ -62,7 +62,8 @@ function Intre() {
   });
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState(null);
   const booksPerPage = 8; // Adjust this number as needed
   const navigate = useNavigate();
 
@@ -120,7 +121,7 @@ function Intre() {
         .catch(error => {
           if (isMounted) {
             console.error('Error fetching header:', error);
-            setError('Failed to load header data');
+            showToast.error(t('فشل تحميل بيانات العنوان'));
           }
         })
         .finally(() => {
@@ -146,13 +147,10 @@ function Intre() {
         .then(response => {
           if (response.data && Array.isArray(response.data.books)) {
             const formattedBooks = response.data.books.map(book => {
-              // تأكد من أن رابط الصورة كامل
               let imageUrl = book.imageUrl;
               if (imageUrl && !imageUrl.startsWith('http')) {
                 imageUrl = `https://elmanafea.shop${imageUrl}`;
               }
-              console.log('Book image URL:', imageUrl); // للتأكد من الرابط
-
               return {
                 id: book._id || Date.now(),
                 title: book.title,
@@ -165,8 +163,7 @@ function Intre() {
         })
         .catch(error => {
           console.error('Error fetching books:', error);
-          const defaultBooks = allBooks[i18n.language] || [];
-          setBooks(defaultBooks);
+          showToast.error(t('فشل تحميل الكتب'));
         });
     };
 
@@ -207,11 +204,12 @@ function Intre() {
       if (response.status === 200) {
         setHeaderText(editingHeaderText);
         setShowHeaderModal(false);
+        showToast.success(t('تم تحديث العنوان بنجاح'));
       }
     })
     .catch(error => {
       console.error('Error updating header:', error);
-      showToast.error(error.response?.data?.message || 'Failed to update header');
+      showToast.error(error.response?.data?.message || t('فشل تحديث العنوان'));
     });
   };
 
@@ -236,29 +234,25 @@ function Intre() {
     if (window.confirm(t('هل أنت متأكد من حذف هذا الكتاب؟'))) {
       const adminToken = localStorage.getItem('adminToken');
       if (!adminToken) {
-        showToast.error('Admin authentication required');
+        showToast.error(t('يجب تسجيل الدخول كمسؤول'));
         return;
       }
 
-      // استخدام الرابط الجديد للحذف
       axios.delete(`https://elmanafea.shop/admin/deletebook/${bookId}`, {
         headers: {
           Authorization: `Bearer ${adminToken}`
         }
       })
       .then(() => {
-        // تحديث قائمة الكتب بعد الحذف
         return axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
       })
       .then(response => {
         if (response.data && Array.isArray(response.data.books)) {
           const formattedBooks = response.data.books.map(book => {
-            // تأكد من أن رابط الصورة كامل
             let imageUrl = book.imageUrl;
             if (imageUrl && !imageUrl.startsWith('http')) {
               imageUrl = `https://elmanafea.shop${imageUrl}`;
             }
-
             return {
               id: book._id || Date.now(),
               title: book.title,
@@ -267,14 +261,59 @@ function Intre() {
             };
           });
           setBooks(formattedBooks);
-          showToast.deleted('تم حذف الكتاب بنجاح');
+          showToast.deleted(t('تم حذف الكتاب بنجاح'));
         }
       })
       .catch(error => {
         console.error('Error deleting book:', error);
-        showToast.error('حدث خطأ أثناء حذف الكتاب');
+        showToast.error(t('حدث خطأ أثناء حذف الكتاب'));
       });
     }
+  };
+
+  const confirmDelete = () => {
+    if (!bookToDelete) return;
+    
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      showToast.error('Admin authentication required');
+      return;
+    }
+
+    axios.delete(`https://elmanafea.shop/admin/deletebook/${bookToDelete}`, {
+      headers: {
+        Authorization: `Bearer ${adminToken}`
+      }
+    })
+    .then(() => {
+      return axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
+    })
+    .then(response => {
+      if (response.data && Array.isArray(response.data.books)) {
+        const formattedBooks = response.data.books.map(book => {
+          let imageUrl = book.imageUrl;
+          if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = `https://elmanafea.shop${imageUrl}`;
+          }
+          return {
+            id: book._id || Date.now(),
+            title: book.title,
+            link: book.fileUrl,
+            image: imageUrl
+          };
+        });
+        setBooks(formattedBooks);
+        showToast.deleted(t('تم حذف الكتاب بنجاح'));
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting book:', error);
+      showToast.error(t('حدث خطأ أثناء حذف الكتاب'));
+    })
+    .finally(() => {
+      setShowDeleteConfirm(false);
+      setBookToDelete(null);
+    });
   };
 
   const handleUpdate = () => {
@@ -285,7 +324,6 @@ function Intre() {
     formData.append('title', editingBook.title);
     formData.append('lang', i18n.language);
     
-    // إضافة الملف إذا تم تغييره
     if (editingBook.file) {
       formData.append('file', editingBook.file);
       formData.append('type', 'file');
@@ -294,14 +332,8 @@ function Intre() {
       formData.append('type', 'text');
     }
 
-    // إضافة الصورة الجديدة إذا تم اختيارها
     if (editingBook.newImage) {
       formData.append('image', editingBook.newImage);
-    }
-
-    // طباعة محتويات الـ FormData للتأكد
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ': ' + pair[1]);
     }
 
     axios({
@@ -319,7 +351,6 @@ function Intre() {
     })
     .then(response => {
       if (response.status === 200 || response.status === 201) {
-        // تحديث قائمة الكتب بعد التعديل
         return axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
       }
       throw new Error(response.data?.message || 'Failed to update book');
@@ -331,7 +362,6 @@ function Intre() {
           if (imageUrl && !imageUrl.startsWith('http')) {
             imageUrl = `https://elmanafea.shop${imageUrl}`;
           }
-
           return {
             id: book._id || Date.now(),
             title: book.title,
@@ -344,11 +374,11 @@ function Intre() {
       
       setShowEditModal(false);
       setEditingBook(null);
-      showToast.edited('تم تحديث الكتاب بنجاح');
+      showToast.edited(t('تم تحديث الكتاب بنجاح'));
     })
     .catch(error => {
       console.error('Error updating book:', error);
-      showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث الكتاب');
+      showToast.error(error.response?.data?.message || t('حدث خطأ في تحديث الكتاب'));
     });
   };
 
@@ -356,22 +386,16 @@ function Intre() {
     const file = event.target.files[0];
     if (file) {
       if (file.type !== 'application/pdf') {
-        showToast.error('يرجى اختيار ملف PDF فقط');
+        showToast.error(t('يرجى اختيار ملف PDF فقط'));
         event.target.value = '';
         return;
       }
       
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        showToast.error('حجم الملف كبير جداً. الحد الأقصى هو 50 ميجابايت');
+      if (file.size > 50 * 1024 * 1024) {
+        showToast.error(t('حجم الملف كبير جداً. الحد الأقصى هو 50 ميجابايت'));
         event.target.value = '';
         return;
       }
-
-      console.log('Selected file:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      });
 
       setNewBook(prev => ({
         ...prev,
@@ -391,23 +415,23 @@ function Intre() {
 
   const handleAdd = () => {
     if (!newBook.title.trim()) {
-      showToast.error('من فضلك أدخل عنوان الكتاب');
+      showToast.error(t('من فضلك أدخل عنوان الكتاب'));
       return;
     }
     
     if (!newBook.file) {
-      showToast.error('من فضلك اختر ملف PDF');
+      showToast.error(t('من فضلك اختر ملف PDF'));
       return;
     }
 
     if (newBook.file.type !== 'application/pdf') {
-      showToast.error('يرجى اختيار ملف PDF فقط');
+      showToast.error(t('يرجى اختيار ملف PDF فقط'));
       return;
     }
 
     const adminToken = localStorage.getItem('adminToken');
     if (!adminToken) {
-      showToast.error('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى');
+      showToast.error(t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى'));
       return;
     }
 
@@ -417,7 +441,6 @@ function Intre() {
     formData.append('lang', i18n.language);
     formData.append('type', 'file');
 
-    // إضافة الصورة إذا تم اختيارها
     if (newBook.image) {
       formData.append('image', newBook.image);
     }
@@ -440,7 +463,6 @@ function Intre() {
     })
     .then(response => {
       if (response.status === 201 || response.status === 200) {
-        // Refresh books list after successful upload
         return axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
       }
       throw new Error('Upload failed');
@@ -452,7 +474,6 @@ function Intre() {
           if (imageUrl && !imageUrl.startsWith('http')) {
             imageUrl = `https://elmanafea.shop${imageUrl}`;
           }
-
           return {
             id: book._id || Date.now(),
             title: book.title,
@@ -466,15 +487,15 @@ function Intre() {
       setShowAddModal(false);
       setNewBook({ title: '', file: null, image: null });
       setUploadProgress(0);
-      showToast.added('تم إضافة الكتاب بنجاح');
+      showToast.added(t('تم إضافة الكتاب بنجاح'));
     })
     .catch(error => {
       console.error('Upload error:', error);
-      let errorMessage = 'حدث خطأ أثناء رفع الكتاب';
+      let errorMessage = t('حدث خطأ أثناء رفع الكتاب');
       
       if (error.response) {
         if (error.response.status === 401) {
-          errorMessage = 'جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى';
+          errorMessage = t('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى');
           localStorage.removeItem('adminToken');
           setIsAdmin(false);
         } else if (error.response.data?.message) {
@@ -518,11 +539,10 @@ function Intre() {
   const handleUpdateSubtitle = () => {
     const adminToken = localStorage.getItem('adminToken');
     if (!adminToken) {
-      showToast.error('Admin authentication required');
+      showToast.error(t('Admin authentication required'));
       return;
     }
 
-    // Send POST request to update video header
     axios.post(
       'https://elmanafea.shop/admin/booksecondheader',
       {
@@ -537,7 +557,6 @@ function Intre() {
     )
     .then(response => {
       if (response.status === 200 || response.status === 201) {
-        // Fetch updated video header
         return axios.get(`https://elmanafea.shop/booksecondheader?lang=${i18n.language}`);
       }
       throw new Error('Failed to update header');
@@ -549,25 +568,24 @@ function Intre() {
         setSubtitleText(editingSubtitleText);
       }
       setShowSubtitleModal(false);
+      showToast.success(t('تم تحديث العنوان الفرعي بنجاح'));
     })
     .catch(error => {
       console.error('Error updating video header:', error);
-      showToast.error(error.response?.data?.message || 'Failed to update header');
+      showToast.error(error.response?.data?.message || t('Failed to update header'));
     });
   };
 
   const handleBookClick = (book) => {
     if (!book.link) {
-      showToast.error('رابط الكتاب غير متوفر');
+      showToast.error(t('رابط الكتاب غير متوفر'));
       return;
     }
 
-    // Convert relative link to absolute URL
     const absoluteLink = book.link.startsWith('http') ? book.link : `https://elmanafea.shop${book.link}`;
     const encodedLink = encodeURIComponent(absoluteLink.trim());
     const encodedTitle = encodeURIComponent(book.title.trim() || 'كتاب بدون عنوان');
 
-    console.log('Navigating to:', `/book-viewer/${encodedLink}/${encodedTitle}`); // Debug log
     navigate(`/book-viewer/${encodedLink}/${encodedTitle}`);
   };
 
@@ -590,7 +608,6 @@ function Intre() {
             )}
           </div>
 
-          {/* Header Edit Modal */}
           {showHeaderModal && (
             <div className="modal">
               <div className="modal-content">
@@ -625,7 +642,6 @@ function Intre() {
           </div>
         </div>
 
-        {/* Modal for editing subtitle */}
         {showSubtitleModal && (
           <div className="modal">
             <div className="modal-content">
@@ -707,7 +723,32 @@ function Intre() {
             ))}
           </div>
 
-          {/* نافذة تعديل الكتاب */}
+          {showDeleteConfirm && (
+            <div className="modal confirm-modal">
+              <div className="modal-content">
+                <h3>{t('تأكيد الحذف')}</h3>
+                <p>{t('هل أنت متأكد من حذف هذا الكتاب؟')}</p>
+                <div className="modal-buttons">
+                  <button 
+                    onClick={confirmDelete} 
+                    className="delete-btn"
+                  >
+                    {t('نعم، حذف')}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setBookToDelete(null);
+                    }} 
+                    className="cancel-btn"
+                  >
+                    {t('إلغاء')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {showEditModal && (
             <div className="modal">
               <div className="modal-content">
@@ -725,7 +766,6 @@ function Intre() {
                   placeholder={t('رابط الكتاب')}
                 />
 
-                {/* إضافة حقل تحميل الصورة */}
                 <div className="file-upload-container">
                   <input
                     type="file"
@@ -733,7 +773,7 @@ function Intre() {
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
-                        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                        if (file.size > 5 * 1024 * 1024) {
                           showToast.error('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
                           e.target.value = '';
                           return;
@@ -752,7 +792,6 @@ function Intre() {
                   )}
                 </div>
 
-                {/* عرض الصورة الحالية إذا وجدت */}
                 {editingBook.image && !editingBook.newImage && (
                   <div className="current-image-preview">
                     <p>الصورة الحالية:</p>
@@ -772,7 +811,6 @@ function Intre() {
             </div>
           )}
 
-          {/* نافذة إضافة كتاب جديد */}
           {showAddModal && (
             <div className="modal">
               <div className="modal-content">
@@ -813,7 +851,6 @@ function Intre() {
                     {newBook.file && <span className="file-name">{newBook.file.name}</span>}
                   </div>
 
-                  {/* إضافة حقل تحميل الصورة */}
                   <div className="file-upload-container">
                     <input
                       type="file"
@@ -821,7 +858,7 @@ function Intre() {
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                          if (file.size > 5 * 1024 * 1024) {
                             showToast.error('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
                             e.target.value = '';
                             return;
@@ -871,18 +908,47 @@ function Intre() {
 
           <div className="pagination">
             <ul>
-              {currentPage > 1 && (
+              {pageNumbers.length > 4 && currentPage > 1 && (
+                <li><a onClick={() => paginate(1)}>&lt;&lt;</a></li>
+              )}
+              {pageNumbers.length > 4 && currentPage > 1 && (
                 <li><a onClick={() => paginate(currentPage - 1)}>&lt;</a></li>
               )}
-              {pageNumbers.map(number => (
-                <li key={number}>
-                  <a onClick={() => paginate(number)} className={currentPage === number ? 'active' : ''}>
-                    {number}
-                  </a>
-                </li>
-              ))}
-              {currentPage < pageNumbers.length && (
+              {(() => {
+                // Calculate which page numbers to show (sliding window of 4)
+                let startPage, endPage;
+                
+                if (pageNumbers.length <= 4) {
+                    // Less than 4 pages, show all
+                    startPage = 0;
+                    endPage = pageNumbers.length;
+                } else if (currentPage <= 2) {
+                    // Near the start, show first 4 pages
+                    startPage = 0;
+                    endPage = 4;
+                } else if (currentPage >= pageNumbers.length - 1) {
+                    // Near the end, show last 4 pages
+                    startPage = pageNumbers.length - 4;
+                    endPage = pageNumbers.length;
+                } else {
+                    // In the middle, show current and surrounding pages
+                    startPage = currentPage - 2;
+                    endPage = currentPage + 2;
+                }
+                
+                return pageNumbers.slice(startPage, endPage).map(number => (
+                    <li key={number}>
+                        <a onClick={() => paginate(number)} className={currentPage === number ? 'active' : ''}>
+                            {number}
+                        </a>
+                    </li>
+                ));
+              })()}
+              {pageNumbers.length > 4 && currentPage < pageNumbers.length && (
                 <li><a onClick={() => paginate(currentPage + 1)}>&gt;</a></li>
+              )}
+              {pageNumbers.length > 4 && currentPage < pageNumbers.length && (
+                <li><a onClick={() => paginate(pageNumbers.length)}>&gt;&gt;</a></li>
               )}
             </ul>
           </div>
