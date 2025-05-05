@@ -245,7 +245,7 @@ const Mosabaqa = () => {
       <div className="mosabaqa-container">
         <div className="mosabaqa-form">
           <div className="mosabaqa-header">
-            <h2>{t('المسابقة الرمضانية')}</h2>
+            <h2>{t('مسابقة منافع الحج')}</h2>
             {isAdmin && (
               <button 
                 className="admin-excel-btn"
