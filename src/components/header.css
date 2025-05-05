@@ -617,3 +617,132 @@ a {
     padding: 6px 8px;
   }
 }
+
+/* تحسينات تصميم الهيدر للأجهزة الصغيرة */
+@media (max-width: 770px) {
+  /* إعادة ترتيب الهيدر */
+  .top-nav {
+    flex-direction: column;
+    padding: 5px 5px;
+  }
+  
+  .logo-container {
+    /* margin: 10px 0; */
+  }
+  
+  .logo {
+    height: 40px; 
+  }
+
+  /* إعادة تصميم عناصر التسجيل */
+  .auth-links {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 0;
+  }
+  
+  .auth-btn {
+    padding: 6px 15px;
+    font-size: 14px;
+  }
+  
+  /* تحسين القائمة الرئيسية */
+  .main-nav {
+    padding: 10px 15px;
+  }
+  
+  .nav-menu {
+    justify-content: center;
+    margin: 10px 0;
+    gap: 5px;
+  }
+  
+  .nav-link {
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  
+  /* تحسين النص المتحرك */
+  .scroll-container {
+    height: 30px;
+  }
+  
+  .scroll-item {
+    font-size: 14px;
+  }
+  
+  /* تعديل أزرار اللغة */
+  .language-dropdown {
+    align-self: center;
+    margin: 10px 0;
+  }
+  
+  .language-btn {
+    font-size: 14px;
+  }
+  
+  /* شريط القائمة المحسن */
+  .nav-actions {
+    display: flex;
+    /* justify-content: center; */
+    width: 100%;
+    position: relative;
+    top: auto;
+    right: auto;
+    /* margin-top: 10px; */
+  }
+  
+  .sign-out-btn {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+  
+  /* تعديل أيقونة القائمة */
+  .mobile-menu-btn {
+    top: 10px;
+    padding: 8px;
+    /* background-color: rgba(255, 255, 255, 0.1); */
+    border-radius: 4px;
+  }
+  
+  /* تحسين تجربة المستخدم في القائمة المنسدلة */
+  .main-nav .nav-menu.mobile-open {
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+    /* padding-top: 80px; */
+  }
+  
+  .main-nav .nav-menu li {
+    width: 100%;
+    /* text-align: center; */
+  }
+  
+  .nav-item-container {
+    /* justify-content: space-between; */
+  }
+  
+  .edit-icon {
+    padding: 8px;
+  }
+}
+
+/* تعديلات إضافية للشاشات الأصغر للغاية */
+@media (max-width: 480px) {
+  .logo {
+    height: 35px;
+  }
+  
+  .auth-btn {
+    padding: 5px 12px;
+    font-size: 13px;
+  }
+  
+  .nav-actions {
+    /* flex-direction: column; */
+    gap: 8px;
+  }
+  
+  .language-content {
+    margin-inline: -60px;
+    width: 150px;
+  }
+}

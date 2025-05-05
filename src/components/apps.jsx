@@ -83,6 +83,7 @@ function Apps() {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showTitleEditModal, setShowTitleEditModal] = useState(false);
   const [showDescriptionEditModal, setShowDescriptionEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const resizeImage = async (file) => {
     return new Promise((resolve) => {
@@ -436,35 +437,37 @@ function Apps() {
     setTempText('');
   };
 
-  const handleDeleteApp = async (appId) => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
-        return;
-      }
+  const handleDeleteApp = (appId) => {
+    setAppToDelete(appId);
+    setShowDeleteConfirm(true);
+  };
 
-      if (!window.confirm('هل أنت متأكد من حذف هذا التطبيق؟')) {
-        return;
-      }
+  const confirmAppDelete = () => {
+    if (!appToDelete) return;
+    
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
+      return;
+    }
 
-      const response = await axios.delete(
-        `https://elmanafea.shop/admin/deleteapp/${appId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${adminToken}`
-          }
-        }
-      );
-
-      if (response.status === 200) {
-        await fetchApps(activeCategory);
-        showToast.deleted('تم حذف التطبيق بنجاح');
+    axios.delete(`https://elmanafea.shop/admin/deleteapp/${appToDelete}`, {
+      headers: {
+        'Authorization': `Bearer ${adminToken}`
       }
-    } catch (error) {
+    })
+    .then(() => {
+      fetchApps(activeCategory);
+      showToast.deleted('تم حذف التطبيق بنجاح');
+    })
+    .catch(error => {
       console.error('Error deleting app:', error);
       showToast.error(error.response?.data?.message || 'حدث خطأ في حذف التطبيق');
-    }
+    })
+    .finally(() => {
+      setShowDeleteConfirm(false);
+      setAppToDelete(null);
+    });
   };
 
   const filteredApps = apps.filter(app => app.category === activeCategory);
@@ -753,6 +756,32 @@ function Apps() {
                   إلغاء
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="modal">
+          <div className="modal-content">
+            <h3>{t('تأكيد الحذف')}</h3>
+            <p>{t('هل أنت متأكد من حذف هذا التطبيق؟')}</p>
+            <div className="modal-buttons">
+              <button 
+                onClick={confirmAppDelete} 
+                className="delete-btn"
+              >
+                {t('نعم، حذف')}
+              </button>
+              <button 
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setAppToDelete(null);
+                }} 
+                className="cancel-btn"
+              >
+                {t('إلغاء')}
+              </button>
             </div>
           </div>
         </div>
