@@ -626,9 +626,6 @@ a {
     padding: 5px 5px;
   }
   
-  .logo-container {
-    /* margin: 10px 0; */
-  }
   
   .logo {
     height: 40px; 
@@ -716,9 +713,7 @@ a {
     /* text-align: center; */
   }
   
-  .nav-item-container {
-    /* justify-content: space-between; */
-  }
+  
   
   .edit-icon {
     padding: 8px;
