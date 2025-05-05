@@ -63,102 +63,105 @@ const Rehla = () => {
     localStorage.setItem('rehlaSections', JSON.stringify(content.sections));
   }, [content.sections]);
 
-  const fetchVideoData = async () => {
-    try {
-      setIsLoading(true);
-      setApiError('');
-      
-      const response = await axios.get(`https://elmanafea.shop/rehlavideos?lang=${i18n.language}`);
-      
-      if (response.data && response.data.videos && Array.isArray(response.data.videos)) {
-        setVideosArray(response.data.videos);
-        
-        if (response.data.videos.length > 0) {
-          const latestVideo = response.data.videos[response.data.videos.length - 1];
+  const fetchVideoData = () => {
+    setIsLoading(true);
+    setApiError('');
+    
+    axios.get(`https://elmanafea.shop/rehlavideos?lang=${i18n.language}`)
+      .then(response => {
+        if (response.data && response.data.videos && Array.isArray(response.data.videos)) {
+          setVideosArray(response.data.videos);
+          
+          if (response.data.videos.length > 0) {
+            const latestVideo = response.data.videos[response.data.videos.length - 1];
+            
+            setContent(prevContent => ({
+              ...prevContent,
+              videoUrl: latestVideo.url,
+              videoId: latestVideo.id,
+              videoType: 'file'
+            }));
+          }
+        } else if (response.data && response.data.video) {
+          setVideosArray([response.data.video]);
           
           setContent(prevContent => ({
             ...prevContent,
-            videoUrl: latestVideo.url,
-            videoId: latestVideo.id,
+            videoUrl: response.data.video.url,
+            videoId: response.data.video.id,
             videoType: 'file'
           }));
+        } else {
+          setVideosArray([]);
         }
-      } else if (response.data && response.data.video) {
-        setVideosArray([response.data.video]);
-        
-        setContent(prevContent => ({
-          ...prevContent,
-          videoUrl: response.data.video.url,
-          videoId: response.data.video.id,
-          videoType: 'file'
-        }));
-      } else {
-        setVideosArray([]);
-      }
-    } catch (err) {
-      console.error('Error fetching video data:', err);
-      setApiError(t('حدث خطأ أثناء جلب بيانات الفيديو'));
-    } finally {
-      setIsLoading(false);
-    }
+      })
+      .catch(err => {
+        console.error('Error fetching video data:', err);
+        setApiError(t('حدث خطأ أثناء جلب بيانات الفيديو'));
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
-  const fetchContentFromAPI = async () => {
-    try {
-      setIsLoading(true);
-      
-      const response = await axios.get(`https://elmanafea.shop/rehla/media?lang=${i18n.language}`);
-      console.log('Content API response:', response.data);
-      
-      if (response.data && response.data.contentItems) {
-        const contentItems = response.data.contentItems;
+  const fetchContentFromAPI = () => {
+    setIsLoading(true);
+    
+    axios.get(`https://elmanafea.shop/rehla/media?lang=${i18n.language}`)
+      .then(response => {
+        console.log('Content API response:', response.data);
         
-        // Process both text and image items and preserve original order from backend
-        const allSections = contentItems.map((item, index) => {
-          // Use index as ordering key to preserve backend order
-          if (item.type === 'image') {
-            return {
+        if (response.data && response.data.contentItems) {
+          const contentItems = response.data.contentItems;
+          
+          // Process both text and image items and preserve original order from backend
+          const allSections = contentItems.map((item, index) => {
+            // Use index as ordering key to preserve backend order
+            if (item.type === 'image') {
+              return {
+                id: item._id,
+                type: 'image',
+                imageUrl: `https://elmanafea.shop${item.content}`,
+                createdAt: item.createdAt,
+                index: index // Store original position
+              };
+            } else if (item.type === 'subtitle') {
+              return {
+                id: item._id,
+                type: 'text',
+                content: item.content,
+                createdAt: item.createdAt,
+                index: index // Store original position
+              };
+            }
+            return null;
+          }).filter(item => item !== null);
+          
+          // Extract images for the image grid but maintain backend order
+          const imageItems = contentItems
+            .filter(item => item.type === 'image')
+            .map((item, index) => ({
               id: item._id,
-              type: 'image',
-              imageUrl: `https://elmanafea.shop${item.content}`,
+              url: `https://elmanafea.shop${item.content}`,
               createdAt: item.createdAt,
               index: index // Store original position
-            };
-          } else if (item.type === 'subtitle') {
-            return {
-              id: item._id,
-              type: 'text',
-              content: item.content,
-              createdAt: item.createdAt,
-              index: index // Store original position
-            };
-          }
-          return null;
-        }).filter(item => item !== null);
-        
-        // Extract images for the image grid but maintain backend order
-        const imageItems = contentItems
-          .filter(item => item.type === 'image')
-          .map((item, index) => ({
-            id: item._id,
-            url: `https://elmanafea.shop${item.content}`,
-            createdAt: item.createdAt,
-            index: index // Store original position
+            }));
+          
+          setImgs(imageItems);
+          
+          // Preserve the exact ordering from the backend
+          setContent(prevContent => ({
+            ...prevContent,
+            sections: allSections
           }));
-        
-        setImgs(imageItems);
-        
-        // Preserve the exact ordering from the backend
-        setContent(prevContent => ({
-          ...prevContent,
-          sections: allSections
-        }));
-      }
-    } catch (err) {
-      console.error('Error fetching content:', err);
-    } finally {
-      setIsLoading(false);
-    }
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching content:', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const handleVideoChange = () => {
@@ -188,101 +191,106 @@ const Rehla = () => {
     }
   };
 
-  const handleSaveVideo = async () => {
+  const handleSaveVideo = () => {
     if (!tempVideoFile) {
       setApiError(t('الرجاء اختيار ملف فيديو'));
       return;
     }
 
-    try {
-      setIsUploading(true);
-      setApiError('');
+    setIsUploading(true);
+    setApiError('');
 
-      const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('adminToken');
 
-      if (!token) {
-        throw new Error('No admin token found');
-      }
-
-      const formData = new FormData();
-      formData.append('video', tempVideoFile);
-      formData.append('lang', i18n.language);
-
-      const response = await axios.post(
-        'https://elmanafea.shop/admin/rehlauploadvideo',
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            console.log(`Upload Progress: ${percentCompleted}%`);
-          }
-        }
-      );
-
-      await fetchVideoData();
-
-      setShowVideoModal(false);
-      setTempValue('');
-      setTempVideoFile(null);
-
-    } catch (err) {
-      console.error('Error uploading video:', err);
-      if (err.response && err.response.data && err.response.data.message) {
-        setApiError(t(err.response.data.message));
-      } else {
-        setApiError(t('حدث خطأ أثناء رفع الفيديو'));
-      }
-    } finally {
+    if (!token) {
+      setApiError('No admin token found');
       setIsUploading(false);
+      return;
     }
+
+    const formData = new FormData();
+    formData.append('video', tempVideoFile);
+    formData.append('lang', i18n.language);
+
+    axios.post(
+      'https://elmanafea.shop/admin/rehlauploadvideo',
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`Upload Progress: ${percentCompleted}%`);
+        }
+      }
+    )
+      .then(() => {
+        return fetchVideoData();
+      })
+      .then(() => {
+        setShowVideoModal(false);
+        setTempValue('');
+        setTempVideoFile(null);
+      })
+      .catch(err => {
+        console.error('Error uploading video:', err);
+        if (err.response && err.response.data && err.response.data.message) {
+          setApiError(t(err.response.data.message));
+        } else {
+          setApiError(t('حدث خطأ أثناء رفع الفيديو'));
+        }
+      })
+      .finally(() => {
+        setIsUploading(false);
+      });
   };
 
-  const handleDeleteVideo = async () => {
+  const handleDeleteVideo = () => {
     if (!window.confirm(t('هل أنت متأكد من حذف الفيديو؟'))) {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      setApiError('');
+    setIsLoading(true);
+    setApiError('');
 
-      const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('adminToken');
 
-      if (!token) {
-        throw new Error('No admin token found');
-      }
-      
-      await axios.delete(
-        `https://elmanafea.shop/admin/rehladeletevideo/${content.videoId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      setContent(prevContent => ({
-        ...prevContent,
-        videoUrl: '',
-        videoId: ''
-      }));
-
-      await fetchVideoData();
-      
-    } catch (err) {
-      console.error('Error deleting video:', err);
-      if (err.response && err.response.data && err.response.data.message) {
-        setApiError(t(err.response.data.message));
-      } else {
-        setApiError(t('حدث خطأ أثناء حذف الفيديو'));
-      }
-    } finally {
+    if (!token) {
+      setApiError('No admin token found');
       setIsLoading(false);
+      return;
     }
+    
+    axios.delete(
+      `https://elmanafea.shop/admin/rehladeletevideo/${content.videoId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+      .then(() => {
+        setContent(prevContent => ({
+          ...prevContent,
+          videoUrl: '',
+          videoId: ''
+        }));
+
+        return fetchVideoData();
+      })
+      .catch(err => {
+        console.error('Error deleting video:', err);
+        if (err.response && err.response.data && err.response.data.message) {
+          setApiError(t(err.response.data.message));
+        } else {
+          setApiError(t('حدث خطأ أثناء حذف الفيديو'));
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const openAddSectionModal = (type) => {
@@ -293,91 +301,75 @@ const Rehla = () => {
     setShowEditModal(true);
   };
 
-  const addSection = async (type, contentValue) => {
+  const addSection = (type, contentValue) => {
     if (type === 'text') {
-      try {
-        setIsLoading(true);
-        
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          throw new Error('No admin token found');
-        }
-        
-        const response = await axios.post(
-          'https://elmanafea.shop/admin/rehlacontentitems',
-          {
-            contentItems: contentValue,
-            lang: i18n.language
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        );
-        
-        if (response.data && response.data.id) {
-          const newTextSection = {
-            id: response.data.id,
-            type: 'text',
-            content: contentValue
-          };
-          
-          setContent(prevContent => ({
-            ...prevContent,
-            sections: [...prevContent.sections, newTextSection]
-          }));
-        }
-        
-      } catch (err) {
-        console.error('Error adding text section:', err);
-        if (err.response && err.response.data && err.response.data.message) {
-          setApiError(t(err.response.data.message));
-        } else {
-          setApiError(t('حدث خطأ أثناء إضافة قسم النص'));
-        }
-      } finally {
+      setIsLoading(true);
+      
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setApiError('No admin token found');
         setIsLoading(false);
+        return;
       }
-    } else {
-      try {
-        setIsLoading(true);
-        console.log('Adding image section with:', { type, contentValue, tempImageFile });
-        
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          throw new Error('No admin token found');
-        }
-
-        let formData = new FormData();
-        formData.append('lang', i18n.language);
-
-        // Prepare image data from either file or URL
-        if (tempImageFile) {
-          // Case 1: Direct file upload
-          formData.append('image', tempImageFile);
-          console.log('Uploading image file:', tempImageFile);
-        } else if (contentValue) {
-          // Case 2: URL-based upload
-          try {
-            const response = await fetch(contentValue);
-            const blob = await response.blob();
-            const file = new File([blob], "image.jpg", { type: blob.type });
-            formData.append('image', file);
-          } catch (error) {
-            console.error('Error creating file from URL:', error);
-            setApiError(t('رجاء اختيار ملف صورة'));
-            setIsLoading(false);
-            return;
+      
+      axios.post(
+        'https://elmanafea.shop/admin/rehlacontentitems',
+        {
+          contentItems: contentValue,
+          lang: i18n.language
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        } else {
-          setApiError(t('الرجاء اختيار صورة أو إدخال رابط'));
-          setIsLoading(false);
-          return;
         }
+      )
+        .then(response => {
+          if (response.data && response.data.id) {
+            const newTextSection = {
+              id: response.data.id,
+              type: 'text',
+              content: contentValue
+            };
+            
+            setContent(prevContent => ({
+              ...prevContent,
+              sections: [...prevContent.sections, newTextSection]
+            }));
+          }
+        })
+        .catch(err => {
+          console.error('Error adding text section:', err);
+          if (err.response && err.response.data && err.response.data.message) {
+            setApiError(t(err.response.data.message));
+          } else {
+            setApiError(t('حدث خطأ أثناء إضافة قسم النص'));
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(true);
+      console.log('Adding image section with:', { type, contentValue, tempImageFile });
+      
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setApiError('No admin token found');
+        setIsLoading(false);
+        return;
+      }
 
-        // Single upload request for both cases
-        const response = await axios.post(
+      let formData = new FormData();
+      formData.append('lang', i18n.language);
+
+      // Prepare image data from either file or URL
+      if (tempImageFile) {
+        // Case 1: Direct file upload
+        formData.append('image', tempImageFile);
+        console.log('Uploading image file:', tempImageFile);
+        
+        axios.post(
           'https://elmanafea.shop/admin/rehlauploadimage',
           formData,
           {
@@ -386,39 +378,96 @@ const Rehla = () => {
               'Content-Type': 'multipart/form-data'
             }
           }
-        );
-        
-        console.log('Image upload response:', response.data);
-        
-        // Handle response - same for both file and URL uploads
-        if (response.data && response.data.imageUrl) {
-          const newImage = {
-            id: response.data.id || Date.now(),
-            url: response.data.imageUrl
-          };
-          
-          setImgs(prev => [...prev, newImage]);
-          
-          const newImageSection = {
-            id: response.data.id || Date.now(),
-            type: 'image',
-            imageUrl: response.data.imageUrl
-          };
-          
-          setContent(prevContent => ({
-            ...prevContent,
-            sections: [...prevContent.sections, newImageSection]
-          }));
-        }
-      } catch (err) {
-        console.error('Error adding image section:', err);
-        console.log('Error response:', err.response?.data);
-        if (err.response && err.response.data && err.response.data.message) {
-          setApiError(t(err.response.data.message));
-        } else {
-          setApiError(t('حدث خطأ أثناء إضافة قسم الصورة'));
-        }
-      } finally {
+        )
+          .then(response => {
+            console.log('Image upload response:', response.data);
+            
+            if (response.data && response.data.imageUrl) {
+              const newImage = {
+                id: response.data.id || Date.now(),
+                url: response.data.imageUrl
+              };
+              
+              setImgs(prev => [...prev, newImage]);
+              
+              const newImageSection = {
+                id: response.data.id || Date.now(),
+                type: 'image',
+                imageUrl: response.data.imageUrl
+              };
+              
+              setContent(prevContent => ({
+                ...prevContent,
+                sections: [...prevContent.sections, newImageSection]
+              }));
+            }
+          })
+          .catch(err => {
+            console.error('Error adding image section:', err);
+            console.log('Error response:', err.response?.data);
+            if (err.response && err.response.data && err.response.data.message) {
+              setApiError(t(err.response.data.message));
+            } else {
+              setApiError(t('حدث خطأ أثناء إضافة قسم الصورة'));
+            }
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else if (contentValue) {
+        // Case 2: URL-based upload
+        fetch(contentValue)
+          .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch image');
+            return response.blob();
+          })
+          .then(blob => {
+            const file = new File([blob], "image.jpg", { type: blob.type });
+            formData.append('image', file);
+            
+            return axios.post(
+              'https://elmanafea.shop/admin/rehlauploadimage',
+              formData,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'multipart/form-data'
+                }
+              }
+            );
+          })
+          .then(response => {
+            console.log('Image upload response:', response.data);
+            
+            if (response.data && response.data.imageUrl) {
+              const newImage = {
+                id: response.data.id || Date.now(),
+                url: response.data.imageUrl
+              };
+              
+              setImgs(prev => [...prev, newImage]);
+              
+              const newImageSection = {
+                id: response.data.id || Date.now(),
+                type: 'image',
+                imageUrl: response.data.imageUrl
+              };
+              
+              setContent(prevContent => ({
+                ...prevContent,
+                sections: [...prevContent.sections, newImageSection]
+              }));
+            }
+          })
+          .catch(error => {
+            console.error('Error creating file from URL:', error);
+            setApiError(t('رجاء اختيار ملف صورة صحيح أو إدخال رابط صحيح'));
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else {
+        setApiError(t('الرجاء اختيار صورة أو إدخال رابط'));
         setIsLoading(false);
       }
     }
@@ -434,107 +483,120 @@ const Rehla = () => {
     });
   };
 
-  const updateSection = async (id, newContent) => {
+  const updateSection = (id, newContent) => {
     const section = content.sections.find(s => s.id === id);
     console.log('Updating section:', { id, section, newContent });
     
     if (section && section.type === 'text') {
-      try {
-        setIsLoading(true);
-        
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          throw new Error('No admin token found');
+      setIsLoading(true);
+      
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setApiError('No admin token found');
+        setIsLoading(false);
+        return;
+      }
+      
+      axios.put(
+        `https://elmanafea.shop/admin/rehlaupdatesubtitle/${id}`,
+        {
+          content: newContent.content
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
+      )
+        .then(() => {
+          setContent({
+            ...content,
+            sections: content.sections.map(section =>
+              section.id === id ? { ...section, ...newContent } : section
+            )
+          });
+        })
+        .catch(err => {
+          console.error('Error updating text section:', err);
+          if (err.response && err.response.data && err.response.data.message) {
+            setApiError(t(err.response.data.message));
+          } else {
+            setApiError(t('حدث خطأ أثناء تحديث قسم النص'));
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else if (section && section.type === 'image') {
+      setIsLoading(true);
+      console.log('Updating image section with:', { tempImageFile, newContent });
+      
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setApiError('No admin token found');
+        setIsLoading(false);
+        return;
+      }
+      
+      if (tempImageFile) {
+        const formData = new FormData();
+        formData.append('image', tempImageFile);
+        formData.append('lang', i18n.language);
         
-        await axios.put(
-          `https://elmanafea.shop/admin/rehlaupdatesubtitle/${id}`,
-          {
-            content: newContent.content
-          },
+        axios.put(
+          `https://elmanafea.shop/admin/rehlaupdateimage/${id}`,
+          formData,
           {
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
             }
           }
-        );
-        
-        setContent({
-          ...content,
-          sections: content.sections.map(section =>
-            section.id === id ? { ...section, ...newContent } : section
-          )
-        });
-        
-      } catch (err) {
-        console.error('Error updating text section:', err);
-        if (err.response && err.response.data && err.response.data.message) {
-          setApiError(t(err.response.data.message));
-        } else {
-          setApiError(t('حدث خطأ أثناء تحديث قسم النص'));
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    } else if (section && section.type === 'image') {
-      try {
-        setIsLoading(true);
-        console.log('Updating image section with:', { tempImageFile, newContent });
-        
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          throw new Error('No admin token found');
-        }
-        
-        if (tempImageFile) {
-          // Use PUT request instead of delete+post
-          const formData = new FormData();
-          formData.append('image', tempImageFile);
-          formData.append('lang', i18n.language);
-          
-          const response = await axios.put(
-            `https://elmanafea.shop/admin/rehlaupdateimage/${id}`,
-            formData,
-            {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'multipart/form-data'
-              }
+        )
+          .then(response => {
+            console.log('Image update response:', response.data);
+            
+            if (response.data && response.data.imageUrl) {
+              const updatedImageSection = {
+                id: response.data._id || id,
+                type: 'image',
+                imageUrl: response.data.imageUrl,
+                createdAt: new Date().toISOString()
+              };
+              
+              setContent(prevContent => ({
+                ...prevContent,
+                sections: prevContent.sections.map(s =>
+                  s.id === id ? updatedImageSection : s
+                )
+              }));
+              
+              setImgs(prev => prev.map(img => img.id === id ? { id, url: response.data.imageUrl } : img));
             }
-          );
-          
-          console.log('Image update response:', response.data);
-          
-          if (response.data && response.data.imageUrl) {
-            const updatedImageSection = {
-              id: response.data._id || id,
-              type: 'image',
-              imageUrl: response.data.imageUrl,
-              createdAt: new Date().toISOString()
-            };
-            
-            setContent(prevContent => ({
-              ...prevContent,
-              sections: prevContent.sections.map(s =>
-                s.id === id ? updatedImageSection : s
-              )
-            }));
-            
-            setImgs(prev => prev.map(img => img.id === id ? { id, url: response.data.imageUrl } : img));
-          }
-        } else if (newContent.imageUrl && newContent.imageUrl !== section.imageUrl) {
-          try {
-            const response = await fetch(newContent.imageUrl);
+          })
+          .catch(err => {
+            console.error('Error updating image section:', err);
+            if (err.response && err.response.data && err.response.data.message) {
+              setApiError(t(err.response.data.message));
+            } else {
+              setApiError(t('حدث خطأ أثناء تحديث الصورة'));
+            }
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else if (newContent.imageUrl && newContent.imageUrl !== section.imageUrl) {
+        fetch(newContent.imageUrl)
+          .then(response => {
             if (!response.ok) throw new Error('Failed to fetch image');
-            
-            const blob = await response.blob();
+            return response.blob();
+          })
+          .then(blob => {
             const formData = new FormData();
-            
             formData.append('image', blob, 'image.jpg');
             formData.append('lang', i18n.language);
             
-            // Use PUT request here as well
-            const uploadResponse = await axios.put(
+            return axios.put(
               `https://elmanafea.shop/admin/rehlaupdateimage/${id}`,
               formData,
               {
@@ -544,7 +606,8 @@ const Rehla = () => {
                 }
               }
             );
-            
+          })
+          .then(uploadResponse => {
             if (uploadResponse.data && uploadResponse.data.imageUrl) {
               const updatedImageSection = {
                 id: uploadResponse.data._id || id,
@@ -562,19 +625,15 @@ const Rehla = () => {
               
               setImgs(prev => prev.map(img => img.id === id ? { id, url: uploadResponse.data.imageUrl } : img));
             }
-          } catch (error) {
+          })
+          .catch(error => {
             console.error('Error updating image from URL:', error);
-            throw error;
-          }
-        }
-      } catch (err) {
-        console.error('Error updating image section:', err);
-        if (err.response && err.response.data && err.response.data.message) {
-          setApiError(t(err.response.data.message));
-        } else {
-          setApiError(t('حدث خطأ أثناء تحديث الصورة'));
-        }
-      } finally {
+            setApiError(t('حدث خطأ أثناء تحديث الصورة من الرابط'));
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else {
         setIsLoading(false);
       }
     } else {
@@ -587,57 +646,76 @@ const Rehla = () => {
     }
   };
 
-  const deleteSection = async (id) => {
+  const deleteSection = (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا القسم؟')) {
       return;
     }
     
     const section = content.sections.find(s => s.id === id);
     
-    try {
-      setIsLoading(true);
-      
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        throw new Error('No admin token found');
-      }
-      
-      if (section && section.type === 'text') {
-        await axios.delete(
-          `https://elmanafea.shop/admin/rehladeletesubtitle/${id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        );
-      } else if (section && section.type === 'image') {
-        await axios.delete(
-          `https://elmanafea.shop/admin/rehladeleteimage/${id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        );
-        
-        setImgs(prev => prev.filter(img => img.id !== id));
-      }
-      
-      setContent({
-        ...content,
-        sections: content.sections.filter(section => section.id !== id)
-      });
-      
-    } catch (err) {
-      console.error('Error deleting section:', err);
-      if (err.response && err.response.data && err.response.data.message) {
-        setApiError(t(err.response.data.message));
-      } else {
-        setApiError(t('حدث خطأ أثناء حذف القسم'));
-      }
-    } finally {
+    setIsLoading(true);
+    
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      setApiError('No admin token found');
       setIsLoading(false);
+      return;
+    }
+    
+    if (section && section.type === 'text') {
+      axios.delete(
+        `https://elmanafea.shop/admin/rehladeletesubtitle/${id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      )
+        .then(() => {
+          setContent({
+            ...content,
+            sections: content.sections.filter(section => section.id !== id)
+          });
+        })
+        .catch(err => {
+          console.error('Error deleting section:', err);
+          if (err.response && err.response.data && err.response.data.message) {
+            setApiError(t(err.response.data.message));
+          } else {
+            setApiError(t('حدث خطأ أثناء حذف القسم'));
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else if (section && section.type === 'image') {
+      axios.delete(
+        `https://elmanafea.shop/admin/rehladeleteimage/${id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      )
+        .then(() => {
+          setContent({
+            ...content,
+            sections: content.sections.filter(section => section.id !== id)
+          });
+          
+          setImgs(prev => prev.filter(img => img.id !== id));
+        })
+        .catch(err => {
+          console.error('Error deleting section:', err);
+          if (err.response && err.response.data && err.response.data.message) {
+            setApiError(t(err.response.data.message));
+          } else {
+            setApiError(t('حدث خطأ أثناء حذف القسم'));
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
   };
 
