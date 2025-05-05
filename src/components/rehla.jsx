@@ -325,19 +325,55 @@ const Rehla = () => {
         }
       )
         .then(response => {
-          if (response.data && response.data.id) {
-            const newTextSection = {
-              id: response.data.id,
-              type: 'text',
-              content: contentValue
-            };
-            
-            setContent(prevContent => ({
-              ...prevContent,
-              sections: [...prevContent.sections, newTextSection]
+          axios.get(`https://elmanafea.shop/rehla/media?lang=${i18n.language}`)
+      .then(response => {
+        console.log('Content API response:', response.data);
+        
+        if (response.data && response.data.contentItems) {
+          const contentItems = response.data.contentItems;
+          
+          // Process both text and image items and preserve original order from backend
+          const allSections = contentItems.map((item, index) => {
+            // Use index as ordering key to preserve backend order
+            if (item.type === 'image') {
+              return {
+                id: item._id,
+                type: 'image',
+                imageUrl: `https://elmanafea.shop${item.content}`,
+                createdAt: item.createdAt,
+                index: index // Store original position
+              };
+            } else if (item.type === 'subtitle') {
+              return {
+                id: item._id,
+                type: 'text',
+                content: item.content,
+                createdAt: item.createdAt,
+                index: index // Store original position
+              };
+            }
+            return null;
+          }).filter(item => item !== null);
+          
+          // Extract images for the image grid but maintain backend order
+          const imageItems = contentItems
+            .filter(item => item.type === 'image')
+            .map((item, index) => ({
+              id: item._id,
+              url: `https://elmanafea.shop${item.content}`,
+              createdAt: item.createdAt,
+              index: index // Store original position
             }));
-          }
-        })
+          
+          setImgs(imageItems);
+          
+          // Preserve the exact ordering from the backend
+          setContent(prevContent => ({
+            ...prevContent,
+            sections: allSections
+          }));
+        }
+      })        })
         .catch(err => {
           console.error('Error adding text section:', err);
           if (err.response && err.response.data && err.response.data.message) {
@@ -380,27 +416,55 @@ const Rehla = () => {
           }
         )
           .then(response => {
-            console.log('Image upload response:', response.data);
-            
-            if (response.data && response.data.imageUrl) {
-              const newImage = {
-                id: response.data.id || Date.now(),
-                url: response.data.imageUrl
-              };
-              
-              setImgs(prev => [...prev, newImage]);
-              
-              const newImageSection = {
-                id: response.data.id || Date.now(),
+            axios.get(`https://elmanafea.shop/rehla/media?lang=${i18n.language}`)
+      .then(response => {
+        console.log('Content API response:', response.data);
+        
+        if (response.data && response.data.contentItems) {
+          const contentItems = response.data.contentItems;
+          
+          // Process both text and image items and preserve original order from backend
+          const allSections = contentItems.map((item, index) => {
+            // Use index as ordering key to preserve backend order
+            if (item.type === 'image') {
+              return {
+                id: item._id,
                 type: 'image',
-                imageUrl: response.data.imageUrl
+                imageUrl: `https://elmanafea.shop${item.content}`,
+                createdAt: item.createdAt,
+                index: index // Store original position
               };
-              
-              setContent(prevContent => ({
-                ...prevContent,
-                sections: [...prevContent.sections, newImageSection]
-              }));
+            } else if (item.type === 'subtitle') {
+              return {
+                id: item._id,
+                type: 'text',
+                content: item.content,
+                createdAt: item.createdAt,
+                index: index // Store original position
+              };
             }
+            return null;
+          }).filter(item => item !== null);
+          
+          // Extract images for the image grid but maintain backend order
+          const imageItems = contentItems
+            .filter(item => item.type === 'image')
+            .map((item, index) => ({
+              id: item._id,
+              url: `https://elmanafea.shop${item.content}`,
+              createdAt: item.createdAt,
+              index: index // Store original position
+            }));
+          
+          setImgs(imageItems);
+          
+          // Preserve the exact ordering from the backend
+          setContent(prevContent => ({
+            ...prevContent,
+            sections: allSections
+          }));
+        }
+      })
           })
           .catch(err => {
             console.error('Error adding image section:', err);
