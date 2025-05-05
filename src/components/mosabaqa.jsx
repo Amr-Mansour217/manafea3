@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle, faEdit, faSave, faFileExcel, faDownload } from '@fortawesome/free-solid-svg-icons';
@@ -28,6 +28,7 @@ const Mosabaqa = () => {
   const [filteredCountries, setFilteredCountries] = useState(countryCodes);
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const countryCodeRef = useRef(null);
 
   useEffect(() => {
     fetchQuestion();
@@ -40,6 +41,22 @@ const Mosabaqa = () => {
     };
     checkAdmin();
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (countryCodeRef.current && !countryCodeRef.current.contains(event.target)) {
+        setShowCountryCodes(false);
+      }
+    }
+
+    if (showCountryCodes) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCountryCodes]);
 
   const fetchQuestion = async () => {
     try {
@@ -57,7 +74,7 @@ const Mosabaqa = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === 'phone') {
       const numbersOnly = value.replace(/[^0-9]/g, '').slice(0, 14);
       setFormData({ ...formData, [name]: numbersOnly });
@@ -78,11 +95,11 @@ const Mosabaqa = () => {
     const value = e.target.value;
     const numbersOnly = value.replace(/[^0-9]/g, '').slice(0, 4);
     const validValue = '+' + numbersOnly;
-    
+
     setFormData({ ...formData, countryCode: validValue });
-    
+
     const query = validValue.replace('+', '');
-    const filtered = countryCodes.filter(country => 
+    const filtered = countryCodes.filter(country =>
       country.name.toLowerCase().includes(query.toLowerCase()) ||
       country.code.includes(query)
     );
@@ -94,9 +111,9 @@ const Mosabaqa = () => {
     if (isEditingQuestion) {
       try {
         setIsLoading(true);
-        
+
         const token = localStorage.getItem('adminToken');
-        
+
         if (!token) {
           showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
           throw {
@@ -106,7 +123,7 @@ const Mosabaqa = () => {
             }
           };
         }
-        
+
         await axios.post('https://elmanafea.shop/admin/question', {
           question: question,
           lang: i18n.language
@@ -115,12 +132,12 @@ const Mosabaqa = () => {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         await fetchQuestion();
         showToast.success(t('تم تحديث السؤال بنجاح')); // Success toast
       } catch (err) {
         console.error('Error updating question:', err);
-        
+
         // Handle specific error codes with Toast
         if (err.response) {
           if (err.response.status === 401) {
@@ -150,13 +167,13 @@ const Mosabaqa = () => {
       showToast.error(t('الرجاء إدخال الاسم ورقم الهاتف')); // Replace setError with showToast
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      
+
       // Prepare the full phone number with country code
       const fullPhoneNumber = formData.countryCode + formData.phone;
-      
+
       // Send data to backend
       await axios.post('https://elmanafea.shop/answer', {
         name: formData.name,
@@ -166,11 +183,11 @@ const Mosabaqa = () => {
         answer: formData.answer,
         lang: i18n.language
       });
-      
+
       // Show success modal and success toast
       setIsModalOpen(true);
       showToast.success(t('تم إرسال مشاركتك بنجاح!'));
-      
+
       // Reset form after 3 seconds
       setTimeout(() => {
         setIsModalOpen(false);
@@ -192,12 +209,12 @@ const Mosabaqa = () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('adminToken');
-      
+
       if (!token) {
         showToast.error(t('الرجاء تسجيل الدخول كمسؤول'));
         return;
       }
-      
+
       // Make GET request with responseType blob to handle file download
       const response = await axios.get('https://elmanafea.shop/admin/answers', {
         responseType: 'blob',
@@ -205,21 +222,21 @@ const Mosabaqa = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       // Create a URL for the blob
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      
+
       // Create a temporary link element and trigger download
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `answers_${new Date().toISOString().split('T')[0]}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-      
+
       showToast.success(t('تم تنزيل الملف بنجاح')); // Success toast for download
     } catch (err) {
       console.error('Error downloading Excel:', err);
@@ -327,7 +344,7 @@ const Mosabaqa = () => {
             <div className="form-group">
               <label>{t('رقم الهاتف')}</label>
               <div className="phone-input-group">
-                <div className="country-code-container">
+                <div className="country-code-container" ref={countryCodeRef}>
                   <input
                     type="text"
                     name="countryCode"
