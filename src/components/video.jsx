@@ -281,21 +281,18 @@ function Videos(){
         return `https://www.youtube.com/embed/${videoId}`;
     };
 
-    const fetchVideos = async () => {
-        try {
-            setIsLoading(true);
-            const response = await axios.get(
-                activeCategory === 'all' 
-                    ? `https://elmanafea.shop/videos/all?lang=${i18n.language}`
-                    : `https://elmanafea.shop/videos?lang=${i18n.language}&category=${activeCategory}`
-            );
-
+    const fetchVideos = () => {
+        setIsLoading(true);
+        axios.get(
+            activeCategory === 'all' 
+                ? `https://elmanafea.shop/videos/all?lang=${i18n.language}`
+                : `https://elmanafea.shop/videos?lang=${i18n.language}&category=${activeCategory}`
+        ).then(response => {
             console.log('Videos response:', response.data);
             console.log('Videos URL:', response.config.url);
 
             if (response.data.videos) {
                 const formattedVideos = response.data.videos.map(video => {
-                    // طباعة كل فيديو للتشخيص
                     console.log('Raw video data:', video);
 
                     let videoLink = '';
@@ -317,11 +314,11 @@ function Videos(){
                 console.log('Formatted videos:', formattedVideos);
                 setVideos(formattedVideos);
             }
-        } catch (error) {
+        }).catch(error => {
             console.error('Error fetching videos:', error);
-        } finally {
+        }).finally(() => {
             setIsLoading(false);
-        }
+        });
     };
 
     useEffect(() => {
@@ -331,7 +328,6 @@ function Videos(){
     useEffect(() => {
         const currentLang = i18n.language;
         
-        // تحديث الفئات
         setCategories(prevCategories => {
             const savedCategories = localStorage.getItem('categories');
             if (savedCategories) {
@@ -341,7 +337,6 @@ function Videos(){
             return Object.entries(translations.categories[currentLang]).map(([id, name]) => ({ id, name }));
         });
 
-        // تحديث عنوان "فيديوهات مختارة"
         setSectionTitle(prev => ({
             ...prev,
             text: translations.featuredTitle[currentLang]
@@ -351,7 +346,6 @@ function Videos(){
     useEffect(() => {
         const currentLang = i18n.language;
         
-        // استرجاع عنوان "فيديوهات مختارة"
         const savedSectionTitle = localStorage.getItem('sectionTitle');
         if (savedSectionTitle) {
             const parsed = JSON.parse(savedSectionTitle);
@@ -363,14 +357,12 @@ function Videos(){
             }
         }
         
-        // استرجاع عنوان "جميع الفيديوهات"
         const savedAllVideosTitle = localStorage.getItem('allVideosTitle');
         if (savedAllVideosTitle) {
             const parsed = JSON.parse(savedAllVideosTitle);
             setAllVideosTitle(parsed);
         }
         
-        // استرجاع التصنيفات
         const savedCategories = localStorage.getItem('categories');
         if (savedCategories) {
             const parsed = JSON.parse(savedCategories);
@@ -383,7 +375,6 @@ function Videos(){
     useEffect(() => {
         const currentLang = i18n.language;
         
-        // استرجاع عنوان "فيديوهات مختارة"
         const savedSectionTitle = localStorage.getItem('sectionTitle');
         if (savedSectionTitle) {
             const parsed = JSON.parse(savedSectionTitle);
@@ -395,14 +386,12 @@ function Videos(){
             }
         }
         
-        // استرجاع التصنيفات
         const savedCategories = localStorage.getItem('categories');
         if (savedCategories) {
             const parsed = JSON.parse(savedCategories);
             if (parsed[currentLang]) {
                 setCategories(parsed[currentLang]);
             } else {
-                // إذا لم تكن هناك تصنيفات محفوظة للغة الحالية، استخدم التصنيفات الافتراضية
                 setCategories(Object.entries(translations.categories[currentLang]).map(([id, name]) => ({ id, name })));
             }
         }
@@ -411,12 +400,12 @@ function Videos(){
     useEffect(() => {
         fetchVideoHeaderData();
         fetchVideoSecondHeaderData();
-        fetchCategoriesData(); // إضافة استدعاء جلب الفئات
+        fetchCategoriesData();
     }, [i18n.language]);
 
-    const fetchVideoHeaderData = async () => {
-        try {
-            const response = await axios.get(`https://elmanafea.shop/vidpageheader?lang=${i18n.language}`);
+    const fetchVideoHeaderData = () => {
+        axios.get(`https://elmanafea.shop/vidpageheader?lang=${i18n.language}`)
+        .then(response => {
             console.log('Video header response:', response.data);
 
             if (response.data?.header) {
@@ -428,14 +417,14 @@ function Videos(){
                     }
                 }));
             }
-        } catch (error) {
+        }).catch(error => {
             console.error('Error fetching video header:', error);
-        }
+        });
     };
 
-    const fetchVideoSecondHeaderData = async () => {
-        try {
-            const response = await axios.get(`https://elmanafea.shop/vidsecondheader?lang=${i18n.language}`);
+    const fetchVideoSecondHeaderData = () => {
+        axios.get(`https://elmanafea.shop/vidsecondheader?lang=${i18n.language}`)
+        .then(response => {
             console.log('Video second header response:', response.data);
 
             if (response.data?.second_header) {
@@ -447,16 +436,15 @@ function Videos(){
                     }
                 }));
             }
-        } catch (error) {
+        }).catch(error => {
             console.error('Error fetching video second header:', error);
-        }
+        });
     };
 
-    const fetchCategoriesData = async () => {
-        try {
-            const currentLang = i18n.language;
-            const response = await axios.get(`https://elmanafea.shop/categories?lang=${currentLang}`);
-
+    const fetchCategoriesData = () => {
+        const currentLang = i18n.language;
+        axios.get(`https://elmanafea.shop/categories?lang=${currentLang}`)
+        .then(response => {
             if (response.data?.categories) {
                 const mappedCategories = response.data.categories.map(cat => ({
                     id: cat.id,
@@ -465,7 +453,6 @@ function Videos(){
                     lang: cat.lang
                 }));
 
-                // Add the "all" category if it doesn't exist
                 const allCategory = {
                     id: 'all',
                     name: translations.categories[currentLang].all
@@ -474,9 +461,8 @@ function Videos(){
                 const finalCategories = [allCategory, ...mappedCategories];
                 setCategories(finalCategories);
             }
-        } catch (error) {
+        }).catch(error => {
             console.error('Error fetching categories:', error);
-            // If fetching fails, use default categories
             const defaultCategories = [
                 { id: 'all', name: translations.categories[i18n.language].all },
                 ...Object.entries(translations.categories[i18n.language])
@@ -484,53 +470,35 @@ function Videos(){
                     .map(([id, name]) => ({ id, name }))
             ];
             setCategories(defaultCategories);
-        }
+        });
     };
 
     const handleCategoryClick = (categoryId) => {
         setActiveCategory(categoryId);
     };
 
-    const handleAddCategory = async () => {
-        if (!newCategory.id || !newCategory.name) return;
-        
-        // إغلاق المودال فوراً
-        setShowCategoryModal(false);
-        setIsSavingCategory(true);
-        
-        const currentLang = i18n.language;
-        
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                alert('يرجى تسجيل الدخول كمشرف أولاً');
-                return;
-            }
+    const handleEditTextClick = (defaultText, type) => {
+        console.log("handleEditTextClick called with:", defaultText, type); // للتأكد من أن الوظيفة تعمل
+        const currentText = texts[i18n.language]?.[type] || defaultText;
+        setEditingText({
+            text: currentText,
+            type: type
+        });
+        setEditModalOpen(true);
+    };
 
-            const response = await axios.post('https://elmanafea.shop/admin/addcategory', 
-                {
-                    id: newCategory.id,
-                    title: newCategory.name,
-                    lang: currentLang
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${adminToken}`
-                    }
-                }
-            );
+    const handleDeleteCategory = (categoryId) => {
+        if (categoryId === 'all') return; // منع حذف تصنيف "الكل"
 
-            if (response.status === 200) {
-                await fetchCategoriesData();
-                setNewCategory({ id: '', name: '' });
-                showToast.added(`تم إضافة تصنيف "${newCategory.name}" بنجاح`);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الإضافة');
-        } finally {
-            setIsSavingCategory(false);
+        // إيجاد التصنيف المراد حذفه للحصول على معرف المستند (_id)
+        const catToDelete = categories.find(cat => cat.id === categoryId);
+        if (!catToDelete?._id) {
+            alert('لم يتم العثور على معرف التصنيف');
+            return;
         }
+
+        setCategoryToDelete(catToDelete);
+        setShowDeleteConfirmModal(true);
     };
 
     const handleEditCategory = (category) => {
@@ -544,162 +512,54 @@ function Videos(){
         setShowCategoryModal(true);
     };
 
-    const handleUpdateCategory = async () => {
-        if (!editingCategory?._id) {
-            showToast.error('لا يمكن تحديث التصنيف، معرف التصنيف غير موجود');
-            return;
-        }
-
-        setShowCategoryModal(false);
-        setIsSavingCategory(true);
-        
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                alert('يرجى تسجيل الدخول كمشرف أولاً');
-                return;
-            }
-
-            const response = await axios.put(
-                `https://elmanafea.shop/admin/updatecategory/${editingCategory._id}`,
-                {
-                    title: newCategory.name,
-                    lang: i18n.language
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (response.status === 200) {
-                await fetchCategoriesData();
-                setEditingCategory(null);
-                setNewCategory({ id: '', name: '' });
-                showToast.edited(`تم تحديث تصنيف "${newCategory.name}" بنجاح`);
-            }
-        } catch (error) {
-            console.error('Error updating category:', error.response?.data || error);
-            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
-        } finally {
-            setIsSavingCategory(false);
-        }
-    };
-
-    const handleDeleteCategory = async (categoryId) => {
-        if (categoryId === 'all') return; // منع حذف تصنيف "الكل"
-
-        // إيجاد التصنيف المراد حذفه للحصول على معرف المستند (_id)
-        const categoryToDelete = categories.find(cat => cat.id === categoryId);
-        if (!categoryToDelete?._id) {
-            alert('لم يتم العثور على معرف التصنيف');
-            return;
-        }
-
-        setCategoryToDelete(categoryToDelete);
-        setShowDeleteConfirmModal(true);
-    };
-
-    const handleConfirmDeleteCategory = async () => {
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                alert('يرجى تسجيل الدخول كمشرف أولاً');
-                return;
-            }
-
-            const response = await axios.delete(
-                `https://elmanafea.shop/admin/removecategory/${categoryToDelete._id}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    data: {
-                        lang: i18n.language
-                    }
-                }
-            );
-
-            if (response.status === 200) {
-                await fetchCategoriesData();
-                showToast.deleted(`تم حذف التصنيف "${categoryToDelete.name}" بنجاح`);
-            }
-        } catch (error) {
-            console.error('Error deleting category:', error.response?.data || error);
-            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
-        } finally {
-            setShowDeleteConfirmModal(false);
-            setCategoryToDelete(null);
-        }
-    };
-
-    const handleAddVideo = async () => {
+    const handleAddVideo = () => {
         if (!newVideoData.title || (!newVideoData.link && !selectedFile)) return;
 
         setShowAddVideoModal(false);
         setIsUploading(true);
 
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                alert('يرجى تسجيل الدخول كمشرف أولاً');
-                return;
-            }
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+            alert('يرجى تسجيل الدخول كمشرف أولاً');
+            return;
+        }
 
-            const formData = new FormData();
-            formData.append('title', newVideoData.title);
-            formData.append('lang', i18n.language);
-            formData.append('category', newVideoData.category);
+        const formData = new FormData();
+        formData.append('title', newVideoData.title);
+        formData.append('lang', i18n.language);
+        formData.append('category', newVideoData.category);
 
-            if (newVideoData.type === 'file') {
-                formData.append('videoType', 'upload');
-                formData.append('video', selectedFile);
-            } else if (newVideoData.type === 'youtube') {
-                formData.append('videoType', 'embed');
-                formData.append('youtubeEmbedUrl', formatYoutubeUrl(newVideoData.link));
-            }
+        if (newVideoData.type === 'file') {
+            formData.append('videoType', 'upload');
+            formData.append('video', selectedFile);
+        } else if (newVideoData.type === 'youtube') {
+            formData.append('videoType', 'embed');
+            formData.append('youtubeEmbedUrl', formatYoutubeUrl(newVideoData.link));
+        }
 
-            const response = await axios.post('https://elmanafea.shop/admin/uploadvideo', 
-                formData,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'multipart/form-data'
-                    }
+        axios.post('https://elmanafea.shop/admin/uploadvideo', 
+            formData,
+            {
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'multipart/form-data'
                 }
-            );
-
-            if (response.status === 200) {
-                // Fetch updated videos
-                const updatedVideosResponse = await axios.get(
-                    `https://elmanafea.shop/videos?lang=${i18n.language}&category=${newVideoData.category}`
-                );
-                
-                if (updatedVideosResponse.data.videos) {
-                    const formattedVideos = updatedVideosResponse.data.videos.map(video => ({
-                        id: video._id,
-                        title: video.title,
-                        category: video.category,
-                        link: video.videoType === 'embed' ? video.videoEmbedUrl : video.videoPath,
-                        isLocal: video.videoType === 'upload'
-                    }));
-                    setVideos(formattedVideos);
-                }
-
-                showToast.added(`تم إضافة فيديو "${newVideoData.title}" بنجاح`);
-                setNewVideoData({ title: '', link: '', type: '', category: 'all' });
-                setSelectedFile(null);
             }
-        } catch (error) {
+        ).then(response => {
+            if (response.status === 201) {
+                return fetchVideos();
+            }
+        }).then(() => {
+            showToast.added(`تم إضافة فيديو "${newVideoData.title}" بنجاح`);
+            setNewVideoData({ title: '', link: '', type: '', category: 'all' });
+            setSelectedFile(null);
+        }).catch(error => {
             console.error('Error uploading video:', error.response?.data || error.message);
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية رفع الفيديو');
             setShowAddVideoModal(true);
-        } finally {
+        }).finally(() => {
             setIsUploading(false);
-        }
+        });
     };
 
     const handleEditVideo = (video) => {
@@ -710,139 +570,299 @@ function Videos(){
         setEditModalOpen(true);
     };
 
-    const handleSaveVideo = async () => {
+    const handleSaveVideo = () => {
         setEditModalOpen(false);
         setIsSavingEdit(true);
         
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                alert('يرجى تسجيل الدخول كمشرف أولاً');
-                return;
-            }
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+            alert('يرجى تسجيل الدخول كمشرف أولاً');
+            setIsSavingEdit(false);
+            return;
+        }
 
-            const response = await axios.put(
+        const videoData = {
+            id: editingVideo.id,
+            title: editingVideo.title,
+            youtubeEmbedUrl: formatYoutubeUrl(editingVideo.link),
+            category: editingVideo.category,
+            lang: i18n.language
+        };
+
+        if (editingVideo.type === 'file' && selectedFile) {
+            const formData = new FormData();
+            formData.append('id', editingVideo.id);
+            formData.append('title', editingVideo.title);
+            formData.append('category', editingVideo.category);
+            formData.append('lang', i18n.language);
+            formData.append('video', selectedFile);
+            formData.append('videoType', 'upload');
+
+            axios.put(
                 'https://elmanafea.shop/admin/updatevideo',
-                {
-                    id: editingVideo.id,
-                    title: editingVideo.title,
-                    youtubeEmbedUrl: formatYoutubeUrl(editingVideo.link),
-                    lang: i18n.language
-                },
+                formData,
                 {
                     headers: {
                         'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'multipart/form-data'
                     }
                 }
-            );
-
-            if (response.status === 200) {
-                await fetchVideos();
+            ).then(response => {
+                if (response.status === 200) {
+                    return fetchVideos();
+                }
+            }).then(() => {
                 showToast.edited(`تم تحديث فيديو "${editingVideo.title}" بنجاح`);
                 setEditingVideo(null);
+                setSelectedFile(null);
+            }).catch(error => {
+                console.error('Error updating video:', error.response?.data || error.message);
+                showToast.error(error.response?.data?.message || 'حدث خطأ في عملية تحديث الفيديو');
+            }).finally(() => {
+                setIsSavingEdit(false);
+            });
+            return;
+        }
+
+        axios.put(
+            'https://elmanafea.shop/admin/updatevideo',
+            videoData,
+            {
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                }
             }
-        } catch (error) {
+        ).then(response => {
+            if (response.status === 200) {
+                return fetchVideos();
+            }
+        }).then(() => {
+            showToast.edited(`تم تحديث فيديو "${editingVideo.title}" بنجاح`);
+            setEditingVideo(null);
+        }).catch(error => {
             console.error('Error updating video:', error);
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
-        } finally {
+        }).finally(() => {
             setIsSavingEdit(false);
-        }
+        });
     };
 
-    const handleDeleteVideo = async (videoId) => {
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                alert('يرجى تسجيل الدخول كمشرف أولاً');
-                return;
-            }
+    const handleDeleteVideo = (videoId) => {
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+            alert('يرجى تسجيل الدخول كمشرف أولاً');
+            return;
+        }
 
-            if (!window.confirm('هل أنت متأكد من حذف هذا الفيديو؟')) {
-                return;
-            }
+        if (!window.confirm('هل أنت متأكد من حذف هذا الفيديو؟')) {
+            return;
+        }
 
-            const response = await axios.delete(
-                'https://elmanafea.shop/admin/deletevideo',
-                {
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    data: {
-                        id: videoId,
-                        lang: i18n.language
-                    }
+        axios.delete(
+            'https://elmanafea.shop/admin/deletevideo',
+            {
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    id: videoId,
+                    lang: i18n.language
                 }
-            );
-
-            if (response.status === 200) {
-                await fetchVideos();
-                showToast.deleted('تم حذف الفيديو بنجاح');
             }
-        } catch (error) {
+        ).then(response => {
+            if (response.status === 200) {
+                return fetchVideos();
+            }
+        }).then(() => {
+            showToast.deleted('تم حذف الفيديو بنجاح');
+        }).catch(error => {
             console.error('Error deleting video:', error);
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
-        }
+        });
     };
 
-    const handleTextSave = async () => {
-        // إغلاق المودال فوراً
+    const handleTextSave = () => {
         setEditModalOpen(false);
         setIsSavingText(true);
         
         const currentLang = i18n.language;
+        const adminToken = localStorage.getItem('adminToken');
 
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                alert('يرجى تسجيل الدخول كمشرف أولاً');
-                return;
-            }
-
-            if (editingText.type === 'title') {
-                const response = await axios.post('https://elmanafea.shop/admin/vidpageheader', 
-                    {
-                        header: editingText.text,
-                        lang: currentLang
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${adminToken}`
-                        }
-                    }
-                );
-
-                if (response.status === 200) {
-                    await fetchVideoHeaderData();
-                    setEditingText(null);
-                    showToast.edited('تم تحديث العنوان بنجاح');
-                }
-            } else if (editingText.type === 'description') {
-                const response = await axios.post('https://elmanafea.shop/admin/vidsecondheader', 
-                    {
-                        second_header: editingText.text,
-                        lang: currentLang
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${adminToken}`
-                        }
-                    }
-                );
-
-                if (response.status === 200) {
-                    await fetchVideoSecondHeaderData();
-                    setEditingText(null);
-                    showToast.edited('تم تحديث الوصف بنجاح');
-                }
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
-        } finally {
+        if (!adminToken) {
+            alert('يرجى تسجيل الدخول كمشرف أولاً');
             setIsSavingText(false);
+            return;
         }
+
+        if (editingText.type === 'title') {
+            axios.post('https://elmanafea.shop/admin/vidpageheader', 
+                {
+                    header: editingText.text,
+                    lang: currentLang
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${adminToken}`
+                    }
+                }
+            ).then(response => {
+                if (response.status === 200) {
+                    return fetchVideoHeaderData();
+                }
+            }).then(() => {
+                setEditingText(null);
+                showToast.edited('تم تحديث العنوان بنجاح');
+            }).catch(error => {
+                console.error('Error updating header:', error);
+                showToast.error(error.response?.data?.message || 'حدث خطأ في عملية تحديث العنوان');
+            }).finally(() => {
+                setIsSavingText(false);
+            });
+        } else if (editingText.type === 'description') {
+            axios.post('https://elmanafea.shop/admin/vidsecondheader', 
+                {
+                    second_header: editingText.text,
+                    lang: currentLang
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${adminToken}`
+                    }
+                }
+            ).then(response => {
+                if (response.status === 200) {
+                    return fetchVideoSecondHeaderData();
+                }
+            }).then(() => {
+                setEditingText(null);
+                showToast.edited('تم تحديث الوصف بنجاح');
+            }).catch(error => {
+                console.error('Error updating description:', error);
+                showToast.error(error.response?.data?.message || 'حدث خطأ في عملية تحديث الوصف');
+            }).finally(() => {
+                setIsSavingText(false);
+            });
+        }
+    };
+
+    const handleAddCategory = () => {
+        if (!newCategory.id || !newCategory.name) return;
+        
+        setShowCategoryModal(false);
+        setIsSavingCategory(true);
+        
+        const currentLang = i18n.language;
+        const adminToken = localStorage.getItem('adminToken');
+        
+        if (!adminToken) {
+            alert('يرجى تسجيل الدخول كمشرف أولاً');
+            setIsSavingCategory(false);
+            return;
+        }
+
+        axios.post('https://elmanafea.shop/admin/addcategory', 
+            {
+                id: newCategory.id,
+                title: newCategory.name,
+                lang: currentLang
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${adminToken}`
+                }
+            }
+        ).then(response => {
+            if (response.status === 201) {
+                return fetchCategoriesData();
+            }
+        }).then(() => {
+            setNewCategory({ id: '', name: '' });
+            showToast.added(`تم إضافة تصنيف "${newCategory.name}" بنجاح`);
+        }).catch(error => {
+            console.error('Error adding category:', error);
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الإضافة');
+        }).finally(() => {
+            setIsSavingCategory(false);
+        });
+    };
+
+    const handleUpdateCategory = () => {
+        if (!editingCategory?._id) {
+            showToast.error('لا يمكن تحديث التصنيف، معرف التصنيف غير موجود');
+            return;
+        }
+
+        setShowCategoryModal(false);
+        setIsSavingCategory(true);
+        
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+            alert('يرجى تسجيل الدخول كمشرف أولاً');
+            setIsSavingCategory(false);
+            return;
+        }
+
+        axios.put(
+            `https://elmanafea.shop/admin/updatecategory/${editingCategory._id}`,
+            {
+                title: newCategory.name,
+                lang: i18n.language
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        ).then(response => {
+            if (response.status === 200) {
+                return fetchCategoriesData();
+            }
+        }).then(() => {
+            setEditingCategory(null);
+            setNewCategory({ id: '', name: '' });
+            showToast.edited(`تم تحديث تصنيف "${newCategory.name}" بنجاح`);
+        }).catch(error => {
+            console.error('Error updating category:', error.response?.data || error);
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
+        }).finally(() => {
+            setIsSavingCategory(false);
+        });
+    };
+
+    const handleConfirmDeleteCategory = () => {
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+            alert('يرجى تسجيل الدخول كمشرف أولاً');
+            return;
+        }
+
+        axios.delete(
+            `https://elmanafea.shop/admin/removecategory/${categoryToDelete._id}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    lang: i18n.language
+                }
+            }
+        ).then(response => {
+            if (response.status === 200) {
+                return fetchCategoriesData();
+            }
+        }).then(() => {
+            showToast.deleted(`تم حذف التصنيف "${categoryToDelete.name}" بنجاح`);
+        }).catch(error => {
+            console.error('Error deleting category:', error.response?.data || error);
+            showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
+        }).finally(() => {
+            setShowDeleteConfirmModal(false);
+            setCategoryToDelete(null);
+        });
     };
 
     const getTextContent = (type, defaultText) => {
@@ -850,29 +870,26 @@ function Videos(){
         return texts[currentLang]?.[type] || t(defaultText);
     };
 
-    // حساب الصفحات
     const indexOfLastVideo = currentPage * videosPerPage;
     const indexOfFirstVideo = indexOfLastVideo - videosPerPage;
     const currentVideos = videos.slice(indexOfFirstVideo, indexOfLastVideo);
 
-    // حساب عدد الصفحات
     const pageNumbers = [];
     for (let i = 1; i <= Math.ceil(videos.length / videosPerPage); i++) {
         pageNumbers.push(i);
     }
 
-    // التنقل بين الصفحات
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-    const fetchPdfFiles = async () => {
-        try {
-            const response = await axios.get(`https://elmanafea.shop/pdfs?lang=${i18n.language}`);
+    const fetchPdfFiles = () => {
+        axios.get(`https://elmanafea.shop/pdfs?lang=${i18n.language}`)
+        .then(response => {
             if (response.data.pdfs) {
                 setPdfFiles(response.data.pdfs);
             }
-        } catch (error) {
+        }).catch(error => {
             console.error('Error fetching PDFs:', error);
-        }
+        });
     };
 
     useEffect(() => {
