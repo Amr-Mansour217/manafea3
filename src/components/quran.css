@@ -27,6 +27,20 @@
   gap: 20px;
   padding: 20px;
   height: calc(100vh - 60px);
+  overflow: hidden; /* Prevent internal scrolling */
+}
+
+.quran-container {
+  display: flex;
+  overflow: hidden; /* Prevent internal scrolling */
+}
+
+.left-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* Disable scrolling in the left section */
 }
 
 .viewer-only {
@@ -125,8 +139,16 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  font-size: 18px;
-  color: #666;
+  text-align: center;
+  color: gray;
+  font-size: 1.5rem;
+  margin-top: 20%;
+}
+
+.loading-message {
+  text-align: center;
+  color: gray;
+  font-size: 1.5rem;
 }
 
 .loader {

@@ -14,6 +14,7 @@ function Quran() {
     return savedPdfs ? JSON.parse(savedPdfs) : {};
   });
   const [uploadError, setUploadError] = useState('');
+  const [isLoading, setIsLoading] = useState(true); // Added loading state
 
   const languageNames = {
     ar: "العربية",
@@ -29,6 +30,22 @@ function Quran() {
     tl: "Tagalog",
     fa: "فارسی",
     ha: "Hausa"
+  };
+
+  const loadingMessages = {
+    ar: "انتظر تحميل الملف...",
+    en: "Please wait while the file is loading...",
+    fr: "Veuillez patienter pendant le chargement du fichier...",
+    tr: "Dosya yüklenirken lütfen bekleyin...",
+    id: "Harap tunggu saat file sedang dimuat...",
+    ru: "Пожалуйста, подождите, пока файл загружается...",
+    hi: "कृपया फ़ाइल लोड होने तक प्रतीक्षा करें...",
+    ur: "براہ کرم فائل کے لوڈ ہونے کا انتظار کریں...",
+    bn: "ফাইল লোড হওয়ার জন্য অনুগ্রহ করে অপেক্ষা করুন...",
+    zh: "请稍候，文件正在加载...",
+    tl: "Mangyaring maghintay habang naglo-load ang file...",
+    fa: "لطفاً منتظر بمانید تا فایل بارگذاری شود...",
+    ha: "Da fatan za ku jira yayin da ake loda fayil ɗin..."
   };
 
   const isMobileOrTablet = () => {
@@ -56,6 +73,7 @@ function Quran() {
   useEffect(() => {
     const fetchLatestBook = async () => {
       try {
+        setIsLoading(true); // Set loading state to true
         const response = await axios.get(`https://elmanafea.shop/quran?lang=${i18n.language}`);
         const books = response.data.books;
         if (books && books.length > 0) {
@@ -67,6 +85,8 @@ function Quran() {
         }
       } catch (error) {
         console.error('Error fetching latest book:', error);
+      } finally {
+        setIsLoading(false); // Set loading state to false
       }
     };
 
@@ -143,6 +163,11 @@ function Quran() {
     <>
       <Header />
       <div className={`quran-container ${!isAdmin ? 'viewer-only' : ''}`}>
+        <div className="left-section">
+          <div className="loading-message">
+            {loadingMessages[i18n.language]}
+          </div>
+        </div>
         {isAdmin && (
           <div className="language-controls">
             {uploadError && <div className="upload-error">{uploadError}</div>}
@@ -163,10 +188,11 @@ function Quran() {
                 </div>
               </div>
             ))}
+            <p>
+              انتظر تحميل الملف
+            </p>
           </div>
         )}
-        
-
       </div>
     </>
   );
