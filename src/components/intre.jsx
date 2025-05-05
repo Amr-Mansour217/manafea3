@@ -109,23 +109,25 @@ function Intre() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchHeaderData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.get(`/bookheader?lang=${i18n.language}`);
-        if (isMounted && response.data?.header) {
-          setHeaderText(response.data.header);
-        }
-      } catch (error) {
-        if (isMounted) {
-          console.error('Error fetching header:', error);
-          setError('Failed to load header data');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
+    const fetchHeaderData = () => {
+      setIsLoading(true);
+      api.get(`/bookheader?lang=${i18n.language}`)
+        .then(response => {
+          if (isMounted && response.data?.header) {
+            setHeaderText(response.data.header);
+          }
+        })
+        .catch(error => {
+          if (isMounted) {
+            console.error('Error fetching header:', error);
+            setError('Failed to load header data');
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        });
     };
 
     if (i18n.language) {
@@ -139,32 +141,33 @@ function Intre() {
 
   // Add useEffect to fetch books
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const response = await axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
-        if (response.data && Array.isArray(response.data.books)) {
-          const formattedBooks = response.data.books.map(book => {
-            // تأكد من أن رابط الصورة كامل
-            let imageUrl = book.imageUrl;
-            if (imageUrl && !imageUrl.startsWith('http')) {
-              imageUrl = `https://elmanafea.shop${imageUrl}`;
-            }
-            console.log('Book image URL:', imageUrl); // للتأكد من الرابط
+    const fetchBooks = () => {
+      axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`)
+        .then(response => {
+          if (response.data && Array.isArray(response.data.books)) {
+            const formattedBooks = response.data.books.map(book => {
+              // تأكد من أن رابط الصورة كامل
+              let imageUrl = book.imageUrl;
+              if (imageUrl && !imageUrl.startsWith('http')) {
+                imageUrl = `https://elmanafea.shop${imageUrl}`;
+              }
+              console.log('Book image URL:', imageUrl); // للتأكد من الرابط
 
-            return {
-              id: book._id || Date.now(),
-              title: book.title,
-              link: book.fileUrl,
-              image: imageUrl
-            };
-          });
-          setBooks(formattedBooks);
-        }
-      } catch (error) {
-        console.error('Error fetching books:', error);
-        const defaultBooks = allBooks[i18n.language] || [];
-        setBooks(defaultBooks);
-      }
+              return {
+                id: book._id || Date.now(),
+                title: book.title,
+                link: book.fileUrl,
+                image: imageUrl
+              };
+            });
+            setBooks(formattedBooks);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching books:', error);
+          const defaultBooks = allBooks[i18n.language] || [];
+          setBooks(defaultBooks);
+        });
     };
 
     fetchBooks();
@@ -181,34 +184,35 @@ function Intre() {
     }
   }, [books, i18n.language]);
 
-  const handleUpdateHeader = async () => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        throw new Error('Admin authentication required');
-      }
+  const handleUpdateHeader = () => {
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      showToast.error('Admin authentication required');
+      return;
+    }
 
-      const response = await api.post(
-        '/admin/bookheader',
-        {
-          header: editingHeaderText,
-          lang: i18n.language
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminToken}`
-          }
+    api.post(
+      '/admin/bookheader',
+      {
+        header: editingHeaderText,
+        lang: i18n.language
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminToken}`
         }
-      );
-
+      }
+    )
+    .then(response => {
       if (response.status === 200) {
         setHeaderText(editingHeaderText);
         setShowHeaderModal(false);
       }
-    } catch (error) {
+    })
+    .catch(error => {
       console.error('Error updating header:', error);
       showToast.error(error.response?.data?.message || 'Failed to update header');
-    }
+    });
   };
 
   // Pagination logic
@@ -228,23 +232,25 @@ function Intre() {
     setShowEditModal(true);
   };
 
-  const handleDelete = async (bookId) => {
+  const handleDelete = (bookId) => {
     if (window.confirm(t('هل أنت متأكد من حذف هذا الكتاب؟'))) {
-      try {
-        const adminToken = localStorage.getItem('adminToken');
-        if (!adminToken) {
-          throw new Error('Admin authentication required');
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        showToast.error('Admin authentication required');
+        return;
+      }
+
+      // استخدام الرابط الجديد للحذف
+      axios.delete(`https://elmanafea.shop/admin/deletebook/${bookId}`, {
+        headers: {
+          Authorization: `Bearer ${adminToken}`
         }
-
-        // استخدام الرابط الجديد للحذف
-        await axios.delete(`https://elmanafea.shop/admin/deletebook/${bookId}`, {
-          headers: {
-            Authorization: `Bearer ${adminToken}`
-          }
-        });
-
+      })
+      .then(() => {
         // تحديث قائمة الكتب بعد الحذف
-        const response = await axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
+        return axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
+      })
+      .then(response => {
         if (response.data && Array.isArray(response.data.books)) {
           const formattedBooks = response.data.books.map(book => {
             // تأكد من أن رابط الصورة كامل
@@ -263,86 +269,87 @@ function Intre() {
           setBooks(formattedBooks);
           showToast.deleted('تم حذف الكتاب بنجاح');
         }
-      } catch (error) {
+      })
+      .catch(error => {
         console.error('Error deleting book:', error);
         showToast.error('حدث خطأ أثناء حذف الكتاب');
-      }
+      });
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!editingBook) return;
 
-    try {
-      const formData = new FormData();
-      formData.append('bookId', editingBook.id);
-      formData.append('title', editingBook.title);
-      formData.append('lang', i18n.language);
-      
-      // إضافة الملف إذا تم تغييره
-      if (editingBook.file) {
-        formData.append('file', editingBook.file);
-        formData.append('type', 'file');
-      } else if (editingBook.link) {
-        formData.append('file', editingBook.link);
-        formData.append('type', 'text');
+    const formData = new FormData();
+    formData.append('bookId', editingBook.id);
+    formData.append('title', editingBook.title);
+    formData.append('lang', i18n.language);
+    
+    // إضافة الملف إذا تم تغييره
+    if (editingBook.file) {
+      formData.append('file', editingBook.file);
+      formData.append('type', 'file');
+    } else if (editingBook.link) {
+      formData.append('file', editingBook.link);
+      formData.append('type', 'text');
+    }
+
+    // إضافة الصورة الجديدة إذا تم اختيارها
+    if (editingBook.newImage) {
+      formData.append('image', editingBook.newImage);
+    }
+
+    // طباعة محتويات الـ FormData للتأكد
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
+    }
+
+    axios({
+      method: 'put',
+      url: `https://elmanafea.shop/admin/updatebook/${editingBook.id}`,
+      data: {
+        title: editingBook.title,
+        bookId: editingBook.id,
+      },
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       }
-
-      // إضافة الصورة الجديدة إذا تم اختيارها
-      if (editingBook.newImage) {
-        formData.append('image', editingBook.newImage);
-      }
-
-      // طباعة محتويات الـ FormData للتأكد
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
-      }
-
-      const response = await axios({
-        method: 'put',
-        url: `https://elmanafea.shop/admin/updatebook/${editingBook.id}`,
-        data: {
-          title: editingBook.title,
-          bookId: editingBook.id,
-          
-        },
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-
+    })
+    .then(response => {
       if (response.status === 200 || response.status === 201) {
         // تحديث قائمة الكتب بعد التعديل
-        const getBooksResponse = await axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
-        if (getBooksResponse.data && Array.isArray(getBooksResponse.data.books)) {
-          const formattedBooks = getBooksResponse.data.books.map(book => {
-            let imageUrl = book.imageUrl;
-            if (imageUrl && !imageUrl.startsWith('http')) {
-              imageUrl = `https://elmanafea.shop${imageUrl}`;
-            }
-
-            return {
-              id: book._id || Date.now(),
-              title: book.title,
-              link: book.fileUrl,
-              image: imageUrl
-            };
-          });
-          setBooks(formattedBooks);
-        }
-        
-        setShowEditModal(false);
-        setEditingBook(null);
-        showToast.edited('تم تحديث الكتاب بنجاح');
-      } else {
-        throw new Error(response.data?.message || 'Failed to update book');
+        return axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
       }
-    } catch (error) {
+      throw new Error(response.data?.message || 'Failed to update book');
+    })
+    .then(getBooksResponse => {
+      if (getBooksResponse.data && Array.isArray(getBooksResponse.data.books)) {
+        const formattedBooks = getBooksResponse.data.books.map(book => {
+          let imageUrl = book.imageUrl;
+          if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = `https://elmanafea.shop${imageUrl}`;
+          }
+
+          return {
+            id: book._id || Date.now(),
+            title: book.title,
+            link: book.fileUrl,
+            image: imageUrl
+          };
+        });
+        setBooks(formattedBooks);
+      }
+      
+      setShowEditModal(false);
+      setEditingBook(null);
+      showToast.edited('تم تحديث الكتاب بنجاح');
+    })
+    .catch(error => {
       console.error('Error updating book:', error);
       showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث الكتاب');
-    }
+    });
   };
 
   const handleFileUpload = (event) => {
@@ -382,76 +389,86 @@ function Intre() {
     setUploadType('');
   };
 
-  const handleAdd = async () => {
-    try {
-      if (!newBook.title.trim()) {
-        showToast.error('من فضلك أدخل عنوان الكتاب');
-        return;
+  const handleAdd = () => {
+    if (!newBook.title.trim()) {
+      showToast.error('من فضلك أدخل عنوان الكتاب');
+      return;
+    }
+    
+    if (!newBook.file) {
+      showToast.error('من فضلك اختر ملف PDF');
+      return;
+    }
+
+    if (newBook.file.type !== 'application/pdf') {
+      showToast.error('يرجى اختيار ملف PDF فقط');
+      return;
+    }
+
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      showToast.error('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', newBook.file);
+    formData.append('title', newBook.title.trim());
+    formData.append('lang', i18n.language);
+    formData.append('type', 'file');
+
+    // إضافة الصورة إذا تم اختيارها
+    if (newBook.image) {
+      formData.append('image', newBook.image);
+    }
+
+    setUploadProgress(0);
+
+    axios({
+      method: 'post',
+      url: 'https://elmanafea.shop/admin/uploadbook',
+      data: formData,
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'multipart/form-data'
+      },
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        setUploadProgress(percentCompleted);
       }
-      
-      if (!newBook.file) {
-        showToast.error('من فضلك اختر ملف PDF');
-        return;
-      }
-
-      if (newBook.file.type !== 'application/pdf') {
-        showToast.error('يرجى اختيار ملف PDF فقط');
-        return;
-      }
-
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        showToast.error('جلسة المسؤول منتهية. يرجى تسجيل الدخول مرة أخرى');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('file', newBook.file);
-      formData.append('title', newBook.title.trim());
-      formData.append('lang', i18n.language);
-      formData.append('type', 'file');
-
-      // إضافة الصورة إذا تم اختيارها
-      if (newBook.image) {
-        formData.append('image', newBook.image);
-      }
-
-      setUploadProgress(0);
-
-      const response = await axios({
-        method: 'post',
-        url: 'https://elmanafea.shop/admin/uploadbook',
-        data: formData,
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Accept': 'application/json',
-          'Content-Type': 'multipart/form-data'
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        }
-      });
-
+    })
+    .then(response => {
       if (response.status === 201 || response.status === 200) {
         // Refresh books list after successful upload
-        const getBooksResponse = await axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
-        if (getBooksResponse.data && Array.isArray(getBooksResponse.data.books)) {
-          const formattedBooks = getBooksResponse.data.books.map(book => ({
+        return axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
+      }
+      throw new Error('Upload failed');
+    })
+    .then(getBooksResponse => {
+      if (getBooksResponse.data && Array.isArray(getBooksResponse.data.books)) {
+        const formattedBooks = getBooksResponse.data.books.map(book => {
+          let imageUrl = book.imageUrl;
+          if (imageUrl && !imageUrl.startsWith('http')) {
+            imageUrl = `https://elmanafea.shop${imageUrl}`;
+          }
+
+          return {
             id: book._id || Date.now(),
             title: book.title,
             link: book.fileUrl,
-            image: book.imageUrl
-          }));
-          setBooks(formattedBooks);
-        }
-        
-        setShowAddModal(false);
-        setNewBook({ title: '', file: null, image: null });
-        setUploadProgress(0);
-        showToast.added('تم إضافة الكتاب بنجاح');
+            image: imageUrl
+          };
+        });
+        setBooks(formattedBooks);
       }
-    } catch (error) {
+      
+      setShowAddModal(false);
+      setNewBook({ title: '', file: null, image: null });
+      setUploadProgress(0);
+      showToast.added('تم إضافة الكتاب بنجاح');
+    })
+    .catch(error => {
       console.error('Upload error:', error);
       let errorMessage = 'حدث خطأ أثناء رفع الكتاب';
       
@@ -467,7 +484,7 @@ function Intre() {
       
       showToast.error(errorMessage);
       setUploadProgress(0);
-    }
+    });
   };
 
   useEffect(() => {
@@ -482,56 +499,61 @@ function Intre() {
 
   // Add useEffect to fetch video header
   useEffect(() => {
-    const fetchVideoHeader = async () => {
-      try {
-        const response = await axios.get(`https://elmanafea.shop/booksecondheader?lang=${i18n.language}`);
-        if (response.data && response.data.second_header) {
-          setSubtitleText(response.data.second_header);
-        }
-      } catch (error) {
-        console.error('Error fetching video header:', error);
-        setSubtitleText('مجموعة مميزة من الكتب في علوم الشريعة والسيرة النبوية');
-      }
+    const fetchVideoHeader = () => {
+      axios.get(`https://elmanafea.shop/booksecondheader?lang=${i18n.language}`)
+        .then(response => {
+          if (response.data && response.data.second_header) {
+            setSubtitleText(response.data.second_header);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching video header:', error);
+          setSubtitleText('مجموعة مميزة من الكتب في علوم الشريعة والسيرة النبوية');
+        });
     };
 
     fetchVideoHeader();
   }, [i18n.language]);
 
-  const handleUpdateSubtitle = async () => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        throw new Error('Admin authentication required');
-      }
+  const handleUpdateSubtitle = () => {
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      showToast.error('Admin authentication required');
+      return;
+    }
 
-      // Send POST request to update video header
-      const response = await axios.post(
-        'https://elmanafea.shop/admin/booksecondheader',
-        {
-          second_header: editingSubtitleText,
-          lang: i18n.language
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminToken}`
-          }
+    // Send POST request to update video header
+    axios.post(
+      'https://elmanafea.shop/admin/booksecondheader',
+      {
+        second_header: editingSubtitleText,
+        lang: i18n.language
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${adminToken}`
         }
-      );
-
+      }
+    )
+    .then(response => {
       if (response.status === 200 || response.status === 201) {
         // Fetch updated video header
-        const getResponse = await axios.get(`https://elmanafea.shop/booksecondheader?lang=${i18n.language}`);
-        if (getResponse.data && getResponse.data.title) {
-          setSubtitleText(getResponse.data.title);
-        } else {
-          setSubtitleText(editingSubtitleText);
-        }
-        setShowSubtitleModal(false);
+        return axios.get(`https://elmanafea.shop/booksecondheader?lang=${i18n.language}`);
       }
-    } catch (error) {
+      throw new Error('Failed to update header');
+    })
+    .then(getResponse => {
+      if (getResponse.data && getResponse.data.title) {
+        setSubtitleText(getResponse.data.title);
+      } else {
+        setSubtitleText(editingSubtitleText);
+      }
+      setShowSubtitleModal(false);
+    })
+    .catch(error => {
       console.error('Error updating video header:', error);
       showToast.error(error.response?.data?.message || 'Failed to update header');
-    }
+    });
   };
 
   const handleBookClick = (book) => {
