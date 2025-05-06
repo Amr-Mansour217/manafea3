@@ -254,8 +254,21 @@
         
         @media (max-width: 576px) {
             .video-categories ul {
-                flex-direction: column;
-                align-items: center;
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 0 10px;
+            }
+            
+            .video-categories ul li {
+                margin: 0;
+            }
+            
+            .video-categories ul li a {
+                font-size: 12px;
+                padding: 6px 12px;
+                white-space: nowrap;
             }
             
             .videos-grid {
@@ -902,4 +915,3 @@
             background-color: #f44336;
             color: white;
         }
-        
