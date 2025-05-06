@@ -5,6 +5,7 @@ import { faEdit, faTrash, faPlus, faPenToSquare, faAnglesLeft, faAnglesRight, fa
 import './intractivefiles.css';
 import Header from "./header";
 import Footer from './footer';
+import Louder from './louder'; // استيراد مكون Louder
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import axios from 'axios';
@@ -33,11 +34,6 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
-
-// Loading component
-const LoadingSpinner = () => (
-  <div className="loading-spinner">Loading...</div>
-);
 
 function Intre() {
   const { t, i18n } = useTranslation();
@@ -554,9 +550,13 @@ function Intre() {
     navigate(`/book-viewer/${encodedLink}/${encodedTitle}`);
   };
 
+  if (isLoading) {
+    return <div><Louder /></div>; // استخدام مكون Louder بدلاً من LoadingSpinner
+  }
+
   return (
     <ErrorBoundary>
-      <Suspense fallback={<LoadingSpinner />}>
+      <Suspense fallback={<Louder />}> {/* استخدام Louder في Suspense */}
         <Header />
         <div className="videos-header">
           <div className="header-container">
@@ -935,7 +935,7 @@ function Intre() {
 export default function IntreWrapper() {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<LoadingSpinner />}>
+      <Suspense fallback={<Louder />}> {/* استخدام Louder في IntreWrapper أيضاً */}
         <Intre />
       </Suspense>
     </ErrorBoundary>
