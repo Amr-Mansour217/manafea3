@@ -192,6 +192,9 @@ function Videos(){
 
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState(null);
+    // إضافة متغيرات حالة جديدة لتأكيد حذف الفيديو
+    const [showDeleteVideoConfirmModal, setShowDeleteVideoConfirmModal] = useState(false);
+    const [videoToDelete, setVideoToDelete] = useState(null);
 
     const [pdfFiles, setPdfFiles] = useState([]);
 
@@ -650,17 +653,25 @@ function Videos(){
         });
     };
 
-    const handleDeleteVideo = (videoId) => {
+    const handleDeleteVideo = (videoId, videoTitle) => {
         const adminToken = localStorage.getItem('adminToken');
         if (!adminToken) {
             alert('يرجى تسجيل الدخول كمشرف أولاً');
             return;
         }
 
-        if (!window.confirm('هل أنت متأكد من حذف هذا الفيديو؟')) {
-            return;
-        }
+        // بدلاً من استخدام window.confirm، نقوم بحفظ معلومات الفيديو وعرض النافذة المنبثقة
+        const video = videos.find(v => v.id === videoId);
+        setVideoToDelete({
+            id: videoId,
+            title: video?.title || 'الفيديو'
+        });
+        setShowDeleteVideoConfirmModal(true);
+    };
 
+    const handleConfirmDeleteVideo = () => {
+        const adminToken = localStorage.getItem('adminToken');
+        
         axios.delete(
             'https://elmanafea.shop/admin/deletevideo',
             {
@@ -669,7 +680,7 @@ function Videos(){
                     'Content-Type': 'application/json'
                 },
                 data: {
-                    id: videoId,
+                    id: videoToDelete.id,
                     lang: i18n.language
                 }
             }
@@ -682,6 +693,9 @@ function Videos(){
         }).catch(error => {
             console.error('Error deleting video:', error);
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
+        }).finally(() => {
+            setShowDeleteVideoConfirmModal(false);
+            setVideoToDelete(null);
         });
     };
 
@@ -985,7 +999,7 @@ function Videos(){
                                         <FontAwesomeIcon 
                                             icon={faTrash} 
                                             className="delete-icon"
-                                            onClick={() => handleDeleteVideo(video.id)}
+                                            onClick={() => handleDeleteVideo(video.id, video.title)}
                                         />
                                         <FontAwesomeIcon 
                                             icon={faPenToSquare} 
@@ -1394,6 +1408,33 @@ function Videos(){
                                 onClick={() => {
                                     setShowDeleteConfirmModal(false);
                                     setCategoryToDelete(null);
+                                }}
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* إضافة نافذة تأكيد حذف الفيديو */}
+            {showDeleteVideoConfirmModal && (
+                <div className="delete-confirm-modal-overlay">
+                    <div className="delete-confirm-modal">
+                        <h3>تأكيد الحذف</h3>
+                        <p>هل أنت متأكد من حذف الفيديو "{videoToDelete?.title}"؟</p>
+                        <div className="delete-confirm-actions">
+                            <button
+                                className="delete-confirm-btn confirm"
+                                onClick={handleConfirmDeleteVideo}
+                            >
+                                نعم، احذف
+                            </button>
+                            <button
+                                className="delete-confirm-btn cancel"
+                                onClick={() => {
+                                    setShowDeleteVideoConfirmModal(false);
+                                    setVideoToDelete(null);
                                 }}
                             >
                                 إلغاء
