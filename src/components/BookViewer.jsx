@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import Louder from './louder'; // استيراد مكون Louder
 
 function BookViewer() {
   const { link, title } = useParams();
@@ -30,7 +31,7 @@ function BookViewer() {
   console.log('Google Docs Viewer URL:', googleDocsViewerUrl); // Debug log
 
   return (
-    <div className="book-viewer">
+    <div className="book-viewer-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>{decodeURIComponent(title || t('كتاب بدون عنوان'))}</h1>
         <button 
@@ -51,8 +52,7 @@ function BookViewer() {
       <div className="pdf-viewer" style={{ height: 'calc(100vh - 100px)', overflow: 'hidden' }}>
         {loadingPdf && (
           <div className="loading-message">
-            <div className="loader"></div>
-            {t('جاري تحميل الملف...')}
+            <Louder /> {/* استخدام Louder بدلاً من رسالة التحميل العادية */}
           </div>
         )}
         {error ? (

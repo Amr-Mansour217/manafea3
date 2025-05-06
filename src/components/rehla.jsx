@@ -5,6 +5,7 @@ import { faEdit, faTrash, faPenToSquare, faFileUpload } from '@fortawesome/free-
 import axios from 'axios';
 import Header from './header';
 import Footer from './footer';
+import Loader from './louder'; 
 import './rehla.css';
 import { showToast } from './Toast'; // Import showToast component
 
@@ -836,6 +837,16 @@ const Rehla = () => {
       </div>
     );
   };
+
+  if (isLoading) {
+    return (
+      <>
+        {/* <Header /> */}
+        <Loader />
+        {/* <Footer /> */}
+      </>
+    );
+  }
 
   return (
     <>

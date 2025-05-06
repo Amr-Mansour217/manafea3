@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from "./header";
 import './quran.css';
 import axios from 'axios';
+import Louder from './louder'; // استيراد مكون Louder
 
 function Quran() {
   const { i18n, t } = useTranslation();
@@ -14,7 +15,7 @@ function Quran() {
     return savedPdfs ? JSON.parse(savedPdfs) : {};
   });
   const [uploadError, setUploadError] = useState('');
-  const [isLoading, setIsLoading] = useState(true); // Added loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   const languageNames = {
     ar: "العربية",
@@ -73,7 +74,7 @@ function Quran() {
   useEffect(() => {
     const fetchLatestBook = async () => {
       try {
-        setIsLoading(true); // Set loading state to true
+        setIsLoading(true);
         const response = await axios.get(`https://elmanafea.shop/quran?lang=${i18n.language}`);
         const books = response.data.books;
         if (books && books.length > 0) {
@@ -86,7 +87,7 @@ function Quran() {
       } catch (error) {
         console.error('Error fetching latest book:', error);
       } finally {
-        setIsLoading(false); // Set loading state to false
+        setIsLoading(false);
       }
     };
 
@@ -99,8 +100,7 @@ function Quran() {
     }
   }, [pdfFiles, i18n.language]);
 
-  const openPdf = () => { // Prevent automatic opening for admins
-
+  const openPdf = () => {
     const pdfUrl = pdfFiles[i18n.language]?.startsWith('http')
       ? pdfFiles[i18n.language]
       : `https://elmanafea.shop${pdfFiles[i18n.language]}`;
@@ -158,6 +158,10 @@ function Quran() {
       event.target.value = '';
     }
   };
+
+  if (isLoading) {
+    return <div><Louder /></div>;
+  }
 
   return (
     <>

@@ -8,6 +8,7 @@ import Footer from './footer';
 import './mosabaqa.css';
 import { countryCodes } from './countryCodes';
 import { showToast } from './Toast'; // Import showToast component
+import Louder from './louder'; // استيراد مكون Louder
 
 const Mosabaqa = () => {
   const { t, i18n } = useTranslation();
@@ -256,6 +257,10 @@ const Mosabaqa = () => {
     }
     return 'ltr';
   };
+
+  if (isLoading) {
+    return <div><Louder /></div>;
+  }
 
   return (
     <>

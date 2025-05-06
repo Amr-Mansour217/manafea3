@@ -7,6 +7,7 @@ import Header from './header';
 import './apps.css' 
 import Footer from './footer';
 import { showToast } from './Toast'; // استيراد دالة showToast
+import Louder from './louder'; // استيراد مكون Louder
 
 function Apps() {
   const { t, i18n } = useTranslation();
@@ -84,6 +85,7 @@ function Apps() {
   const [showTitleEditModal, setShowTitleEditModal] = useState(false);
   const [showDescriptionEditModal, setShowDescriptionEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // إضافة حالة التحميل
 
   const resizeImage = async (file) => {
     return new Promise((resolve) => {
@@ -303,9 +305,11 @@ function Apps() {
         }));
         setApps(updatedApps);
       }
+      setIsLoading(false); // تحديث حالة التحميل
     } catch (error) {
       console.error('Error fetching apps:', error);
       showToast.error('حدث خطأ أثناء استرجاع التطبيقات');
+      setIsLoading(false); // تحديث حالة التحميل
     }
   };
 
@@ -471,6 +475,11 @@ function Apps() {
   };
 
   const filteredApps = apps.filter(app => app.category === activeCategory);
+
+  // إضافة شرط للتحقق من حالة التحميل
+  if (isLoading) {
+    return <div><Louder /></div>;
+  }
 
   return (
     <div className="page-container">

@@ -7,11 +7,13 @@ import './another.css';
 import Footer from './footer';
 import axios from 'axios';
 import { showToast } from './Toast'; // Import the Toast component
+import Louder from './louder'; // استيراد مكون Louder
 
 function Another() {
   const { t, i18n } = useTranslation();
   const [isAdmin, setIsAdmin] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(true); // إضافة حالة التحميل
+
   const [websites, setWebsites] = useState(() => {
     const savedWebsites = localStorage.getItem('websites');
     return savedWebsites ? JSON.parse(savedWebsites) : [];
@@ -142,10 +144,12 @@ function Another() {
       
       setWebsites(websitesData);
       localStorage.setItem('websites', JSON.stringify(websitesData));
+      setIsLoading(false); // تحديث حالة التحميل
     } catch (error) {
       console.error('Error fetching websites:', error);
       showToast.error(t('حدث خطأ في جلب المواقع'));
       setWebsites([]);
+      setIsLoading(false); // تحديث حالة التحميل
     }
   };
 
@@ -387,6 +391,11 @@ function Another() {
       </div>
     ));
   };
+
+  // إضافة شرط للتحقق من حالة التحميل
+  if (isLoading) {
+    return <div><Louder /></div>;
+  }
 
   return (
     <div className="page-container">
