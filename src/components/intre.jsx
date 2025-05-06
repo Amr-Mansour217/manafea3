@@ -231,44 +231,9 @@ function Intre() {
   };
 
   const handleDelete = (bookId) => {
-    if (window.confirm(t('هل أنت متأكد من حذف هذا الكتاب؟'))) {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        showToast.error(t('يجب تسجيل الدخول كمسؤول'));
-        return;
-      }
-
-      axios.delete(`https://elmanafea.shop/admin/deletebook/${bookId}`, {
-        headers: {
-          Authorization: `Bearer ${adminToken}`
-        }
-      })
-      .then(() => {
-        return axios.get(`https://elmanafea.shop/books?lang=${i18n.language}`);
-      })
-      .then(response => {
-        if (response.data && Array.isArray(response.data.books)) {
-          const formattedBooks = response.data.books.map(book => {
-            let imageUrl = book.imageUrl;
-            if (imageUrl && !imageUrl.startsWith('http')) {
-              imageUrl = `https://elmanafea.shop${imageUrl}`;
-            }
-            return {
-              id: book._id || Date.now(),
-              title: book.title,
-              link: book.fileUrl,
-              image: imageUrl
-            };
-          });
-          setBooks(formattedBooks);
-          showToast.deleted(t('تم حذف الكتاب بنجاح'));
-        }
-      })
-      .catch(error => {
-        console.error('Error deleting book:', error);
-        showToast.error(t('حدث خطأ أثناء حذف الكتاب'));
-      });
-    }
+    // استبدال window.confirm بنافذة التأكيد المخصصة
+    setBookToDelete(bookId);
+    setShowDeleteConfirm(true);
   };
 
   const confirmDelete = () => {
