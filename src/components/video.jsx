@@ -478,13 +478,14 @@ function Videos(){
     };
 
     const handleEditTextClick = (defaultText, type) => {
-        console.log("handleEditTextClick called with:", defaultText, type); // للتأكد من أن الوظيفة تعمل
+        console.log("handleEditTextClick called with:", defaultText, type);
         const currentText = texts[i18n.language]?.[type] || defaultText;
         setEditingText({
             text: currentText,
             type: type
         });
-        setEditModalOpen(true); // تأكد من تعيين هذه القيمة إلى true لفتح النافذة المنبثقة
+        setEditingVideo(null); // إضافة هذا السطر لإغلاق نافذة تعديل الفيديو
+        setEditModalOpen(true);
     };
 
     const handleDeleteCategory = (categoryId) => {
@@ -567,6 +568,7 @@ function Videos(){
             ...video, 
             type: video.isLocal ? 'file' : 'youtube'
         });
+        setEditingText(null); // إضافة هذا السطر لإغلاق نافذة تعديل النص
         setEditModalOpen(true);
     };
 
