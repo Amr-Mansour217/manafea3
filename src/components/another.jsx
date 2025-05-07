@@ -6,14 +6,306 @@ import Header from './header';
 import './another.css';
 import Footer from './footer';
 import axios from 'axios';
-import { showToast } from './Toast'; // Import the Toast component
-import Louder from './louder'; // استيراد مكون Louder
+import { showToast } from './Toast';
+import Louder from './louder';
+
+// كلاس لإدارة المواقع
+class WebsiteManager {
+  constructor(i18n, showToast) {
+    this.i18n = i18n;
+    this.showToast = showToast;
+    this.baseURL = 'https://elmanafea.shop';
+  }
+
+  normalizeUrl(url) {
+    if (!url) return '';
+    url = url.trim();
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return `https://${url}`;
+  }
+
+  getFaviconUrl(websiteUrl) {
+    return `https://www.google.com/s2/favicons?domain=${websiteUrl}&sz=64`;
+  }
+
+  async fetchWebsites() {
+    try {
+      console.log('Fetching all websites after update');
+      
+      const timestamp = new Date().getTime();
+      const response = await axios.get(`${this.baseURL}/websites?_t=${timestamp}`);
+      console.log('API Response after update:', response.data);
+      
+      let websitesData = [];
+      
+      if (Array.isArray(response.data)) {
+        websitesData = response.data.map(site => ({
+          id: site._id,
+          name: site.name,
+          url: site.url
+        }));
+      } else if (response.data && typeof response.data === 'object') {
+        const possibleArrayData = Object.values(response.data).find(val => Array.isArray(val));
+        if (possibleArrayData) {
+          websitesData = possibleArrayData.map(site => ({
+            id: site._id || site.id,
+            name: site.name || site.title,
+            url: site.url
+          }));
+        }
+      }
+      
+      console.log('Processed websites data:', websitesData);
+      return websitesData;
+      
+    } catch (error) {
+      console.error('Error fetching websites:', error);
+      this.showToast.error(this.i18n.t('حدث خطأ في جلب المواقع'));
+      return [];
+    }
+  }
+
+  async addWebsite(newWebsite) {
+    if (!newWebsite.name || !newWebsite.url) {
+      this.showToast.error(this.i18n.t('من فضلك أدخل جميع البيانات المطلوبة'));
+      return false;
+    }
+
+    try {
+      const formattedUrl = this.normalizeUrl(newWebsite.url);
+      
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        this.showToast.error(this.i18n.t('يرجى تسجيل الدخول كمشرف أولاً'));
+        return false;
+      }
+      
+      const response = await axios.post(`${this.baseURL}/admin/addwebsite`, {
+        name: newWebsite.name,
+        url: formattedUrl,
+        language: this.i18n.language
+      }, {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      console.log('Add website response:', response);
+
+      if (response.status >= 200 && response.status < 300) {
+        this.showToast.success(this.i18n.t('تمت الإضافة بنجاح'));
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error adding website:', error);
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        this.showToast.error(this.i18n.t(error.response.data.message));
+      } else {
+        this.showToast.error(this.i18n.t('حدث خطأ في إضافة الموقع'));
+      }
+      
+      return false;
+    }
+  }
+
+  async updateWebsite(editingWebsite) {
+    if (!editingWebsite.name || !editingWebsite.url) {
+      this.showToast.error(this.i18n.t('من فضلك أدخل جميع البيانات المطلوبة'));
+      return false;
+    }
+
+    const formattedUrl = this.normalizeUrl(editingWebsite.url);
+    
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        this.showToast.error(this.i18n.t('يرجى تسجيل الدخول كمشرف أولاً'));
+        return false;
+      }
+
+      console.log(`Updating website with ID: ${editingWebsite.id}`);
+      
+      const response = await axios({
+        method: 'put',
+        url: `${this.baseURL}/admin/updatewebsites/${editingWebsite.id}`,
+        data: {
+          name: editingWebsite.name,
+          url: formattedUrl,
+          lang: this.i18n.language
+        },
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Update response:', response.data);
+
+      if (response.status === 200) {
+        this.showToast.edited(this.i18n.t('تم التعديل بنجاح'));
+        return { ...editingWebsite, url: formattedUrl };
+      } else {
+        throw new Error('فشل في تحديث الموقع');
+      }
+    } catch (error) {
+      console.error('Error updating website:', error);
+      console.error('Response data:', error.response?.data);
+      this.showToast.error(this.i18n.t(error.response?.data?.message || 'حدث خطأ في تحديث الموقع'));
+      return false;
+    }
+  }
+
+  async deleteWebsite(website) {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        this.showToast.error(this.i18n.t('يرجى تسجيل الدخول كمشرف أولاً'));
+        return false;
+      }
+
+      const response = await axios.delete(`${this.baseURL}/admin/deletewebsites/${website.id}`, {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (response.status !== 200) {
+        throw new Error('فشل في حذف الموقع');
+      }
+      
+      this.showToast.deleted(this.i18n.t('تم الحذف بنجاح'));
+      return true;
+    } catch (error) {
+      console.error('Error deleting website:', error);
+      this.showToast.error(this.i18n.t(error.message));
+      return false;
+    }
+  }
+}
+
+// كلاس لإدارة نصوص الصفحة
+class TextManager {
+  constructor(i18n, showToast) {
+    this.i18n = i18n;
+    this.showToast = showToast;
+    this.baseURL = 'https://elmanafea.shop';
+  }
+
+  async fetchWebsiteHeader() {
+    try {
+      const currentLang = this.i18n.language;
+      const response = await axios.get(`${this.baseURL}/websitesheader?lang=${currentLang}`);
+      console.log('Website header response:', response.data);
+      
+      if (response.data?.title) {
+        return response.data.title;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching website header:', error);
+      this.showToast.error(this.i18n.t('حدث خطأ في جلب العنوان'));
+      return null;
+    }
+  }
+
+  async fetchWebsiteSecondHeader() {
+    try {
+      const currentLang = this.i18n.language;
+      const response = await axios.get(`${this.baseURL}/websecondheader?lang=${currentLang}`);
+      console.log('Website second header response:', response.data);
+      
+      if (response.data?.second_header?.title) {
+        return response.data.second_header.title;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching website second header:', error);
+      this.showToast.error(this.i18n.t('حدث خطأ في جلب الوصف'));
+      return null;
+    }
+  }
+
+  async updateText(editingField, tempText) {
+    if (!tempText) {
+      this.showToast.error(this.i18n.t('من فضلك أدخل النص'));
+      return false;
+    }
+
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        this.showToast.error(this.i18n.t('يرجى تسجيل الدخول كمشرف أولاً'));
+        return false;
+      }
+
+      const currentLang = this.i18n.language;
+      
+      if (editingField === 'title') {
+        const response = await axios({
+          method: 'post',
+          url: `${this.baseURL}/admin/head`,
+          data: {
+            title: tempText,
+            lang: currentLang
+          },
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Update title response:', response.data);
+        
+        if (response.status === 200) {
+          this.showToast.success(this.i18n.t('تمت العملية بنجاح'));
+          return true;
+        }
+      } else if (editingField === 'description') {
+        const response = await axios({
+          method: 'post',
+          url: `${this.baseURL}/admin/websecondheader`,
+          data: {
+            title: tempText,  
+            lang: currentLang 
+          },
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Update description response:', response.data);
+        
+        if (response.status === 200) {
+          this.showToast.success(this.i18n.t('تمت العملية بنجاح'));
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error updating text:', error);
+      this.showToast.error(this.i18n.t(error.response?.data?.message || 'حدث خطأ في تحديث النص'));
+      return false;
+    }
+  }
+}
 
 function Another() {
   const { t, i18n } = useTranslation();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // إضافة حالة التحميل
+  const [isLoading, setIsLoading] = useState(true);
 
+  // إنشاء مدراء الصفحة
+  const websiteManager = new WebsiteManager(i18n, showToast);
+  const textManager = new TextManager(i18n, showToast);
+
+  // حالة الصفحة
   const [websites, setWebsites] = useState(() => {
     const savedWebsites = localStorage.getItem('websites');
     return savedWebsites ? JSON.parse(savedWebsites) : [];
@@ -32,6 +324,7 @@ function Another() {
       }
     };
   });
+
   const [editingField, setEditingField] = useState(null);
   const [tempText, setTempText] = useState('');
 
@@ -63,154 +356,41 @@ function Another() {
     localStorage.setItem('anotherTexts', JSON.stringify(texts));
   }, [texts]);
 
-  const normalizeUrl = (url) => {
-    if (!url) return '';
-    url = url.trim();
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    return `https://${url}`;
-  };
-
-  const handleAddWebsite = async () => {
-    if (!newWebsite.name || !newWebsite.url) {
-      showToast.error(t('من فضلك أدخل جميع البيانات المطلوبة'));
-      return;
-    }
-
-    try {
-      const formattedUrl = normalizeUrl(newWebsite.url);
-      
-      setShowAddModal(false);
-      
-      const response = await axios.post('https://elmanafea.shop/admin/addwebsite', {
-        name: newWebsite.name,
-        url: formattedUrl,
-        language: i18n.language
-      }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-
-      console.log('Add website response:', response);
-
-      if (response.status >= 200 && response.status < 300) {
-        setNewWebsite({ name: '', url: '' });
-        fetchWebsites();
-        showToast.success(t('تمت الإضافة بنجاح'));
-      }
-    } catch (error) {
-      console.error('Error adding website:', error);
-      
-      if (error.response && error.response.data && error.response.data.message) {
-        showToast.error(t(error.response.data.message));
-      } else {
-        showToast.error(t('حدث خطأ في إضافة الموقع'));
-      }
-      
-      setShowAddModal(true);
-    }
-  };
-
   const fetchWebsites = async () => {
-    try {
-      console.log('Fetching all websites after update');
-      
-      const timestamp = new Date().getTime();
-      const response = await axios.get(`https://elmanafea.shop/websites?_t=${timestamp}`);
-      console.log('API Response after update:', response.data);
-      
-      let websitesData = [];
-      
-      if (Array.isArray(response.data)) {
-        websitesData = response.data.map(site => ({
-          id: site._id,
-          name: site.name,
-          url: site.url
-        }));
-      } else if (response.data && typeof response.data === 'object') {
-        const possibleArrayData = Object.values(response.data).find(val => Array.isArray(val));
-        if (possibleArrayData) {
-          websitesData = possibleArrayData.map(site => ({
-            id: site._id || site.id,
-            name: site.name || site.title,
-            url: site.url
-          }));
-        }
-      }
-      
-      console.log('Processed websites data:', websitesData);
-      
-      setWebsites(websitesData);
-      localStorage.setItem('websites', JSON.stringify(websitesData));
-      setIsLoading(false); // تحديث حالة التحميل
-    } catch (error) {
-      console.error('Error fetching websites:', error);
-      showToast.error(t('حدث خطأ في جلب المواقع'));
-      setWebsites([]);
-      setIsLoading(false); // تحديث حالة التحميل
-    }
+    const websitesData = await websiteManager.fetchWebsites();
+    setWebsites(websitesData);
+    localStorage.setItem('websites', JSON.stringify(websitesData));
+    setIsLoading(false);
   };
 
   useEffect(() => {
     fetchWebsites();
   }, []);
 
-  const handleUpdateWebsite = async () => {
-    if (!editingWebsite.name || !editingWebsite.url) {
-      showToast.error(t('من فضلك أدخل جميع البيانات المطلوبة'));
-      return;
-    }
-
-    const formattedUrl = normalizeUrl(editingWebsite.url);
+  const handleAddWebsite = async () => {
+    const success = await websiteManager.addWebsite(newWebsite);
     
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        showToast.error(t('يرجى تسجيل الدخول كمشرف أولاً'));
-        return;
-      }
+    if (success) {
+      setShowAddModal(false);
+      setNewWebsite({ name: '', url: '' });
+      fetchWebsites();
+    }
+  };
 
-      console.log(`Updating website with ID: ${editingWebsite.id}`);
-      
-      const response = await axios({
-        method: 'put',
-        url: `https://elmanafea.shop/admin/updatewebsites/${editingWebsite.id}`,
-        data: {
-          name: editingWebsite.name,
-          url: formattedUrl,
-          lang: i18n.language
-        },
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Update response:', response.data);
-
-      if (response.status === 200) {
-        setWebsites(prevWebsites => {
-          const updatedWebsites = prevWebsites.map(site => 
-            site.id === editingWebsite.id 
-              ? {...site, name: editingWebsite.name, url: formattedUrl} 
-              : site
-          );
-          
-          localStorage.setItem('websites', JSON.stringify(updatedWebsites));
-          return updatedWebsites;
-        });
+  const handleUpdateWebsite = async () => {
+    const updatedSite = await websiteManager.updateWebsite(editingWebsite);
+    
+    if (updatedSite) {
+      setWebsites(prevWebsites => {
+        const updatedWebsites = prevWebsites.map(site => 
+          site.id === editingWebsite.id ? updatedSite : site
+        );
         
-        setEditingWebsite(null);
-        showToast.edited(t('تم التعديل بنجاح'));
-      } else {
-        throw new Error('فشل في تحديث الموقع');
-      }
-    } catch (error) {
-      console.error('Error updating website:', error);
-      console.error('Response data:', error.response?.data);
-      showToast.error(t(error.response?.data?.message || 'حدث خطأ في تحديث الموقع'));
+        localStorage.setItem('websites', JSON.stringify(updatedWebsites));
+        return updatedWebsites;
+      });
+      
+      setEditingWebsite(null);
     }
   };
 
@@ -220,88 +400,46 @@ function Another() {
   };
 
   const confirmDeleteWebsite = async () => {
-    try {
-      const response = await axios.delete(`https://elmanafea.shop/admin/deletewebsites/${websiteToDelete.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-
-      if (response.status !== 200) {
-        throw new Error('فشل في حذف الموقع');
-      }
-
+    const success = await websiteManager.deleteWebsite(websiteToDelete);
+    
+    if (success) {
       setShowDeleteConfirmModal(false);
       setWebsiteToDelete(null);
-      
       fetchWebsites();
-      showToast.deleted(t('تم الحذف بنجاح'));
-    } catch (error) {
-      console.error('Error deleting website:', error);
-      showToast.error(t(error.message));
     }
   };
 
   const handleUpdateText = async () => {
-    if (!tempText) {
-      showToast.error(t('من فضلك أدخل النص'));
-      return;
-    }
-
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        showToast.error(t('يرجى تسجيل الدخول كمشرف أولاً'));
-        return;
-      }
-
-      const currentLang = i18n.language;
-      
+    const success = await textManager.updateText(editingField, tempText);
+    
+    if (success) {
       if (editingField === 'title') {
-        const response = await axios({
-          method: 'post',
-          url: 'https://elmanafea.shop/admin/head',
-          data: {
-            title: tempText,
-            lang: currentLang
-          },
-          headers: {
-            'Authorization': `Bearer ${adminToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('Update title response:', response.data);
-        
-        if (response.status === 200) {
-          await fetchWebsiteHeader();
-          showToast.success(t('تمت العملية بنجاح'));
+        const title = await textManager.fetchWebsiteHeader();
+        if (title) {
+          setTexts(prevTexts => ({
+            ...prevTexts,
+            [i18n.language]: {
+              ...prevTexts[i18n.language],
+              title
+            }
+          }));
         }
       } else if (editingField === 'description') {
-        const response = await axios({
-          method: 'post',
-          url: 'https://elmanafea.shop/admin/websecondheader',
-          data: {
-            title: tempText,  
-            lang: currentLang 
-          },
-          headers: {
-            'Authorization': `Bearer ${adminToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('Update description response:', response.data);
-        
-        if (response.status === 200) {
-          await fetchWebsiteSecondHeader();
-          showToast.success(t('تمت العملية بنجاح'));
+        const description = await textManager.fetchWebsiteSecondHeader();
+        if (description) {
+          setTexts(prevTexts => ({
+            ...prevTexts,
+            [i18n.language]: {
+              ...prevTexts[i18n.language],
+              description
+            }
+          }));
         }
       } else {
         setTexts({
           ...texts,
-          [currentLang]: {
-            ...texts[currentLang],
+          [i18n.language]: {
+            ...texts[i18n.language],
             [editingField]: tempText
           }
         });
@@ -309,62 +447,28 @@ function Another() {
       
       setEditingField(null);
       setTempText('');
-    } catch (error) {
-      console.error('Error updating text:', error);
-      showToast.error(t(error.response?.data?.message || 'حدث خطأ في تحديث النص'));
     }
   };
 
-  const fetchWebsiteHeader = async () => {
-    try {
-      const currentLang = i18n.language;
-      const response = await axios.get(`https://elmanafea.shop/websitesheader?lang=${currentLang}`);
-      console.log('Website header response:', response.data);
-      
-      if (response.data?.title) {
-        setTexts(prevTexts => ({
-          ...prevTexts,
-          [currentLang]: {
-            ...prevTexts[currentLang],
-            title: response.data.title
-          }
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching website header:', error);
-      showToast.error(t('حدث خطأ في جلب العنوان'));
-    }
-  };
-
-  const fetchWebsiteSecondHeader = async () => {
-    try {
-      const currentLang = i18n.language;
-      const response = await axios.get(`https://elmanafea.shop/websecondheader?lang=${currentLang}`);
-      console.log('Website second header response:', response.data);
-      
-      if (response.data?.second_header?.title) {
-        setTexts(prevTexts => ({
-          ...prevTexts,
-          [currentLang]: {
-            ...prevTexts[currentLang],
-            description: response.data.second_header.title
-          }
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching website second header:', error);
-      showToast.error(t('حدث خطأ في جلب الوصف'));
+  const fetchPageTexts = async () => {
+    const title = await textManager.fetchWebsiteHeader();
+    const description = await textManager.fetchWebsiteSecondHeader();
+    
+    if (title || description) {
+      setTexts(prevTexts => ({
+        ...prevTexts,
+        [i18n.language]: {
+          ...prevTexts[i18n.language],
+          title: title || prevTexts[i18n.language]?.title,
+          description: description || prevTexts[i18n.language]?.description
+        }
+      }));
     }
   };
 
   useEffect(() => {
-    fetchWebsiteHeader();
-    fetchWebsiteSecondHeader();
+    fetchPageTexts();
   }, [i18n.language]);
-
-  const getFaviconUrl = (websiteUrl) => {
-    return `https://www.google.com/s2/favicons?domain=${websiteUrl}&sz=64`;
-  };
 
   const renderWebsites = () => {
     if (!websites || !Array.isArray(websites)) {
@@ -385,14 +489,13 @@ function Another() {
           </div>
         )}
         <a href={site.url} target="_blank" rel="noopener noreferrer">
-          <img src={getFaviconUrl(site.url)} alt={site.name} />
+          <img src={websiteManager.getFaviconUrl(site.url)} alt={site.name} />
           <p>{site.name}</p>
         </a>
       </div>
     ));
   };
 
-  // إضافة شرط للتحقق من حالة التحميل
   if (isLoading) {
     return <div><Louder /></div>;
   }
@@ -446,6 +549,7 @@ function Another() {
         </div>
       </div>
 
+      {/* نوافذ الأضافة والتحرير والحذف */}
       {showAddModal && (
         <div className="modal">
           <div className="modal-content">

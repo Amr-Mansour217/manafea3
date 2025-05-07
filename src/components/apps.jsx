@@ -6,88 +6,12 @@ import axios from 'axios';
 import Header from './header';
 import './apps.css' 
 import Footer from './footer';
-import { showToast } from './Toast'; // استيراد دالة showToast
-import Louder from './louder'; // استيراد مكون Louder
+import { showToast } from './Toast';
+import Louder from './louder';
 
-function Apps() {
-  const { t, i18n } = useTranslation();
-  const [activeCategory, setActiveCategory] = useState('android');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [apps, setApps] = useState([]);
-  const [texts, setTexts] = useState(() => {
-    const savedTexts = localStorage.getItem('appsTexts');
-    return savedTexts ? JSON.parse(savedTexts) : {
-      ar: {
-        description: 'مجموعة مميزة من التطبيقات الإسلامية المفيدة'
-      },
-      en: {
-        title: 'Islamic Apps Library',
-      },
-      fr: {
-        title: 'Bibliothèque d\'Applications Islamiques',
-        description: 'Une collection d\'applications islamiques utiles'
-      },
-      tr: {
-        title: 'İslami Uygulamalar Kütüphanesi',
-        description: 'Faydalı İslami uygulamaların bir koleksiyonu'
-      },
-      id: {
-        title: 'Perpustakaan Aplikasi Islam',
-        description: 'Koleksi aplikasi Islam yang bermanfaat'
-      },
-      ru: {
-        title: 'Библиотека Исламских Приложений',
-        description: 'Коллекция полезных исламских приложений'
-      },
-      hi: {
-        title: 'इस्लामिक ऐप्स लाइब्रेरी',
-        description: 'उपयोगी इस्लामिक एप्लिकेशन का संग्रह'
-      },
-      ur: {
-        title: 'اسلامی ایپس لائبریری',
-        description: 'مفید اسلامی ایپلیکیشنز کا مجموعہ'
-      },
-      bn: {
-        title: 'ইসলামিক অ্যাপস লাইব্রেরি',
-        description: 'উপকারী ইসলামিক অ্যাপ্লিকেশনের সংগ্রহ'
-      },
-      zh: {
-        title: '伊斯兰应用程序库',
-        description: '实用伊斯兰应用程序集合'
-      },
-      tl: {
-        title: 'Aklatan ng mga Islamic na Application',
-        description: 'Koleksyon ng mga kapaki-pakinabang na Islamic applications'
-      },
-      fa: {
-        title: 'کتابخانه برنامه‌های اسلامی',
-        description: 'مجموعه‌ای از برنامه‌های کاربردی اسلامی'
-      }
-    };
-  });
-  const [isEditingHeader, setIsEditingHeader] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingApp, setEditingApp] = useState(null);
-  const [newApp, setNewApp] = useState({
-    name: '',
-    image: null,
-    link: '',
-    category: 'android'
-  });
-  const [editingField, setEditingField] = useState(null);
-  const [tempText, setTempText] = useState('');
-  const [headerText, setHeaderText] = useState('');
-  const [editingHeaderText, setEditingHeaderText] = useState('');
-  const [descriptionText, setDescriptionText] = useState('');
-  const [editingDescriptionText, setEditingDescriptionText] = useState('');
-  const [appToDelete, setAppToDelete] = useState(null);
-  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
-  const [showTitleEditModal, setShowTitleEditModal] = useState(false);
-  const [showDescriptionEditModal, setShowDescriptionEditModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // إضافة حالة التحميل
-
-  const resizeImage = async (file) => {
+// كلاس لمعالجة وضبط حجم الصور
+class ImageProcessor {
+  async resizeImage(file) {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -123,12 +47,267 @@ function Apps() {
       };
       reader.readAsDataURL(file);
     });
-  };
+  }
+}
+
+// كلاس لإدارة نصوص الصفحة
+class TextManager {
+  constructor(i18n) {
+    this.i18n = i18n;
+    this.baseURL = 'https://elmanafea.shop';
+  }
+  
+  async fetchHeaderText() {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/appsheader?lang=${this.i18n.language}`
+      );
+      if (response.data?.header) {
+        return response.data.header;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching header:', error);
+      return null;
+    }
+  }
+
+  async fetchDescriptionText() {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/appssecondheader?lang=${this.i18n.language}`
+      );
+      if (response.data?.secondHeader) {
+        return response.data.secondHeader;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching description:', error);
+      return null;
+    }
+  }
+
+  async updateHeaderText(text, adminToken) {
+    try {
+      if (!adminToken) {
+        throw new Error('يرجى تسجيل الدخول كمشرف أولاً');
+      }
+
+      const response = await axios.post(
+        `${this.baseURL}/admin/appsheader`,
+        {
+          text: text,
+          lang: this.i18n.language
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminToken}`
+          }
+        }
+      );
+
+      return { success: response.status === 200, data: response.data };
+    } catch (error) {
+      console.error('Error updating header:', error);
+      throw error;
+    }
+  }
+  
+  async updateDescriptionText(text, adminToken) {
+    try {
+      if (!adminToken) {
+        throw new Error('يرجى تسجيل الدخول كمشرف أولاً');
+      }
+
+      const response = await axios.post(
+        `${this.baseURL}/admin/appssecondheader`,
+        {
+          text: text,
+          lang: this.i18n.language
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${adminToken}`
+          }
+        }
+      );
+
+      return { success: response.status === 200, data: response.data };
+    } catch (error) {
+      console.error('Error updating description:', error);
+      throw error;
+    }
+  }
+}
+
+// كلاس لإدارة التطبيقات
+class AppManager {
+  constructor(i18n) {
+    this.i18n = i18n;
+    this.baseURL = 'https://elmanafea.shop';
+  }
+  
+  async fetchApps(platform) {
+    try {
+      const response = await axios.get(`${this.baseURL}/apps?platform=${platform}`);
+      const data = response.data;
+
+      if (Array.isArray(data)) {
+        return data.map(app => ({
+          id: app._id,
+          name: app.title || '',
+          image: app.photo ? `${this.baseURL}/${app.photo.startsWith('/') ? app.photo.slice(1) : app.photo}` : '',
+          link: app.url || '',
+          category: app.platform || platform
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching apps:', error);
+      throw new Error('حدث خطأ أثناء استرجاع التطبيقات');
+    }
+  }
+
+  async addApp(appData, adminToken) {
+    try {
+      if (!appData.name || !appData.link || !appData.image) {
+        throw new Error('الرجاء إدخال جميع البيانات المطلوبة');
+      }
+
+      if (!adminToken) {
+        throw new Error('يرجى تسجيل الدخول كمشرف أولاً');
+      }
+
+      const formData = new FormData();
+      formData.append('photo', appData.image);
+      formData.append('title', appData.name);
+      formData.append('url', appData.link);
+      formData.append('platform', appData.category);
+
+      const response = await axios({
+        method: 'post',
+        url: `${this.baseURL}/admin/addapp`,
+        data: formData,
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return { success: response.status === 200 || response.status === 201, data: response.data };
+    } catch (error) {
+      console.error('Error adding app:', error);
+      throw error;
+    }
+  }
+
+  async updateApp(appData, adminToken) {
+    try {
+      if (!appData.name || !appData.link) {
+        throw new Error('الرجاء إدخال جميع البيانات المطلوبة');
+      }
+
+      if (!adminToken) {
+        throw new Error('يرجى تسجيل الدخول كمشرف أولاً');
+      }
+
+      const formData = new FormData();
+      formData.append('photo', appData.image);
+      formData.append('title', appData.name);
+      formData.append('url', appData.link);
+      formData.append('platform', appData.category);
+
+      const response = await axios.put(
+        `${this.baseURL}/admin/updateapp/${appData.id}`, 
+        formData, 
+        {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`
+          }
+        }
+      );
+
+      return { success: response.status === 200, data: response.data };
+    } catch (error) {
+      console.error('Error updating app:', error);
+      throw error;
+    }
+  }
+
+  async deleteApp(appId, adminToken) {
+    try {
+      if (!appId) return { success: false, message: 'معرف التطبيق غير موجود' };
+      
+      if (!adminToken) {
+        throw new Error('يرجى تسجيل الدخول كمشرف أولاً');
+      }
+
+      const response = await axios.delete(
+        `${this.baseURL}/admin/deleteapp/${appId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${adminToken}`
+          }
+        }
+      );
+
+      return { success: response.status === 200, data: response.data };
+    } catch (error) {
+      console.error('Error deleting app:', error);
+      throw error;
+    }
+  }
+}
+
+// الكومبوننت الرئيسي مع استخدام الكلاسات
+function Apps() {
+  const { t, i18n } = useTranslation();
+  const [activeCategory, setActiveCategory] = useState('android');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [apps, setApps] = useState([]);
+  const [texts, setTexts] = useState(() => {
+    const savedTexts = localStorage.getItem('appsTexts');
+    return savedTexts ? JSON.parse(savedTexts) : {
+      ar: {
+        description: 'مجموعة مميزة من التطبيقات الإسلامية المفيدة'
+      },
+      en: {
+        title: 'Islamic Apps Library',
+      },
+      // ...existing code...
+    };
+  });
+  const [isEditingHeader, setIsEditingHeader] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingApp, setEditingApp] = useState(null);
+  const [newApp, setNewApp] = useState({
+    name: '',
+    image: null,
+    link: '',
+    category: 'android'
+  });
+  const [editingField, setEditingField] = useState(null);
+  const [tempText, setTempText] = useState('');
+  const [headerText, setHeaderText] = useState('');
+  const [editingHeaderText, setEditingHeaderText] = useState('');
+  const [descriptionText, setDescriptionText] = useState('');
+  const [editingDescriptionText, setEditingDescriptionText] = useState('');
+  const [appToDelete, setAppToDelete] = useState(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showTitleEditModal, setShowTitleEditModal] = useState(false);
+  const [showDescriptionEditModal, setShowDescriptionEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // إنشاء كائنات من الكلاسات
+  const imageProcessor = new ImageProcessor();
+  const textManager = new TextManager(i18n);
+  const appManager = new AppManager(i18n);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const resizedImage = await resizeImage(file);
+      const resizedImage = await imageProcessor.resizeImage(file);
       setNewApp(prev => ({
         ...prev,
         image: resizedImage
@@ -136,7 +315,7 @@ function Apps() {
     }
   };
 
-  // Check admin status
+  // التحقق من حالة المشرف
   useEffect(() => {
     const checkAdmin = () => {
       const token = localStorage.getItem('adminToken');
@@ -156,46 +335,7 @@ function Apps() {
         en: {
           title: 'Islamic Apps Library',
         },
-        fr: {
-          title: 'Bibliothèque d\'Applications Islamiques',
-          description: 'Une collection d\'applications islamiques utiles'
-        },
-        tr: {
-          title: 'İslami Uygulamalar Kütüphanesi',
-          description: 'Faydalı İslami uygulamaların bir koleksiyonu'
-        },
-        id: {
-          title: 'Perpustakaan Aplikasi Islam',
-          description: 'Koleksi aplikasi Islam yang bermanfaat'
-        },
-        ru: {
-          title: 'Библиотека Исламских Приложений',
-          description: 'Коллекция полезных исламских приложений'
-        },
-        hi: {
-          title: 'इस्लामिक ऐप्स लाइब्रेरी',
-          description: 'उपयोगी इस्लामिक एप्लिकेशन का संग्रह'
-        },
-        ur: {
-          title: 'اسلامی ایپس لائبریری',
-          description: 'مفید اسلامی ایپلیکیشنز کا مجموعہ'
-        },
-        bn: {
-          title: 'ইসলামিক অ্যাপস লাইব্রেরি',
-          description: 'উপকারী ইসলামিক অ্যাপ্লিকেশনের সংগ্রহ'
-        },
-        zh: {
-          title: '伊斯兰应用程序库',
-          description: '实用伊斯兰应用程序集合'
-        },
-        tl: {
-          title: 'Aklatan ng mga Islamic na Application',
-          description: 'Koleksyon ng mga kapaki-pakinabang na Islamic applications'
-        },
-        fa: {
-          title: 'کتابخانه برنامه‌های اسلامی',
-          description: 'مجموعه‌ای از برنامه‌های کاربردی اسلامی'
-        }
+        // ...existing code...
       };
 
       const updatedTexts = Object.keys(defaultTexts).reduce((acc, lang) => {
@@ -210,70 +350,41 @@ function Apps() {
     }
   }, []);
 
+  // جلب بيانات النصوص
   useEffect(() => {
     const fetchHeaderData = async () => {
       try {
-        const response = await axios.get(
-          `https://elmanafea.shop/appsheader?lang=${i18n.language}`
-        );
-        if (response.data?.header) {
-          setHeaderText(response.data.header);
+        const headerText = await textManager.fetchHeaderText();
+        if (headerText) {
+          setHeaderText(headerText);
         }
       } catch (error) {
         console.error('Error fetching header:', error);
       }
     };
 
-    fetchHeaderData();
-  }, [i18n.language]);
-
-  useEffect(() => {
     const fetchDescriptionData = async () => {
       try {
-        const response = await axios.get(
-          `https://elmanafea.shop/appssecondheader?lang=${i18n.language}`
-        );
-        if (response.data?.secondHeader) {
-          setDescriptionText(response.data.secondHeader);
+        const descText = await textManager.fetchDescriptionText();
+        if (descText) {
+          setDescriptionText(descText);
         }
       } catch (error) {
         console.error('Error fetching description:', error);
       }
     };
 
+    fetchHeaderData();
     fetchDescriptionData();
   }, [i18n.language]);
 
+  // إضافة تطبيق جديد
   const handleAddApp = async () => {
     try {
-      if (!newApp.name || !newApp.link || !newApp.image) {
-        showToast.error('الرجاء إدخال جميع البيانات المطلوبة');
-        return;
-      }
-
       const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('photo', newApp.image);
-      formData.append('title', newApp.name);
-      formData.append('url', newApp.link);
-      formData.append('platform', newApp.category);
-
-      const response = await axios({
-        method: 'post',
-        url: 'https://elmanafea.shop/admin/addapp',
-        data: formData,
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.status === 200 || response.status === 201) {
+      const result = await appManager.addApp(newApp, adminToken);
+      
+      if (result.success) {
         await fetchApps(newApp.category);
         showToast.added(`تم إضافة تطبيق "${newApp.name}" بنجاح`);
         setShowAddModal(false);
@@ -286,30 +397,21 @@ function Apps() {
       }
     } catch (error) {
       console.error('Error:', error);
-      showToast.error(error.response?.data?.message || 'حدث خطأ في إضافة التطبيق');
+      showToast.error(error.message || 'حدث خطأ في إضافة التطبيق');
     }
   };
 
+  // جلب التطبيقات
   const fetchApps = async (platform) => {
+    setIsLoading(true);
     try {
-      const response = await axios.get(`https://elmanafea.shop/apps?platform=${platform}`);
-      const data = response.data;
-
-      if (Array.isArray(data)) {
-        const updatedApps = data.map(app => ({
-          id: app._id,
-          name: app.title || '',
-          image: app.photo ? `https://elmanafea.shop/${app.photo.startsWith('/') ? app.photo.slice(1) : app.photo}` : '',
-          link: app.url || '',
-          category: app.platform || platform
-        }));
-        setApps(updatedApps);
-      }
-      setIsLoading(false); // تحديث حالة التحميل
+      const appsData = await appManager.fetchApps(platform);
+      setApps(appsData);
     } catch (error) {
-      console.error('Error fetching apps:', error);
-      showToast.error('حدث خطأ أثناء استرجاع التطبيقات');
-      setIsLoading(false); // تحديث حالة التحميل
+      showToast.error(error.message);
+      setApps([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -317,6 +419,7 @@ function Apps() {
     fetchApps(activeCategory);
   }, [activeCategory]);
 
+  // معالجة تغيير صورة التطبيق
   const handleEditImage = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -327,92 +430,54 @@ function Apps() {
     }
   };
 
+  // تحديث تطبيق
   const handleUpdateApp = async () => {
     try {
-      const formData = new FormData();
-      formData.append('photo', editingApp.image);
-      formData.append('title', editingApp.name);
-      formData.append('url', editingApp.link);
-      formData.append('platform', editingApp.category);
-
-      const response = await axios.put(`https://elmanafea.shop/admin/updateapp/${editingApp.id}`, formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-        }
-      });
-
-      if (response.status === 200) {
+      const adminToken = localStorage.getItem('adminToken');
+      const result = await appManager.updateApp(editingApp, adminToken);
+      
+      if (result.success) {
         await fetchApps(editingApp.category);
         showToast.edited(`تم تحديث تطبيق "${editingApp.name}" بنجاح`);
         setEditingApp(null);
       }
     } catch (error) {
       console.error('Error:', error);
-      showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث التطبيق');
+      showToast.error(error.message || 'حدث خطأ في تحديث التطبيق');
     }
   };
 
+  // تحديث عنوان الصفحة
   const handleUpdateHeader = async () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
-        return;
-      }
-
-      const response = await axios.post(
-        'https://elmanafea.shop/admin/appsheader',
-        {
-          text: editingHeaderText,
-          lang: i18n.language
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminToken}`
-          }
-        }
-      );
-
-      if (response.status === 200) {
+      const result = await textManager.updateHeaderText(editingHeaderText, adminToken);
+      
+      if (result.success) {
         setHeaderText(editingHeaderText);
         setShowTitleEditModal(false);
         showToast.edited('تم تحديث العنوان بنجاح');
       }
     } catch (error) {
       console.error('Error updating header:', error);
-      showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث العنوان');
+      showToast.error(error.message || 'حدث خطأ في تحديث العنوان');
     }
   };
 
+  // تحديث وصف الصفحة
   const handleUpdateDescription = async () => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      if (!adminToken) {
-        showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
-        return;
-      }
-
-      const response = await axios.post(
-        'https://elmanafea.shop/admin/appssecondheader',
-        {
-          text: editingDescriptionText,
-          lang: i18n.language
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${adminToken}`
-          }
-        }
-      );
-
-      if (response.status === 200) {
+      const result = await textManager.updateDescriptionText(editingDescriptionText, adminToken);
+      
+      if (result.success) {
         setDescriptionText(editingDescriptionText);
         setShowDescriptionEditModal(false);
         showToast.edited('تم تحديث الوصف بنجاح');
       }
     } catch (error) {
       console.error('Error updating description:', error);
-      showToast.error(error.response?.data?.message || 'حدث خطأ في تحديث الوصف');
+      showToast.error(error.message || 'حدث خطأ في تحديث الوصف');
     }
   };
 
@@ -441,42 +506,35 @@ function Apps() {
     setTempText('');
   };
 
+  // حذف تطبيق
   const handleDeleteApp = (appId) => {
     setAppToDelete(appId);
     setShowDeleteConfirm(true);
   };
 
-  const confirmAppDelete = () => {
+  // تأكيد حذف التطبيق
+  const confirmAppDelete = async () => {
     if (!appToDelete) return;
     
-    const adminToken = localStorage.getItem('adminToken');
-    if (!adminToken) {
-      showToast.error('يرجى تسجيل الدخول كمشرف أولاً');
-      return;
-    }
-
-    axios.delete(`https://elmanafea.shop/admin/deleteapp/${appToDelete}`, {
-      headers: {
-        'Authorization': `Bearer ${adminToken}`
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const result = await appManager.deleteApp(appToDelete, adminToken);
+      
+      if (result.success) {
+        fetchApps(activeCategory);
+        showToast.deleted('تم حذف التطبيق بنجاح');
       }
-    })
-    .then(() => {
-      fetchApps(activeCategory);
-      showToast.deleted('تم حذف التطبيق بنجاح');
-    })
-    .catch(error => {
+    } catch (error) {
       console.error('Error deleting app:', error);
-      showToast.error(error.response?.data?.message || 'حدث خطأ في حذف التطبيق');
-    })
-    .finally(() => {
+      showToast.error(error.message || 'حدث خطأ في حذف التطبيق');
+    } finally {
       setShowDeleteConfirm(false);
       setAppToDelete(null);
-    });
+    }
   };
 
   const filteredApps = apps.filter(app => app.category === activeCategory);
 
-  // إضافة شرط للتحقق من حالة التحميل
   if (isLoading) {
     return <div><Louder /></div>;
   }
@@ -553,8 +611,8 @@ function Apps() {
         <div className="apps-container">
           <div className="apps-categories">
             <ul> 
-              <li><a className={activeCategory === 'android' ? 'active' : ''} onClick={() => setActiveCategory('android')}>android</a></li>
-              <li><a className={activeCategory === 'ios' ? 'active' : ''} onClick={() => setActiveCategory('ios')}>ios</a></li>
+              <li><a className={activeCategory === 'android' ? 'active' : ''} onClick={() => setActiveCategory('android')}>Android</a></li>
+              <li><a className={activeCategory === 'ios' ? 'active' : ''} onClick={() => setActiveCategory('ios')}>iOS</a></li>
             </ul>
           </div>
           <div className="apps-grid">
@@ -588,6 +646,7 @@ function Apps() {
         </div>
       </div>
 
+      {/* النوافذ المنبثقة */}
       {showAddModal && (
         <div className="modal">
           <div className="modal-content">
