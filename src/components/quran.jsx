@@ -6,6 +6,29 @@ import './quran.css';
 import axios from 'axios';
 import Louder from './louder'; // استيراد مكون Louder
 
+// دالة معالجة أسماء الملفات لتحويل المسافات والحروف غير اللاتينية
+const sanitizeFileName = (fileName) => {
+  // الحصول على امتداد الملف
+  const fileExtension = fileName.split('.').pop();
+  
+  // تحويل المسافات إلى شرطات سفلية
+  let sanitized = fileName.replace(/\s+/g, '_');
+  
+  // التحقق من وجود حروف غير لاتينية (غير ASCII)
+  const hasNonLatinChars = /[^\x00-\x7F]/.test(sanitized);
+  
+  if (hasNonLatinChars) {
+    // إنشاء اسم عشوائي مكون من أحرف وأرقام لاتينية
+    const randomString = Math.random().toString(36).substring(2, 10);
+    const timestamp = Date.now().toString(36);
+    
+    // إنشاء الاسم الجديد مع الاحتفاظ بامتداد الملف
+    sanitized = `quran_${timestamp}_${randomString}.${fileExtension}`;
+  }
+  
+  return sanitized;
+};
+
 function Quran() {
   const { i18n, t } = useTranslation();
   const navigate = useNavigate();
@@ -123,9 +146,18 @@ function Quran() {
     }
 
     try {
+      // معالجة اسم الملف
+      const originalFileName = file.name;
+      const sanitizedFileName = sanitizeFileName(originalFileName);
+      
+      // إنشاء ملف جديد بالاسم المعالج
+      const sanitizedFile = new File([file], sanitizedFileName, { type: file.type });
+      
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', sanitizedFile);
       formData.append('langs', `"${language}"`);
+      // احتفظ بالاسم الأصلي للعرض إذا كنت بحاجة إليه
+      formData.append('originalFileName', originalFileName);
 
       const response = await axios.post(
         'https://elmanafea.shop/admin/uploadquran',

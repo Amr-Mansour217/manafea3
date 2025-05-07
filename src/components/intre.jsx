@@ -12,6 +12,19 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from './Toast'; // استيراد دالة showToast
 
+// دالة مساعدة لمعالجة أسماء الملفات
+const sanitizeFileName = (fileName) => {
+  let sanitized = fileName.replace(/\s+/g, '_');
+  const containsNonLatinChars = /[^\x00-\x7F]/.test(sanitized);
+  if (containsNonLatinChars) {
+    const randomPart = Math.random().toString(36).substring(2, 10);
+    const timestamp = Date.now().toString(36);
+    const extension = fileName.split('.').pop();
+    sanitized = `file_${timestamp}_${randomPart}.${extension}`;
+  }
+  return sanitized;
+};
+
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -227,7 +240,6 @@ function Intre() {
   };
 
   const handleDelete = (bookId) => {
-    // استبدال window.confirm بنافذة التأكيد المخصصة
     setBookToDelete(bookId);
     setShowDeleteConfirm(true);
   };
@@ -286,7 +298,12 @@ function Intre() {
     formData.append('lang', i18n.language);
     
     if (editingBook.file) {
-      formData.append('file', editingBook.file);
+      const sanitizedFile = new File(
+        [editingBook.file], 
+        sanitizeFileName(editingBook.file.name), 
+        { type: editingBook.file.type }
+      );
+      formData.append('file', sanitizedFile);
       formData.append('type', 'file');
     } else if (editingBook.link) {
       formData.append('file', editingBook.link);
@@ -294,7 +311,10 @@ function Intre() {
     }
 
     if (editingBook.newImage) {
-      formData.append('image', editingBook.newImage);
+      const sanitizedImage = handleImageUpload(editingBook.newImage);
+      if (sanitizedImage) {
+        formData.append('image', sanitizedImage);
+      }
     }
 
     axios({
@@ -358,11 +378,30 @@ function Intre() {
         return;
       }
 
+      const fileName = file.name;
+      const sanitizedFileName = sanitizeFileName(fileName);
+      const renamedFile = new File([file], sanitizedFileName, { type: file.type });
+
       setNewBook(prev => ({
         ...prev,
-        file: file
+        file: renamedFile,
+        originalFileName: fileName
       }));
     }
+  };
+
+  const handleImageUpload = (file) => {
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast.error('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
+        return null;
+      }
+
+      const fileName = file.name;
+      const sanitizedFileName = sanitizeFileName(fileName);
+      return new File([file], sanitizedFileName, { type: file.type });
+    }
+    return null;
   };
 
   const handleCloseModal = () => {
@@ -401,6 +440,9 @@ function Intre() {
     formData.append('title', newBook.title.trim());
     formData.append('lang', i18n.language);
     formData.append('type', 'file');
+    if (newBook.originalFileName) {
+      formData.append('originalFileName', newBook.originalFileName);
+    }
 
     if (newBook.image) {
       formData.append('image', newBook.image);
@@ -738,12 +780,14 @@ function Intre() {
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
-                        if (file.size > 5 * 1024 * 1024) {
-                          showToast.error('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
-                          e.target.value = '';
-                          return;
+                        const sanitizedImage = handleImageUpload(file);
+                        if (sanitizedImage) {
+                          setEditingBook({
+                            ...editingBook, 
+                            newImage: sanitizedImage,
+                            originalImageName: file.name
+                          });
                         }
-                        setEditingBook({...editingBook, newImage: file});
                       }
                     }}
                     className="file-input"
@@ -753,7 +797,7 @@ function Intre() {
                     تغيير صورة الغلاف
                   </label>
                   {editingBook.newImage && (
-                    <span className="file-name">{editingBook.newImage.name}</span>
+                    <span className="file-name">{editingBook.originalImageName || editingBook.newImage.name}</span>
                   )}
                 </div>
 
@@ -813,7 +857,7 @@ function Intre() {
                         <span className="progress-text">{Math.round(uploadProgress)}%</span>
                       </div>
                     )}
-                    {newBook.file && <span className="file-name">{newBook.file.name}</span>}
+                    {newBook.file && <span className="file-name">{newBook.originalFileName || newBook.file.name}</span>}
                   </div>
 
                   <div className="file-upload-container">
@@ -823,12 +867,14 @@ function Intre() {
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          if (file.size > 5 * 1024 * 1024) {
-                            showToast.error('حجم الصورة كبير جداً. الحد الأقصى هو 5 ميجابايت');
-                            e.target.value = '';
-                            return;
+                          const sanitizedImage = handleImageUpload(file);
+                          if (sanitizedImage) {
+                            setNewBook({
+                              ...newBook, 
+                              image: sanitizedImage,
+                              originalImageName: file.name
+                            });
                           }
-                          setNewBook({...newBook, image: file});
                         }
                       }}
                       className="file-input"
@@ -839,7 +885,7 @@ function Intre() {
                     </label>
                     {newBook.image && (
                       <div className="image-preview">
-                        <span className="file-name">{newBook.image.name}</span>
+                        <span className="file-name">{newBook.originalImageName || newBook.image.name}</span>
                         <img 
                           src={URL.createObjectURL(newBook.image)} 
                           alt="معاينة الصورة"
@@ -884,23 +930,18 @@ function Intre() {
                 </a></li>
               )}
               {(() => {
-                // Calculate which page numbers to show (sliding window of 4)
                 let startPage, endPage;
                 
                 if (pageNumbers.length <= 4) {
-                    // Less than 4 pages, show all
                     startPage = 0;
                     endPage = pageNumbers.length;
                 } else if (currentPage <= 2) {
-                    // Near the start, show first 4 pages
                     startPage = 0;
                     endPage = 4;
                 } else if (currentPage >= pageNumbers.length - 1) {
-                    // Near the end, show last 4 pages
                     startPage = pageNumbers.length - 4;
                     endPage = pageNumbers.length;
                 } else {
-                    // In the middle, show current and surrounding pages
                     startPage = currentPage - 2;
                     endPage = currentPage + 2;
                 }
