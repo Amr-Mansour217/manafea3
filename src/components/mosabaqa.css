@@ -359,6 +359,339 @@ input[dir="ltr"]::placeholder {
   height: 12px;
 }
 
+.admin-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-options-btn {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9rem;
+}
+
+.admin-options-btn:hover {
+  background-color: #2a70c2;
+}
+
+.answer-select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  margin-top: 5px;
+}
+
+.options-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* تنسيقات لزر حذف الكل والنافذة المنبثقة */
+.options-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.add-option-form {
+  flex-grow: 1;
+}
+
+.delete-all-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9rem;
+}
+
+.delete-all-btn:hover {
+  background-color: #d32f2f;
+}
+
+.delete-all-btn:disabled {
+  background-color: #ffccbc;
+  cursor: not-allowed;
+}
+
+.warning-text {
+  color: #f44336;
+  font-weight: bold;
+  margin: 15px 0;
+}
+
+.add-option-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.add-option-form input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.add-option-form button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.add-option-form button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.options-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.option-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.option-text {
+  flex: 1;
+}
+
+.option-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.option-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  font-size: 14px;
+  padding: 5px;
+}
+
+.option-actions button:hover {
+  color: #000;
+}
+
+.edit-option-form {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+}
+
+.edit-option-form input {
+  flex: 1;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.edit-option-form button {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.close-modal-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.close-modal-btn:hover {
+  background-color: #d32f2f;
+}
+
+.no-options {
+  text-align: center;
+  color: #777;
+  padding: 10px;
+}
+
+/* Question Edit Modal */
+.question-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.question-modal h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.save-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.save-btn:hover {
+  background-color: #45a049;
+}
+
+.save-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background-color: #d32f2f;
+}
+
+/* تنسيق إضافي لنافذة السؤال */
+.hint-text {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  display: block;
+}
+
+.question-modal input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.question-modal .form-group {
+  margin-bottom: 15px;
+}
+
+/* نافذة تأكيد الحذف */
+.confirm-modal {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-modal h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.option-to-delete {
+  font-weight: bold;
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.delete-confirm-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-confirm-btn:hover {
+  background-color: #d32f2f;
+}
+
+.delete-confirm-btn:disabled {
+  background-color: #ffccbc;
+  cursor: not-allowed;
+}
+
+.delete-btn {
+  color: #f44336;
+}
+
+.delete-btn:hover {
+  color: #d32f2f;
+}
+
 @media (max-width: 768px) {
   .mosabaqa-container {
     max-width: 100%;

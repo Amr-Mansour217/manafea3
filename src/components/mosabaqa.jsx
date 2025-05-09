@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faEdit, faSave, faFileExcel, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faEdit, faSave, faFileExcel, faDownload, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import Header from './header';
 import Footer from './footer';
@@ -21,7 +21,6 @@ const Mosabaqa = () => {
     country: ''
   });
   const [question, setQuestion] = useState('ما هو أول مسجد بني في الإسلام؟');
-  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [showCountryCodes, setShowCountryCodes] = useState(false);
@@ -30,9 +29,29 @@ const Mosabaqa = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const countryCodeRef = useRef(null);
+  
+  // New states for answer options management
+  const [answerOptions, setAnswerOptions] = useState([]);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [newOption, setNewOption] = useState('');
+  const [editingOption, setEditingOption] = useState({ id: null, text: '' });
+
+  // Add new state for question editing
+  const [correctAnswer, setCorrectAnswer] = useState('');
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [questionFormData, setQuestionFormData] = useState({
+    questionText: '',
+    correctAnswer: '',
+    newCorrectAnswer: '' // حقل جديد لإضافة إجابة جديدة
+  });
+
+  // إضافة حالات جديدة للتأكيد على الحذف
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [optionToDelete, setOptionToDelete] = useState(null);
 
   useEffect(() => {
     fetchQuestion();
+    fetchAnswerOptions();
   }, [i18n.language]);
 
   useEffect(() => {
@@ -65,9 +84,49 @@ const Mosabaqa = () => {
       const response = await axios.get(`https://elmanafea.shop/questions?lang=${i18n.language}`);
       if (response.data && response.data.question) {
         setQuestion(response.data.question);
+        // If there's a correct answer in the response, set it
+        if (response.data.correctAnswer) {
+          setCorrectAnswer(response.data.correctAnswer);
+        }
       }
     } catch (err) {
       console.error('Error fetching question:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchAnswerOptions = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`https://elmanafea.shop/storedanswers?lang=${i18n.language}`);
+      
+      // التحقق من شكل البيانات القادمة
+      let options = [];
+      if (response.data && response.data.answers && Array.isArray(response.data.answers)) {
+        options = response.data.answers;
+      } else if (response.data && Array.isArray(response.data)) {
+        options = response.data;
+      } else {
+        console.log('No answer options available or empty response');
+        options = [];
+      }
+      
+      // ترتيب الخيارات بحسب تاريخ الإنشاء (الأحدث أولاً)
+      const sortedOptions = [...options].sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+      
+      setAnswerOptions(sortedOptions);
+    } catch (err) {
+      console.error('Error fetching answer options:', err);
+      // لا تظهر رسالة خطأ إذا كان الخطأ 404 (لا توجد إجابات)
+      if (err.response && err.response.status === 404) {
+        // في حالة عدم وجود إجابات، قم بتعيين المصفوفة فارغة بدلاً من عرض خطأ
+        setAnswerOptions([]);
+      } else {
+        showToast.error(t('حدث خطأ في تحميل خيارات الإجابة'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -108,25 +167,60 @@ const Mosabaqa = () => {
     setShowCountryCodes(true);
   };
 
-  const toggleQuestionEdit = async () => {
-    if (isEditingQuestion) {
-      try {
-        setIsLoading(true);
+  const openQuestionModal = () => {
+    setQuestionFormData({
+      questionText: question,
+      correctAnswer: correctAnswer,
+      newCorrectAnswer: ''
+    });
+    setShowQuestionModal(true);
+  };
 
-        const token = localStorage.getItem('adminToken');
+  const closeQuestionModal = () => {
+    setShowQuestionModal(false);
+  };
 
-        if (!token) {
-          showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
-          throw {
-            response: {
-              status: 401,
-              data: { message: 'No authentication token found.' }
-            }
-          };
-        }
+  const handleQuestionFormChange = (e) => {
+    const { name, value } = e.target;
+    setQuestionFormData({
+      ...questionFormData,
+      [name]: value
+    });
+  };
 
-        await axios.post('https://elmanafea.shop/admin/question', {
-          question: question,
+  const saveQuestion = async () => {
+    if (!questionFormData.questionText.trim()) {
+      showToast.error(t('الرجاء إدخال السؤال'));
+      return;
+    }
+
+    // التحقق من وجود إجابة محددة أو إجابة جديدة
+    if (answerOptions.length > 0 && !questionFormData.correctAnswer) {
+      showToast.error(t('الرجاء اختيار الإجابة الصحيحة'));
+      return;
+    }
+
+    if (answerOptions.length === 0 && !questionFormData.newCorrectAnswer.trim()) {
+      showToast.error(t('الرجاء إدخال الإجابة الصحيحة'));
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('adminToken');
+
+      if (!token) {
+        showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
+        return;
+      }
+
+      let answerId = questionFormData.correctAnswer;
+      let isNewAnswer = false;
+
+      // إذا لم توجد خيارات إجابة، قم بإنشاء إجابة جديدة أولاً (POST)
+      if (answerOptions.length === 0 && questionFormData.newCorrectAnswer.trim()) {
+        const answerResponse = await axios.post('https://elmanafea.shop/admin/answers', {
+          answer: questionFormData.newCorrectAnswer,
           lang: i18n.language
         }, {
           headers: {
@@ -134,32 +228,52 @@ const Mosabaqa = () => {
           }
         });
 
-        await fetchQuestion();
-        showToast.success(t('تم تحديث السؤال بنجاح')); // Success toast
-      } catch (err) {
-        console.error('Error updating question:', err);
-
-        // Handle specific error codes with Toast
-        if (err.response) {
-          if (err.response.status === 401) {
-            showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
-          } else if (err.response.status === 403) {
-            showToast.error(t('غير مصرح بالتعديل. الرجاء تسجيل الدخول كمسؤول'));
-          } else {
-            showToast.error(t('حدث خطأ في تحديث السؤال'));
-          }
-        } else {
-          showToast.error(t('حدث خطأ في الاتصال بالخادم'));
+        // استخدام معرف الإجابة الجديدة
+        if (answerResponse.data && answerResponse.data._id) {
+          answerId = answerResponse.data._id;
+          isNewAnswer = true;
+        } else if (answerResponse.data && answerResponse.data.id) {
+          answerId = answerResponse.data.id;
+          isNewAnswer = true;
         }
-      } finally {
-        setIsLoading(false);
       }
-    }
-    setIsEditingQuestion(!isEditingQuestion);
-  };
 
-  const handleQuestionChange = (e) => {
-    setQuestion(e.target.value);
+      // حفظ السؤال مع الإجابة الصحيحة
+      // دائمًا استخدم POST لأن الخادم لا يدعم PUT في هذا المسار
+      await axios.post('https://elmanafea.shop/admin/question', {
+        question: questionFormData.questionText,
+        correctAnswer: answerId,
+        lang: i18n.language
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // تحديث الحالة المحلية
+      setQuestion(questionFormData.questionText);
+      setCorrectAnswer(answerId);
+      
+      closeQuestionModal();
+      await fetchQuestion();
+      await fetchAnswerOptions();
+      showToast.success(t('تم تحديث السؤال بنجاح'));
+    } catch (err) {
+      console.error('Error updating question:', err);
+      if (err.response) {
+        if (err.response.status === 401) {
+          showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
+        } else if (err.response.status === 403) {
+          showToast.error(t('غير مصرح بالتعديل. الرجاء تسجيل الدخول كمسؤول'));
+        } else {
+          showToast.error(t('حدث خطأ في تحديث السؤال'));
+        }
+      } else {
+        showToast.error(t('حدث خطأ في الاتصال بالخادم'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -251,6 +365,139 @@ const Mosabaqa = () => {
     }
   };
 
+  const openOptionsModal = () => {
+    setShowOptionsModal(true);
+  };
+
+  const closeOptionsModal = () => {
+    setShowOptionsModal(false);
+    setNewOption('');
+    setEditingOption({ id: null, text: '' });
+  };
+
+  const addNewOption = async () => {
+    if (!newOption.trim()) return;
+    
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('adminToken');
+      
+      if (!token) {
+        showToast.error(t('الرجاء تسجيل الدخول كمسؤول'));
+        return;
+      }
+      
+      // تغيير text إلى answer حسب متطلبات الـ backend
+      await axios.post('https://elmanafea.shop/admin/answers', {
+        answer: newOption,
+        lang: i18n.language
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      await fetchAnswerOptions();
+      setNewOption('');
+      showToast.success(t('تمت إضافة الخيار بنجاح'));
+    } catch (err) {
+      console.error('Error adding option:', err);
+      if (err.response && err.response.data && err.response.data.message) {
+        showToast.error(t(err.response.data.message));
+      } else if (err.response && err.response.status === 401) {
+        showToast.error(t('الرمز غير صالح أو منتهي الصلاحية'));
+      } else {
+        showToast.error(t('حدث خطأ في إضافة الخيار'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startEditOption = (option) => {
+    setEditingOption({
+      id: option._id,
+      text: option.text
+    });
+  };
+
+  const saveEditedOption = async () => {
+    if (!editingOption.text.trim() || !editingOption.id) return;
+    
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('adminToken');
+      
+      if (!token) {
+        showToast.error(t('الرجاء تسجيل الدخول كمسؤول'));
+        return;
+      }
+      
+      // تغيير الحقل من answer إلى text حسب ما يطلبه الخادم
+      await axios.put(`https://elmanafea.shop/admin/storedanswers/${editingOption.id}`, {
+        text: editingOption.text,  // تغيير من answer إلى text
+        lang: i18n.language
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      await fetchAnswerOptions();
+      setEditingOption({ id: null, text: '' });
+      showToast.success(t('تم تحديث الخيار بنجاح'));
+    } catch (err) {
+      console.error('Error updating option:', err);
+      if (err.response && err.response.data && err.response.data.message) {
+        showToast.error(t(err.response.data.message));
+      } else {
+        showToast.error(t('حدث خطأ في تحديث الخيار'));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const confirmDeleteOption = (option) => {
+    setOptionToDelete(option);
+    setShowDeleteConfirm(true);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setOptionToDelete(null);
+  };
+
+  const proceedWithDelete = async () => {
+    if (!optionToDelete || !optionToDelete._id) return;
+    
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('adminToken');
+      
+      if (!token) {
+        showToast.error(t('الرجاء تسجيل الدخول كمسؤول'));
+        return;
+      }
+      
+      await axios.delete(`https://elmanafea.shop/admin/answer/${optionToDelete._id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      await fetchAnswerOptions();
+      showToast.success(t('تم حذف الخيار بنجاح'));
+    } catch (err) {
+      console.error('Error deleting option:', err);
+      showToast.error(t('حدث خطأ في حذف الخيار'));
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+      setOptionToDelete(null);
+    }
+  };
+
   const getTextDirection = (text) => {
     if (['ar', 'fa', 'ur'].includes(i18n.language)) {
       return 'rtl';
@@ -270,67 +517,64 @@ const Mosabaqa = () => {
           <div className="mosabaqa-header">
             <h2>{t('مسابقة منافع الحج')}</h2>
             {isAdmin && (
-              <button 
-                className="admin-excel-btn"
-                onClick={handleDownloadExcel}
-                disabled={isLoading}
-                title={t('تحميل إجابات المشاركين')}
-              >
-                <FontAwesomeIcon icon={faFileExcel} />
-                <span>{t('تحميل الإجابات')}</span>
-                {isLoading && <span className="loading-spinner"></span>}
-              </button>
+              <div className="admin-buttons">
+                <button 
+                  className="admin-excel-btn"
+                  onClick={handleDownloadExcel}
+                  disabled={isLoading}
+                  title={t('تحميل إجابات المشاركين')}
+                >
+                  <FontAwesomeIcon icon={faFileExcel} />
+                  <span>{t('تحميل الإجابات')}</span>
+                  {isLoading && <span className="loading-spinner"></span>}
+                </button>
+                <button 
+                  className="admin-options-btn"
+                  onClick={openOptionsModal}
+                  disabled={isLoading}
+                  title={t('إدارة خيارات الإجابة')}
+                >
+                  <FontAwesomeIcon icon={faEdit} />
+                  <span>{t('إدارة الخيارات')}</span>
+                </button>
+              </div>
             )}
           </div>
 
           <div className="question-section">
             <h3>{t('السؤال')}:</h3>
             <div className="question-content">
-              {isEditingQuestion ? (
-                <div className="question-edit-container">
-                  <input
-                    type="text"
-                    value={question}
-                    onChange={handleQuestionChange}
-                    className="question-edit-input"
-                  />
+              <div className="question-view-container">
+                <p>{question}</p>
+                {isAdmin && (
                   <button 
-                    className="question-edit-btn save-btn"
-                    onClick={toggleQuestionEdit}
-                    title={t('حفظ')}
+                    className="question-edit-btn"
+                    onClick={openQuestionModal}
+                    title={t('تعديل السؤال')}
                     disabled={isLoading}
                   >
-                    <FontAwesomeIcon icon={faSave} />
-                    {isLoading && <span className="loading-spinner"></span>}
+                    <FontAwesomeIcon icon={faEdit} />
                   </button>
-                </div>
-              ) : (
-                <div className="question-view-container">
-                  <p>{question}</p>
-                  {isAdmin && (
-                    <button 
-                      className="question-edit-btn"
-                      onClick={() => setIsEditingQuestion(true)}
-                      title={t('تعديل السؤال')}
-                      disabled={isLoading}
-                    >
-                      <FontAwesomeIcon icon={faEdit} />
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
             <div className="form-group">
               <label>{t('الإجابة')}</label>
-              <input
-                type="text"
+              <select
                 name="answer"
                 value={formData.answer}
                 onChange={handleChange}
                 required
-                placeholder={t('اكتب إجابتك هنا')}
-              />
+                className="answer-select"
+              >
+                <option value="">{t('اختر إجابتك')}</option>
+                {answerOptions.map(option => (
+                  <option key={option._id} value={option._id}>
+                    {option.text}
+                  </option>
+                ))}
+              </select>
             </div>
 
           <form onSubmit={handleSubmit}>
@@ -423,6 +667,178 @@ const Mosabaqa = () => {
               </div>
               <h3>{t('تم إرسال مشاركتك بنجاح!')}</h3>
               <p>{t('شكراً لمشاركتك في المسابقة')}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Answer Options Modal */}
+        {showOptionsModal && (
+          <div className="modal-overlay">
+            <div className="options-modal">
+              <h3>{t('إدارة خيارات الإجابة')}</h3>
+              
+              <div className="options-header">
+                <div className="add-option-form">
+                  <input
+                    type="text"
+                    value={newOption}
+                    onChange={(e) => setNewOption(e.target.value)}
+                    placeholder={t('أضف خيار جديد')}
+                  />
+                  <button 
+                    onClick={addNewOption}
+                    disabled={!newOption.trim() || isLoading}
+                  >
+                    <FontAwesomeIcon icon={faPlus} /> {t('إضافة')}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="options-list">
+                {answerOptions.length === 0 ? (
+                  <p className="no-options">{t('لا توجد خيارات متاحة')}</p>
+                ) : (
+                  answerOptions.map(option => (
+                    <div key={option._id} className="option-item">
+                      {editingOption.id === option._id ? (
+                        <div className="edit-option-form">
+                          <input
+                            type="text"
+                            value={editingOption.text}
+                            onChange={(e) => setEditingOption({ ...editingOption, text: e.target.value })}
+                          />
+                          <button 
+                            onClick={saveEditedOption}
+                            disabled={!editingOption.text.trim() || isLoading}
+                          >
+                            <FontAwesomeIcon icon={faSave} />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="option-text">{option.text}</span>
+                          <div className="option-actions">
+                            <button onClick={() => startEditOption(option)}>
+                              <FontAwesomeIcon icon={faEdit} />
+                            </button>
+                            <button 
+                              onClick={() => confirmDeleteOption(option)} // تغيير من deleteOption إلى confirmDeleteOption
+                              className="delete-btn"
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <button className="close-modal-btn" onClick={closeOptionsModal}>
+                {t('إغلاق')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* نافذة تأكيد الحذف */}
+        {showDeleteConfirm && optionToDelete && (
+          <div className="modal-overlay">
+            <div className="confirm-modal">
+              <h3>{t('تأكيد الحذف')}</h3>
+              <p>{t('هل أنت متأكد من حذف الإجابة التالية؟')}</p>
+              <p className="option-to-delete">"{optionToDelete.text}"</p>
+              
+              <div className="confirm-buttons">
+                <button 
+                  className="cancel-btn" 
+                  onClick={cancelDelete}
+                  disabled={isLoading}
+                >
+                  {t('إلغاء')}
+                </button>
+                <button 
+                  className="delete-confirm-btn" 
+                  onClick={proceedWithDelete}
+                  disabled={isLoading}
+                >
+                  {isLoading ? t('جاري الحذف...') : t('نعم، احذف')}
+                  {isLoading && <span className="loading-spinner"></span>}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Question Edit Modal */}
+        {showQuestionModal && (
+          <div className="modal-overlay">
+            <div className="question-modal">
+              <h3>{t('تعديل السؤال والإجابة الصحيحة')}</h3>
+              
+              <div className="modal-form">
+                <div className="form-group">
+                  <label>{t('السؤال')}</label>
+                  <input
+                    type="text"
+                    name="questionText"
+                    value={questionFormData.questionText}
+                    onChange={handleQuestionFormChange}
+                    placeholder={t('أدخل السؤال')}
+                    required
+                  />
+                </div>
+                
+                {answerOptions.length > 0 ? (
+                  // إذا كانت هناك خيارات إجابة، أظهر القائمة المنسدلة
+                  <div className="form-group">
+                    <label>{t('الإجابة الصحيحة')}</label>
+                    <select
+                      name="correctAnswer"
+                      value={questionFormData.correctAnswer}
+                      onChange={handleQuestionFormChange}
+                      className="answer-select"
+                    >
+                      <option value="">{t('اختر الإجابة الصحيحة')}</option>
+                      {answerOptions.map(option => (
+                        <option key={option._id} value={option._id}>
+                          {option.text}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  // إذا لم تكن هناك خيارات إجابة، أظهر حقل إدخال للإجابة الجديدة
+                  <div className="form-group">
+                    <label>{t('أضف إجابة جديدة')}</label>
+                    <input
+                      type="text"
+                      name="newCorrectAnswer"
+                      value={questionFormData.newCorrectAnswer}
+                      onChange={handleQuestionFormChange}
+                      placeholder={t('أدخل الإجابة الصحيحة')}
+                    />
+                    <small className="hint-text">{t('سيتم حفظ هذه الإجابة كإجابة صحيحة')}</small>
+                  </div>
+                )}
+
+                <div className="modal-buttons">
+                  <button 
+                    className="save-btn" 
+                    onClick={saveQuestion}
+                    disabled={isLoading || !questionFormData.questionText.trim() || 
+                      (answerOptions.length > 0 && !questionFormData.correctAnswer) ||
+                      (answerOptions.length === 0 && !questionFormData.newCorrectAnswer.trim())}
+                  >
+                    {isLoading ? t('جاري الحفظ...') : t('حفظ')}
+                    {isLoading && <span className="loading-spinner"></span>}
+                  </button>
+                  <button className="cancel-btn" onClick={closeQuestionModal}>
+                    {t('إلغاء')}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
