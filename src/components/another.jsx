@@ -37,7 +37,7 @@ class WebsiteManager {
       const timestamp = new Date().getTime();
       const response = await axios.get(`${this.baseURL}/websites?_t=${timestamp}`);
       console.log('API Response after update:', response.data);
-      
+
       let websitesData = [];
       
       if (Array.isArray(response.data)) {
@@ -59,7 +59,7 @@ class WebsiteManager {
       
       console.log('Processed websites data:', websitesData);
       return websitesData;
-      
+
     } catch (error) {
       console.error('Error fetching websites:', error);
       this.showToast.error(this.i18n.t('حدث خطأ في جلب المواقع'));
@@ -200,16 +200,27 @@ class TextManager {
     try {
       const currentLang = this.i18n.language;
       const response = await axios.get(`${this.baseURL}/websitesheader?lang=${currentLang}`);
-      console.log('Website header response:', response.data);
+      console.log('Website header response (raw):', response);
+      console.log('Website header response data:', response.data);
       
+      // Check different possible response structures
       if (response.data?.title) {
+        console.log('Found title at response.data.title:', response.data.title);
         return response.data.title;
+      } else if (response.data?.header?.title) {
+        console.log('Found title at response.data.header.title:', response.data.header.title);
+        return response.data.header.title;
+      } else if (typeof response.data === 'string') {
+        console.log('Found title as string:', response.data);
+        return response.data;
       }
-      return null;
+      
+      console.warn('Could not find title in response:', response.data);
+      return "مكتبة المواقع الإسلامية"; // Default title as fallback
     } catch (error) {
       console.error('Error fetching website header:', error);
       this.showToast.error(this.i18n.t('حدث خطأ في جلب العنوان'));
-      return null;
+      return "مكتبة المواقع الإسلامية"; // Default title even on error
     }
   }
 
@@ -315,11 +326,11 @@ function Another() {
     const savedTexts = localStorage.getItem('anotherTexts');
     return savedTexts ? JSON.parse(savedTexts) : {
       ar: {
-        title: 'مكتبة المواقع الإسلامية',
+        title: 'مكتبة المواقع الإسلامية', // Add default title here
         description: 'مجموعة مميزة من المواقع الإسلامية المفيدة'
       },
       en: {
-        title: 'Islamic Websites Library',
+        title: 'Islamic Websites Library', // Add default title here
         description: 'A collection of useful Islamic websites'
       }
     };
@@ -365,6 +376,8 @@ function Another() {
 
   useEffect(() => {
     fetchWebsites();
+    // Add fetchPageTexts here to ensure titles load on component mount
+    fetchPageTexts();
   }, []);
 
   const handleAddWebsite = async () => {
@@ -451,18 +464,30 @@ function Another() {
   };
 
   const fetchPageTexts = async () => {
-    const title = await textManager.fetchWebsiteHeader();
-    const description = await textManager.fetchWebsiteSecondHeader();
-    
-    if (title || description) {
-      setTexts(prevTexts => ({
-        ...prevTexts,
-        [i18n.language]: {
-          ...prevTexts[i18n.language],
-          title: title || prevTexts[i18n.language]?.title,
-          description: description || prevTexts[i18n.language]?.description
-        }
-      }));
+    try {
+      console.log('Fetching page texts for language:', i18n.language);
+      const title = await textManager.fetchWebsiteHeader();
+      const description = await textManager.fetchWebsiteSecondHeader();
+      
+      console.log('Fetched title from backend:', title);
+      console.log('Fetched description from backend:', description);
+      
+      if (title || description) {
+        setTexts(prevTexts => {
+          const updatedTexts = {
+            ...prevTexts,
+            [i18n.language]: {
+              ...prevTexts[i18n.language],
+              title: title || prevTexts[i18n.language]?.title || 'مكتبة المواقع الإسلامية',
+              description: description || prevTexts[i18n.language]?.description
+            }
+          };
+          console.log('Updated texts state:', updatedTexts);
+          return updatedTexts;
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching page texts:', error);
     }
   };
 
@@ -504,19 +529,21 @@ function Another() {
     <div className="page-container">
       <Header/>
       <div className="videos-header">
-        <h1>
-          {texts[i18n.language]?.title}
-          {isAdmin && (
-            <FontAwesomeIcon
-              icon={faEdit}
-              className="edit-icon"
-              onClick={() => {
-                setEditingField('title');
-                setTempText(texts[i18n.language]?.title);
-              }}
-            />
-          )}
-        </h1>
+        {texts[i18n.language]?.title && (
+          <h1>
+            {texts[i18n.language].title}
+            {isAdmin && (
+              <FontAwesomeIcon
+                icon={faEdit}
+                className="edit-icon"
+                onClick={() => {
+                  setEditingField('title');
+                  setTempText(texts[i18n.language]?.title || '');
+                }}
+              />
+            )}
+          </h1>
+        )}
         <p>
           {texts[i18n.language]?.description}
           {isAdmin && (
@@ -560,14 +587,14 @@ function Another() {
             }}>
               <input
                 type="text"
-                placeholder="اسم الموقع *"
+                placeholder="اسم الموقع"
                 value={newWebsite.name}
                 onChange={e => setNewWebsite({...newWebsite, name: e.target.value})}
                 required
               />
               <input
                 type="text"
-                placeholder="رابط الموقع * (مثال: elmanafea.com أو https://example.com)"
+                placeholder="رابط الموقع  (مثال: elmanafea.com أو https://example.com)"
                 value={newWebsite.url}
                 onChange={e => setNewWebsite({...newWebsite, url: e.target.value})}
                 required
@@ -591,7 +618,7 @@ function Another() {
             }}>
               <input
                 type="text"
-                placeholder="اسم الموقع *"
+                placeholder="اسم الموقع"
                 value={editingWebsite.name}
                 onChange={e => setEditingWebsite({...editingWebsite, name: e.target.value})}
                 required
