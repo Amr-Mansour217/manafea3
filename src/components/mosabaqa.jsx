@@ -279,7 +279,12 @@ const Mosabaqa = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone) {
-      showToast.error(t('الرجاء إدخال الاسم ورقم الهاتف')); // Replace setError with showToast
+      showToast.error(t('الرجاء إدخال الاسم ورقم الهاتف'));
+      return;
+    }
+    
+    if (!formData.answer) {
+      showToast.error(t('الرجاء اختيار إجابة من القائمة'));
       return;
     }
 
@@ -289,13 +294,25 @@ const Mosabaqa = () => {
       // Prepare the full phone number with country code
       const fullPhoneNumber = formData.countryCode + formData.phone;
 
-      // Send data to backend
+      // البحث عن نص الإجابة المختارة بدلاً من إرسال المعرّف
+      const selectedOption = answerOptions.find(option => option._id === formData.answer);
+      
+      if (!selectedOption) {
+        showToast.error(t('حدث خطأ في تحديد الإجابة، يرجى المحاولة مرة أخرى'));
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("إرسال الإجابة:", selectedOption.text); // للتأكد من إرسال النص
+
+      // Send data to backend with answer text instead of ID
       await axios.post('https://elmanafea.shop/answer', {
         name: formData.name,
         phone: fullPhoneNumber,
-        email: formData.email || ' ', // Send empty string if email is not provided
+        email: formData.email || ' ',
         country: formData.country || '',
-        answer: formData.answer,
+        answer: selectedOption.text, // إرسال النص بدلاً من المعرّف
+        answerId: formData.answer, // إرسال المعرف أيضًا إذا كان الخادم يحتاجه
         lang: i18n.language
       });
 
@@ -311,7 +328,7 @@ const Mosabaqa = () => {
     } catch (err) {
       console.error('Error submitting participation:', err);
       if (err.response && err.response.data && err.response.data.message) {
-        showToast.error(t(err.response.data.message)); // Use showToast instead of setError
+        showToast.error(t(err.response.data.message));
       } else {
         showToast.error(t('حدث خطأ في إرسال البيانات'));
       }
