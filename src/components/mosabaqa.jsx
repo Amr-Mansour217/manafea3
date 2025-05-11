@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faEdit, faSave, faFileExcel, faDownload, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faEdit, faSave, faFileExcel, faDownload, faPlus, faTrash, faTimes } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import Header from './header';
 import Footer from './footer';
@@ -22,6 +22,7 @@ const Mosabaqa = () => {
   });
   const [question, setQuestion] = useState('ما هو أول مسجد بني في الإسلام؟');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false); // حالة جديدة لتتبع صحة الإجابة
   const [error, setError] = useState('');
   const [showCountryCodes, setShowCountryCodes] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -305,26 +306,38 @@ const Mosabaqa = () => {
       
       console.log("إرسال الإجابة:", selectedOption.text); // للتأكد من إرسال النص
 
-      // Send data to backend with answer text instead of ID
-      await axios.post('https://elmanafea.shop/answer', {
+      // إرسال البيانات إلى الخادم
+      const response = await axios.post('https://elmanafea.shop/answer', {
         name: formData.name,
         phone: fullPhoneNumber,
         email: formData.email || ' ',
         country: formData.country || '',
-        answer: selectedOption.text, // إرسال النص بدلاً من المعرّف
-        answerId: formData.answer, // إرسال المعرف أيضًا إذا كان الخادم يحتاجه
+        answer: selectedOption.text,
+        answerId: formData.answer,
         lang: i18n.language
       });
 
-      // Show success modal and success toast
-      setIsModalOpen(true);
-      showToast.success(t('تم إرسال مشاركتك بنجاح!'));
+      // التحقق من صحة الإجابة من الاستجابة
+      // افترض أن الخادم يعيد حقل isCorrect يشير إلى صحة الإجابة
+      const isCorrect = response.data && response.data.isCorrect;
+      setIsCorrectAnswer(isCorrect);
 
-      // Reset form after 3 seconds
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setFormData({ name: '', answer: '', countryCode: '+966', phone: '', email: '', country: '' });
-      }, 3000);
+      // عرض النافذة المنبثقة بنتيجة الإجابة
+      setIsModalOpen(true);
+
+      // إعادة تعيين النموذج بعد 3 ثوانٍ فقط إذا كانت الإجابة صحيحة
+      if (isCorrect) {
+        setTimeout(() => {
+          setIsModalOpen(false);
+          setFormData({ name: '', answer: '', countryCode: '+966', phone: '', email: '', country: '' });
+        }, 3000);
+      } else {
+        // إذا كانت الإجابة خاطئة، نترك النافذة المنبثقة مفتوحة حتى يغلقها المستخدم يدويًا
+        // ولا نعيد تعيين النموذج حتى يتمكن من تغيير إجابته والمحاولة مرة أخرى
+        setTimeout(() => {
+          setIsModalOpen(false);
+        }, 3000);
+      }
     } catch (err) {
       console.error('Error submitting participation:', err);
       if (err.response && err.response.data && err.response.data.message) {
@@ -522,6 +535,10 @@ const Mosabaqa = () => {
     return 'ltr';
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
   if (isLoading) {
     return <div><Louder /></div>;
   }
@@ -678,12 +695,19 @@ const Mosabaqa = () => {
 
         {isModalOpen && (
           <div className="modal-overlay">
-            <div className="success-modal">
-              <div className="success-icon">
-                <FontAwesomeIcon icon={faCheckCircle} />
+            <div className={`result-modal ${isCorrectAnswer ? 'success-modal' : 'error-modal'}`}>
+              <div className={`result-icon ${isCorrectAnswer ? 'success-icon' : 'error-icon'}`}>
+                <FontAwesomeIcon icon={isCorrectAnswer ? faCheckCircle : faTimes} />
               </div>
-              <h3>{t('تم إرسال مشاركتك بنجاح!')}</h3>
-              <p>{t('شكراً لمشاركتك في المسابقة')}</p>
+              <h3>{isCorrectAnswer ? t('إجابة صحيحة!') : t('إجابة خاطئة')}</h3>
+              <p>
+                {isCorrectAnswer 
+                  ? t('أحسنت! شكراً لمشاركتك في المسابقة') 
+                  : t('للأسف إجابتك غير صحيحة، يمكنك المحاولة مرة أخرى')}
+              </p>
+              <button className="close-modal-btn" onClick={closeModal}>
+                {t('إغلاق')}
+              </button>
             </div>
           </div>
         )}

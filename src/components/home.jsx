@@ -430,10 +430,17 @@ class RatingSectionManager {
   }
 
   submitFeedback(stars, comment, t) {
-    if (stars === 0 || comment.trim() === '') {
+    if (stars === 0) {
       return {
         success: false,
-        message: t("يرجى اختيار عدد النجوم وكتابة تعليق قبل الإرسال")
+        message: t("يرجى اختيار عدد النجوم قبل الإرسال")
+      };
+    }
+
+    if (comment.trim() === '') {
+      return {
+        success: false,
+        message: t("يرجى كتابة تعليق قبل الإرسال")
       };
     }
 
@@ -699,6 +706,20 @@ const Home = () => {
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
     
+    // التحقق من وجود تقييم بالنجوم
+    if (stars === 0) {
+      setErrorMessage(t('يرجى اختيار تقييم بالنجوم قبل الإرسال'));
+      setIsErrorModalOpen(true);
+      return;
+    }
+    
+    // التحقق من وجود تعليق
+    if (!comment.trim()) {
+      setErrorMessage(t('يرجى كتابة تعليق قبل الإرسال'));
+      setIsErrorModalOpen(true);
+      return;
+    }
+    
     ratingManager.submitFeedback(stars, comment, t)
       .then(result => {
         if (result.success) {
@@ -706,8 +727,8 @@ const Home = () => {
           setStars(0);
           setComment('');
         } else {
-          setIsErrorModalOpen(true);
           setErrorMessage(result.message);
+          setIsErrorModalOpen(true);
         }
       });
   }, [stars, comment, t]);
