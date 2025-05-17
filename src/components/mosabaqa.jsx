@@ -51,9 +51,22 @@ const Mosabaqa = () => {
   const [optionToDelete, setOptionToDelete] = useState(null);
 
   useEffect(() => {
+    // استرجاع الإجابة الصحيحة من localStorage عند تحميل الصفحة أو تغيير اللغة
+    const savedCorrectAnswer = localStorage.getItem(`correctAnswer_${i18n.language}`);
+    if (savedCorrectAnswer) {
+      setCorrectAnswer(savedCorrectAnswer);
+    }
+    
     fetchQuestion();
     fetchAnswerOptions();
   }, [i18n.language]);
+
+  // حفظ الإجابة الصحيحة في localStorage عند تغيرها، مع مراعاة اللغة الحالية
+  useEffect(() => {
+    if (correctAnswer) {
+      localStorage.setItem(`correctAnswer_${i18n.language}`, correctAnswer);
+    }
+  }, [correctAnswer, i18n.language]);
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -88,6 +101,8 @@ const Mosabaqa = () => {
         // If there's a correct answer in the response, set it
         if (response.data.correctAnswer) {
           setCorrectAnswer(response.data.correctAnswer);
+          // حفظ الإجابة الصحيحة في localStorage أيضًا هنا، مع مراعاة اللغة
+          localStorage.setItem(`correctAnswer_${i18n.language}`, response.data.correctAnswer);
         }
       }
     } catch (err) {
@@ -96,7 +111,7 @@ const Mosabaqa = () => {
       setIsLoading(false);
     }
   };
-
+  
   const fetchAnswerOptions = async () => {
     try {
       setIsLoading(true);
@@ -255,6 +270,9 @@ const Mosabaqa = () => {
       setQuestion(questionFormData.questionText);
       setCorrectAnswer(answerId);
       
+      // حفظ الإجابة الصحيحة في localStorage مع مراعاة اللغة
+      localStorage.setItem(`correctAnswer_${i18n.language}`, answerId);
+      
       closeQuestionModal();
       await fetchQuestion();
       await fetchAnswerOptions();
@@ -292,10 +310,18 @@ const Mosabaqa = () => {
     try {
       setIsLoading(true);
 
-      // Prepare the full phone number with country code
-      const fullPhoneNumber = formData.countryCode + formData.phone;
+      // حفظ البيانات في متغير مؤقت لاستخدامها في الطلب
+      const submissionData = {
+        name: formData.name,
+        phone: formData.countryCode + formData.phone,
+        email: formData.email || ' ',
+        country: formData.country || '',
+        answer: '',
+        answerId: formData.answer,
+        lang: i18n.language
+      };
 
-      // البحث عن نص الإجابة المختارة بدلاً من إرسال المعرّف
+      // البحث عن نص الإجابة المختارة
       const selectedOption = answerOptions.find(option => option._id === formData.answer);
       
       if (!selectedOption) {
@@ -304,40 +330,37 @@ const Mosabaqa = () => {
         return;
       }
       
-      console.log("إرسال الإجابة:", selectedOption.text); // للتأكد من إرسال النص
+      submissionData.answer = selectedOption.text;
+      
+      console.log("إرسال الإجابة:", selectedOption.text);
+      console.log("الإجابة الصحيحة:", correctAnswer);
+      
+      // تحديد ما إذا كانت الإجابة المختارة هي الصحيحة
+      const isCorrect = formData.answer === correctAnswer;
 
-      // إرسال البيانات إلى الخادم
-      const response = await axios.post('https://elmanafea.shop/answer', {
-        name: formData.name,
-        phone: fullPhoneNumber,
-        email: formData.email || ' ',
-        country: formData.country || '',
-        answer: selectedOption.text,
-        answerId: formData.answer,
-        lang: i18n.language
+      // مسح البيانات فوراً قبل إرسال الطلب
+      setFormData({ 
+        name: '', 
+        answer: '', 
+        countryCode: '+966', 
+        phone: '', 
+        email: '', 
+        country: '' 
       });
 
-      // التحقق من صحة الإجابة من الاستجابة
-      // افترض أن الخادم يعيد حقل isCorrect يشير إلى صحة الإجابة
-      const isCorrect = response.data && response.data.isCorrect;
+      // إرسال البيانات إلى الخادم
+      const response = await axios.post('https://elmanafea.shop/answer', submissionData);
+
+      console.log("استجابة الخادم:", response.data);
+      
       setIsCorrectAnswer(isCorrect);
-
-      // عرض النافذة المنبثقة بنتيجة الإجابة
       setIsModalOpen(true);
-
-      // إعادة تعيين النموذج بعد 3 ثوانٍ فقط إذا كانت الإجابة صحيحة
-      if (isCorrect) {
-        setTimeout(() => {
-          setIsModalOpen(false);
-          setFormData({ name: '', answer: '', countryCode: '+966', phone: '', email: '', country: '' });
-        }, 3000);
-      } else {
-        // إذا كانت الإجابة خاطئة، نترك النافذة المنبثقة مفتوحة حتى يغلقها المستخدم يدويًا
-        // ولا نعيد تعيين النموذج حتى يتمكن من تغيير إجابته والمحاولة مرة أخرى
-        setTimeout(() => {
-          setIsModalOpen(false);
-        }, 3000);
-      }
+      
+      // إغلاق النافذة المنبثقة بعد 3 ثوانٍ
+      setTimeout(() => {
+        setIsModalOpen(false);
+      }, 3000);
+      
     } catch (err) {
       console.error('Error submitting participation:', err);
       if (err.response && err.response.data && err.response.data.message) {
@@ -593,22 +616,26 @@ const Mosabaqa = () => {
               </div>
             </div>
           </div>
-            <div className="form-group">
+            <div className="form-group answer-options-container">
               <label>{t('الإجابة')}</label>
-              <select
-                name="answer"
-                value={formData.answer}
-                onChange={handleChange}
-                required
-                className="answer-select"
-              >
-                <option value="">{t('اختر إجابتك')}</option>
-                {answerOptions.map(option => (
-                  <option key={option._id} value={option._id}>
-                    {option.text}
-                  </option>
-                ))}
-              </select>
+              <div className="custom-answer-options">
+                {answerOptions.length === 0 ? (
+                  <p className="no-answers-message">{t('لا توجد خيارات متاحة حاليا')}</p>
+                ) : (
+                  answerOptions.map(option => (
+                    <div 
+                      key={option._id} 
+                      className={`answer-option ${formData.answer === option._id ? 'selected' : ''}`}
+                      onClick={() => setFormData({ ...formData, answer: option._id })}
+                    >
+                      <div className="custom-radio">
+                        <div className="radio-inner"></div>
+                      </div>
+                      <span className="option-label">{option.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
           <form onSubmit={handleSubmit}>
