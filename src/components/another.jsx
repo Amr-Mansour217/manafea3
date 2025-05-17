@@ -32,11 +32,9 @@ class WebsiteManager {
 
   async fetchWebsites() {
     try {
-      console.log('Fetching all websites after update');
       
       const timestamp = new Date().getTime();
       const response = await axios.get(`${this.baseURL}/websites?_t=${timestamp}`);
-      console.log('API Response after update:', response.data);
 
       let websitesData = [];
       
@@ -57,11 +55,9 @@ class WebsiteManager {
         }
       }
       
-      console.log('Processed websites data:', websitesData);
       return websitesData;
 
     } catch (error) {
-      console.error('Error fetching websites:', error);
       this.showToast.error(this.i18n.t('حدث خطأ في جلب المواقع'));
       return [];
     }
@@ -92,7 +88,6 @@ class WebsiteManager {
         }
       });
 
-      console.log('Add website response:', response);
 
       if (response.status >= 200 && response.status < 300) {
         this.showToast.success(this.i18n.t('تمت الإضافة بنجاح'));
@@ -101,7 +96,6 @@ class WebsiteManager {
       
       return false;
     } catch (error) {
-      console.error('Error adding website:', error);
       
       if (error.response && error.response.data && error.response.data.message) {
         this.showToast.error(this.i18n.t(error.response.data.message));
@@ -128,7 +122,6 @@ class WebsiteManager {
         return false;
       }
 
-      console.log(`Updating website with ID: ${editingWebsite.id}`);
       
       const response = await axios({
         method: 'put',
@@ -144,7 +137,6 @@ class WebsiteManager {
         }
       });
 
-      console.log('Update response:', response.data);
 
       if (response.status === 200) {
         this.showToast.edited(this.i18n.t('تم التعديل بنجاح'));
@@ -153,8 +145,6 @@ class WebsiteManager {
         throw new Error('فشل في تحديث الموقع');
       }
     } catch (error) {
-      console.error('Error updating website:', error);
-      console.error('Response data:', error.response?.data);
       this.showToast.error(this.i18n.t(error.response?.data?.message || 'حدث خطأ في تحديث الموقع'));
       return false;
     }
@@ -181,7 +171,6 @@ class WebsiteManager {
       this.showToast.deleted(this.i18n.t('تم الحذف بنجاح'));
       return true;
     } catch (error) {
-      console.error('Error deleting website:', error);
       this.showToast.error(this.i18n.t(error.message));
       return false;
     }
@@ -200,25 +189,18 @@ class TextManager {
     try {
       const currentLang = this.i18n.language;
       const response = await axios.get(`${this.baseURL}/websitesheader?lang=${currentLang}`);
-      console.log('Website header response (raw):', response);
-      console.log('Website header response data:', response.data);
       
       // Check different possible response structures
       if (response.data?.title) {
-        console.log('Found title at response.data.title:', response.data.title);
         return response.data.title;
       } else if (response.data?.header?.title) {
-        console.log('Found title at response.data.header.title:', response.data.header.title);
         return response.data.header.title;
       } else if (typeof response.data === 'string') {
-        console.log('Found title as string:', response.data);
         return response.data;
       }
       
-      console.warn('Could not find title in response:', response.data);
       return "مكتبة المواقع الإسلامية"; // Default title as fallback
     } catch (error) {
-      console.error('Error fetching website header:', error);
       this.showToast.error(this.i18n.t('حدث خطأ في جلب العنوان'));
       return "مكتبة المواقع الإسلامية"; // Default title even on error
     }
@@ -228,14 +210,12 @@ class TextManager {
     try {
       const currentLang = this.i18n.language;
       const response = await axios.get(`${this.baseURL}/websecondheader?lang=${currentLang}`);
-      console.log('Website second header response:', response.data);
       
       if (response.data?.second_header?.title) {
         return response.data.second_header.title;
       }
       return null;
     } catch (error) {
-      console.error('Error fetching website second header:', error);
       this.showToast.error(this.i18n.t('حدث خطأ في جلب الوصف'));
       return null;
     }
@@ -270,7 +250,6 @@ class TextManager {
           }
         });
         
-        console.log('Update title response:', response.data);
         
         if (response.status === 200) {
           this.showToast.success(this.i18n.t('تمت العملية بنجاح'));
@@ -290,7 +269,6 @@ class TextManager {
           }
         });
         
-        console.log('Update description response:', response.data);
         
         if (response.status === 200) {
           this.showToast.success(this.i18n.t('تمت العملية بنجاح'));
@@ -300,7 +278,6 @@ class TextManager {
       
       return false;
     } catch (error) {
-      console.error('Error updating text:', error);
       this.showToast.error(this.i18n.t(error.response?.data?.message || 'حدث خطأ في تحديث النص'));
       return false;
     }
@@ -465,12 +442,9 @@ function Another() {
 
   const fetchPageTexts = async () => {
     try {
-      console.log('Fetching page texts for language:', i18n.language);
       const title = await textManager.fetchWebsiteHeader();
       const description = await textManager.fetchWebsiteSecondHeader();
       
-      console.log('Fetched title from backend:', title);
-      console.log('Fetched description from backend:', description);
       
       if (title || description) {
         setTexts(prevTexts => {
@@ -482,12 +456,10 @@ function Another() {
               description: description || prevTexts[i18n.language]?.description
             }
           };
-          console.log('Updated texts state:', updatedTexts);
           return updatedTexts;
         });
       }
     } catch (error) {
-      console.error('Error fetching page texts:', error);
     }
   };
 
@@ -497,7 +469,6 @@ function Another() {
 
   const renderWebsites = () => {
     if (!websites || !Array.isArray(websites)) {
-      console.error('websites is not an array:', websites);
       return null;
     }
     

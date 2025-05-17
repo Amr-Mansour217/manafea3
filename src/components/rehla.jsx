@@ -96,7 +96,6 @@ const Rehla = () => {
         }
       })
       .catch(err => {
-        console.error('Error fetching video data:', err);
         showToast.error(t('حدث خطأ أثناء جلب بيانات الفيديو'));
       })
       .finally(() => {
@@ -151,7 +150,6 @@ const Rehla = () => {
         }
       })
       .catch(err => {
-        console.error('Error fetching content:', err);
       })
       .finally(() => {
         setIsLoading(false);
@@ -212,7 +210,6 @@ const Rehla = () => {
         },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          console.log(`Upload Progress: ${percentCompleted}%`);
         }
       }
     )
@@ -226,7 +223,6 @@ const Rehla = () => {
         showToast.added(t('تم رفع الفيديو بنجاح'));
       })
       .catch(err => {
-        console.error('Error uploading video:', err);
         if (err.response && err.response.data && err.response.data.message) {
           showToast.error(t(err.response.data.message));
         } else {
@@ -272,7 +268,6 @@ const Rehla = () => {
         return fetchVideoData();
       })
       .catch(err => {
-        console.error('Error deleting video:', err);
         if (err.response && err.response.data && err.response.data.message) {
           showToast.error(t(err.response.data.message));
         } else {
@@ -363,7 +358,6 @@ const Rehla = () => {
             })        
         })
         .catch(err => {
-          console.error('Error adding text section:', err);
           if (err.response && err.response.data && err.response.data.message) {
             showToast.error(t(err.response.data.message));
           } else {
@@ -446,7 +440,6 @@ const Rehla = () => {
               })
           })
           .catch(err => {
-            console.error('Error adding image section:', err);
             if (err.response && err.response.data && err.response.data.message) {
               showToast.error(t(err.response.data.message));
             } else {
@@ -500,7 +493,6 @@ const Rehla = () => {
             }
           })
           .catch(error => {
-            console.error('Error creating file from URL:', error);
             showToast.error(t('رجاء اختيار ملف صورة صحيح أو إدخال رابط صحيح'));
           })
           .finally(() => {
@@ -547,7 +539,6 @@ const Rehla = () => {
           showToast.edited(t('تم تحديث النص بنجاح'));
         })
         .catch(err => {
-          console.error('Error updating text section:', err);
           if (err.response && err.response.data && err.response.data.message) {
             showToast.error(t(err.response.data.message));
           } else {
@@ -603,7 +594,6 @@ const Rehla = () => {
             }
           })
           .catch(err => {
-            console.error('Error updating image section:', err);
             if (err.response && err.response.data && err.response.data.message) {
               showToast.error(t(err.response.data.message));
             } else {
@@ -656,7 +646,6 @@ const Rehla = () => {
             }
           })
           .catch(error => {
-            console.error('Error updating image from URL:', error);
             showToast.error(t('حدث خطأ أثناء تحديث الصورة من الرابط'));
           })
           .finally(() => {
@@ -711,7 +700,6 @@ const Rehla = () => {
           showToast.deleted(t('تم حذف النص بنجاح'));
         })
         .catch(err => {
-          console.error('Error deleting section:', err);
           if (err.response && err.response.data && err.response.data.message) {
             showToast.error(t(err.response.data.message));
           } else {
@@ -742,7 +730,6 @@ const Rehla = () => {
           showToast.deleted(t('تم حذف الصورة بنجاح'));
         })
         .catch(err => {
-          console.error('Error deleting section:', err);
           if (err.response && err.response.data && err.response.data.message) {
             showToast.error(t(err.response.data.message));
           } else {

@@ -11,8 +11,6 @@ function BookViewer() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('Received link:', link); // Debug log
-    console.log('Received title:', title); // Debug log
   }, [link, title]);
 
   let decodedLink = link && link !== 'undefined' ? decodeURIComponent(link) : null;
@@ -23,12 +21,10 @@ function BookViewer() {
   }
 
   if (!decodedLink) {
-    console.error('Decoded link is invalid:', decodedLink); // Debug log
     return <div className="error-message">{t('رابط الكتاب غير متوفر')}</div>;
   }
 
   const googleDocsViewerUrl = `https://docs.google.com/gview?url=${decodedLink}&embedded=true`;
-  console.log('Google Docs Viewer URL:', googleDocsViewerUrl); // Debug log
 
   return (
     <div className="book-viewer-container">
@@ -70,7 +66,6 @@ function BookViewer() {
             onError={() => {
               setLoadingPdf(false);
               setError(true);
-              console.error('Error loading PDF:', decodedLink);
             }}
           />
         )}

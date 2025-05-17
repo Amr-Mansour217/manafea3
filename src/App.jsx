@@ -30,7 +30,6 @@ function App() {
       setDirection(newDirection);
       document.documentElement.dir = newDirection;
       document.documentElement.lang = i18n.language;
-      console.log('Language initialized:', i18n.language, 'Direction:', newDirection);
       setIsLoading(false);
     };
 
@@ -43,7 +42,6 @@ function App() {
       setDirection(newDirection);
       document.documentElement.dir = newDirection;
       document.documentElement.lang = i18n.language;
-      console.log('Language changed to:', i18n.language, 'Direction:', newDirection);
     };
 
     i18n.on('languageChanged', handleLanguageChange);

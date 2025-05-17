@@ -67,7 +67,6 @@ class TextManager {
       }
       return null;
     } catch (error) {
-      console.error('Error fetching header:', error);
       return null;
     }
   }
@@ -82,7 +81,6 @@ class TextManager {
       }
       return null;
     } catch (error) {
-      console.error('Error fetching description:', error);
       return null;
     }
   }
@@ -108,7 +106,6 @@ class TextManager {
 
       return { success: response.status === 200, data: response.data };
     } catch (error) {
-      console.error('Error updating header:', error);
       throw error;
     }
   }
@@ -134,7 +131,6 @@ class TextManager {
 
       return { success: response.status === 200, data: response.data };
     } catch (error) {
-      console.error('Error updating description:', error);
       throw error;
     }
   }
@@ -163,7 +159,6 @@ class AppManager {
       }
       return [];
     } catch (error) {
-      console.error('Error fetching apps:', error);
       throw new Error('حدث خطأ أثناء استرجاع التطبيقات');
     }
   }
@@ -196,7 +191,6 @@ class AppManager {
 
       return { success: response.status === 200 || response.status === 201, data: response.data };
     } catch (error) {
-      console.error('Error adding app:', error);
       throw error;
     }
   }
@@ -229,7 +223,6 @@ class AppManager {
 
       return { success: response.status === 200, data: response.data };
     } catch (error) {
-      console.error('Error updating app:', error);
       throw error;
     }
   }
@@ -253,7 +246,6 @@ class AppManager {
 
       return { success: response.status === 200, data: response.data };
     } catch (error) {
-      console.error('Error deleting app:', error);
       throw error;
     }
   }
@@ -359,7 +351,6 @@ function Apps() {
           setHeaderText(headerText);
         }
       } catch (error) {
-        console.error('Error fetching header:', error);
       }
     };
 
@@ -370,7 +361,6 @@ function Apps() {
           setDescriptionText(descText);
         }
       } catch (error) {
-        console.error('Error fetching description:', error);
       }
     };
 
@@ -396,7 +386,6 @@ function Apps() {
         });
       }
     } catch (error) {
-      console.error('Error:', error);
       showToast.error(error.message || 'حدث خطأ في إضافة التطبيق');
     }
   };
@@ -442,7 +431,6 @@ function Apps() {
         setEditingApp(null);
       }
     } catch (error) {
-      console.error('Error:', error);
       showToast.error(error.message || 'حدث خطأ في تحديث التطبيق');
     }
   };
@@ -459,7 +447,6 @@ function Apps() {
         showToast.edited('تم تحديث العنوان بنجاح');
       }
     } catch (error) {
-      console.error('Error updating header:', error);
       showToast.error(error.message || 'حدث خطأ في تحديث العنوان');
     }
   };
@@ -476,7 +463,6 @@ function Apps() {
         showToast.edited('تم تحديث الوصف بنجاح');
       }
     } catch (error) {
-      console.error('Error updating description:', error);
       showToast.error(error.message || 'حدث خطأ في تحديث الوصف');
     }
   };
@@ -525,7 +511,6 @@ function Apps() {
         showToast.deleted('تم حذف التطبيق بنجاح');
       }
     } catch (error) {
-      console.error('Error deleting app:', error);
       showToast.error(error.message || 'حدث خطأ في حذف التطبيق');
     } finally {
       setShowDeleteConfirm(false);

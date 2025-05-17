@@ -84,9 +84,8 @@ const loadStoredTranslations = () => {
       customTranslations[lang] = {
         ...customTranslations[lang],
         ...translations
-      };
-    } catch (error) {
-      console.error(`Failed to load translations for ${lang}:`, error);
+      };    } catch (error) {
+      // Error handling for failed translations loading
     }
   });
 };

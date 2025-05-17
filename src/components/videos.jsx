@@ -47,7 +47,6 @@ const Videos = () => {
         setVideos(formattedVideos);
       }
     } catch (error) {
-      console.error('Error fetching videos:', error);
     }
   };
 
@@ -87,7 +86,6 @@ const Videos = () => {
         setNewVideoData({ title: '', link: '', type: '', file: null });
       }
     } catch (error) {
-      console.error('Error uploading video:', error);
     }
   };
 
@@ -122,7 +120,6 @@ const Videos = () => {
         setEditingVideo(null);
       }
     } catch (error) {
-      console.error('Error updating video:', error);
     }
   };
 
@@ -139,7 +136,6 @@ const Videos = () => {
       );
       await fetchVideos();
     } catch (error) {
-      console.error('Error deleting video:', error);
     }
   };
 

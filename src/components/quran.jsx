@@ -108,7 +108,6 @@ function Quran() {
           }));
         }
       } catch (error) {
-        console.error('Error fetching latest book:', error);
       } finally {
         setIsLoading(false);
       }
@@ -183,7 +182,6 @@ function Quran() {
         alert(uploadData.message || 'فشل في رفع الملف');
       }
     } catch (error) {
-      console.error('Error:', error);
       alert(error.response?.data?.message || 'حدث خطأ أثناء رفع الملف');
       setUploadError(error.response?.data?.message || error.message || 'حدث خطأ أثناء رفع الملف');
     } finally {

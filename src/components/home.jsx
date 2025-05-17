@@ -24,10 +24,8 @@ class HeroSectionManager {
   fetchHeaderData() {
     return axios.get(`${this.apiBaseUrl}/header?lang=${this.i18n.language}`)
       .then(response => {
-        console.log('Response from backend:', response.data);
 
         if (response.data?.header) {
-          console.log('Found header:', response.data.header);
           this.setHeaderData(response.data);
           localStorage.setItem('headerData', JSON.stringify(response.data));
           
@@ -44,7 +42,6 @@ class HeroSectionManager {
         }
       })
       .catch(error => {
-        console.error('Error fetching header:', error);
         const cachedHeader = localStorage.getItem('headerData');
         if (cachedHeader) {
           this.setHeaderData(JSON.parse(cachedHeader));
@@ -55,7 +52,6 @@ class HeroSectionManager {
   fetchSecondHeaderData() {
     return axios.get(`${this.apiBaseUrl}/secondheader?lang=${this.i18n.language}`)
       .then(response => {
-        console.log('Second header response:', response.data);
 
         if (response.data?.second_header) {
           this.setTexts(prev => ({
@@ -71,21 +67,18 @@ class HeroSectionManager {
         }
       })
       .catch(error => {
-        console.error('Error fetching second header:', error);
       });
   }
 
   fetchHeroImage() {
     return axios.get(`${this.apiBaseUrl}/image`)
       .then(response => {
-        console.log('Image response:', response.data);
 
         if (response.data?.image) {
           const fullImageUrl = response.data.image.startsWith('http') 
             ? response.data.image 
             : `${this.apiBaseUrl}${response.data.image}`;
 
-          console.log('Full image URL:', fullImageUrl);
 
           const newBackgrounds = {
             ar: fullImageUrl,
@@ -108,7 +101,6 @@ class HeroSectionManager {
         }
       })
       .catch(error => {
-        console.error('Error fetching hero image:', error);
       });
   }
 
@@ -143,7 +135,6 @@ class HeroSectionManager {
         }
       })
       .catch(error => {
-        console.error('Error uploading image:', error);
         alert(error.response?.data?.message || 'حدث خطأ في عملية تحديث الصورة');
       });
     }
@@ -186,7 +177,6 @@ class VideoSectionManager {
   fetchLessonWord() {
     return axios.get(`${this.apiBaseUrl}/admin/lessonword?lang=${this.i18n.language}`)
       .then(response => {
-        console.log('Lesson word response:', response.data);
 
         if (response.data?.lesson_word) {
           this.setTexts(prev => ({
@@ -202,19 +192,15 @@ class VideoSectionManager {
         }
       })
       .catch(error => {
-        console.error('Error fetching lesson word:', error);
       });
   }
 
   fetchVideos() {
     return axios.get(`${this.apiBaseUrl}/homevideos?lang=${this.i18n.language}`)
       .then(response => {
-        console.log('Raw response:', response);
-        console.log('Videos data:', response.data);
 
         if (response.data.videos) {
           const formattedVideos = response.data.videos.map(video => {
-            console.log('Processing video:', video);
             
             let videoLink = '';
             if (video.videoType === 'youtube') {
@@ -231,12 +217,10 @@ class VideoSectionManager {
             };
           });
 
-          console.log('Formatted videos:', formattedVideos);
           this.setVideos(formattedVideos);
         }
       })
       .catch(error => {
-        console.error('Error fetching videos:', error);
         toast.error('حدث خطأ أثناء تحميل الفيديوهات');
       });
   }
@@ -320,7 +304,6 @@ class VideoSectionManager {
       updateData.youtubeEmbedUrl = formattedUrl;
     }
 
-    console.log("البيانات المرسلة للتحديث:", updateData);
 
     return axios.put(
       `${this.apiBaseUrl}/admin/homeupdatevideo/${editingItem.id}`,
@@ -343,9 +326,7 @@ class VideoSectionManager {
       }
     })
     .catch(error => {
-      console.error('Error updating video:', error);
       if (error.response) {
-        console.error('تفاصيل الخطأ:', error.response.status, error.response.data);
       }
       showToast.error(error.response?.data?.message || 'حدث خطأ أثناء تحديث الفيديو');
       throw error;
@@ -381,7 +362,6 @@ class VideoSectionManager {
       }
     })
     .catch(error => {
-      console.error('Error deleting video:', error);
       showToast.error(error.response?.data?.message || 'حدث خطأ أثناء حذف الفيديو');
       throw error;
     });
@@ -416,7 +396,6 @@ class VideoSectionManager {
       }
     })
     .catch(error => {
-      console.error('Error:', error);
       showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
       throw error;
     });
@@ -461,7 +440,6 @@ class RatingSectionManager {
       }
     })
     .catch(error => {
-      console.error('Error submitting feedback:', error);
       let errorMessage = t('An error occurred while submitting feedback.');
       if (error.response) {
         errorMessage = `${t('Server error')}: ${error.response.status}`;
@@ -502,7 +480,6 @@ class RatingSectionManager {
       showToast.success('تم تحميل التعليقات بنجاح');
     })
     .catch(error => {
-      console.error('Error downloading feedbacks:', error);
       showToast.error('حدث خطأ أثناء تحميل ملف التعليقات');
       throw error;
     });
@@ -525,18 +502,15 @@ class HomePageManager {
 
   getHeaderTitle(headerData, texts) {
     if (headerData?.header) {
-      console.log('Using header from state:', headerData.header);
       return headerData.header;
     }
     
     const cachedHeader = localStorage.getItem('headerData');
     if (cachedHeader) {
       const parsed = JSON.parse(cachedHeader);
-      console.log('Using header from localStorage:', parsed.header);
       return parsed.header;
     }
     
-    console.log('Using fallback header');
     return texts[this.i18n.language]?.hero?.title || texts.ar.hero.title;
   }
 
@@ -675,7 +649,6 @@ const Home = () => {
 
   useEffect(() => {
     if (headerData?.header) {
-      console.log('Header data updated:', headerData.header);
     }
   }, [headerData]);
 
@@ -790,7 +763,6 @@ const Home = () => {
           }
         })
         .catch(error => {
-          console.error('Error:', error);
           showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
         });
     } else if (editingItem?.section === 'section' && editingItem?.key === 'title') {
@@ -869,11 +841,9 @@ const Home = () => {
   };
 
   const handleVideoEditClick = (video) => {
-    console.log("تفاصيل الفيديو المراد تعديله:", video);  
     
     // تحديد نوع الفيديو من البيانات بشكل صحيح
     const videoType = video.videoType;
-    console.log("نوع الفيديو:", videoType);
     
     setEditingItem({ 
       type: 'video', 

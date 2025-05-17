@@ -104,9 +104,8 @@ const Mosabaqa = () => {
           // حفظ الإجابة الصحيحة في localStorage أيضًا هنا، مع مراعاة اللغة
           localStorage.setItem(`correctAnswer_${i18n.language}`, response.data.correctAnswer);
         }
-      }
-    } catch (err) {
-      console.error('Error fetching question:', err);
+      }    } catch (err) {
+      // Error handling
     } finally {
       setIsLoading(false);
     }
@@ -116,15 +115,13 @@ const Mosabaqa = () => {
     try {
       setIsLoading(true);
       const response = await axios.get(`https://elmanafea.shop/storedanswers?lang=${i18n.language}`);
-      
-      // التحقق من شكل البيانات القادمة
+        // التحقق من شكل البيانات القادمة
       let options = [];
       if (response.data && response.data.answers && Array.isArray(response.data.answers)) {
         options = response.data.answers;
       } else if (response.data && Array.isArray(response.data)) {
         options = response.data;
       } else {
-        console.log('No answer options available or empty response');
         options = [];
       }
       
@@ -133,9 +130,7 @@ const Mosabaqa = () => {
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
       
-      setAnswerOptions(sortedOptions);
-    } catch (err) {
-      console.error('Error fetching answer options:', err);
+      setAnswerOptions(sortedOptions);    } catch (err) {
       // لا تظهر رسالة خطأ إذا كان الخطأ 404 (لا توجد إجابات)
       if (err.response && err.response.status === 404) {
         // في حالة عدم وجود إجابات، قم بتعيين المصفوفة فارغة بدلاً من عرض خطأ
@@ -276,9 +271,7 @@ const Mosabaqa = () => {
       closeQuestionModal();
       await fetchQuestion();
       await fetchAnswerOptions();
-      showToast.success(t('تم تحديث السؤال بنجاح'));
-    } catch (err) {
-      console.error('Error updating question:', err);
+      showToast.success(t('تم تحديث السؤال بنجاح'));    } catch (err) {
       if (err.response) {
         if (err.response.status === 401) {
           showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
@@ -329,11 +322,7 @@ const Mosabaqa = () => {
         setIsLoading(false);
         return;
       }
-      
-      submissionData.answer = selectedOption.text;
-      
-      console.log("إرسال الإجابة:", selectedOption.text);
-      console.log("الإجابة الصحيحة:", correctAnswer);
+        submissionData.answer = selectedOption.text;
       
       // تحديد ما إذا كانت الإجابة المختارة هي الصحيحة
       const isCorrect = formData.answer === correctAnswer;
@@ -346,12 +335,8 @@ const Mosabaqa = () => {
         phone: '', 
         email: '', 
         country: '' 
-      });
-
-      // إرسال البيانات إلى الخادم
+      });      // إرسال البيانات إلى الخادم
       const response = await axios.post('https://elmanafea.shop/answer', submissionData);
-
-      console.log("استجابة الخادم:", response.data);
       
       setIsCorrectAnswer(isCorrect);
       setIsModalOpen(true);
@@ -360,9 +345,7 @@ const Mosabaqa = () => {
       setTimeout(() => {
         setIsModalOpen(false);
       }, 3000);
-      
-    } catch (err) {
-      console.error('Error submitting participation:', err);
+        } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         showToast.error(t(err.response.data.message));
       } else {
@@ -405,9 +388,7 @@ const Mosabaqa = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
 
-      showToast.success(t('تم تنزيل الملف بنجاح')); // Success toast for download
-    } catch (err) {
-      console.error('Error downloading Excel:', err);
+      showToast.success(t('تم تنزيل الملف بنجاح')); // Success toast for download    } catch (err) {
       if (err.response && err.response.status === 401) {
         showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
       } else {
@@ -452,9 +433,7 @@ const Mosabaqa = () => {
       
       await fetchAnswerOptions();
       setNewOption('');
-      showToast.success(t('تمت إضافة الخيار بنجاح'));
-    } catch (err) {
-      console.error('Error adding option:', err);
+      showToast.success(t('تمت إضافة الخيار بنجاح'));    } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         showToast.error(t(err.response.data.message));
       } else if (err.response && err.response.status === 401) {
@@ -498,9 +477,7 @@ const Mosabaqa = () => {
       
       await fetchAnswerOptions();
       setEditingOption({ id: null, text: '' });
-      showToast.success(t('تم تحديث الخيار بنجاح'));
-    } catch (err) {
-      console.error('Error updating option:', err);
+      showToast.success(t('تم تحديث الخيار بنجاح'));    } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         showToast.error(t(err.response.data.message));
       } else {
@@ -540,9 +517,7 @@ const Mosabaqa = () => {
       });
       
       await fetchAnswerOptions();
-      showToast.success(t('تم حذف الخيار بنجاح'));
-    } catch (err) {
-      console.error('Error deleting option:', err);
+      showToast.success(t('تم حذف الخيار بنجاح'));    } catch (err) {
       showToast.error(t('حدث خطأ في حذف الخيار'));
     } finally {
       setIsLoading(false);

@@ -32,7 +32,6 @@ const Login = () => {
         setError('Invalid response from server. Token not received.');
       }
     } catch (err) {
-      console.error('Login error:', err);
       setError(err.response?.data?.message || 'Error during login. Please try again.');
     } finally {
       setLoading(false);

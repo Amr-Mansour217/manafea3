@@ -37,7 +37,6 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   render() {
@@ -89,7 +88,6 @@ function Intre() {
   api.interceptors.response.use(
     response => response,
     error => {
-      console.error('API Error:', error);
       if (error.response?.status === 401) {
         localStorage.removeItem('adminToken');
         setIsAdmin(false);
@@ -105,7 +103,6 @@ function Intre() {
         const token = localStorage.getItem('adminToken');
         setIsAdmin(!!token);
       } catch (error) {
-        console.error('Error checking admin status:', error);
         setIsAdmin(false);
       }
     };
@@ -129,7 +126,6 @@ function Intre() {
         })
         .catch(error => {
           if (isMounted) {
-            console.error('Error fetching header:', error);
             showToast.error(t('فشل تحميل بيانات العنوان'));
           }
         })
@@ -171,7 +167,6 @@ function Intre() {
           }
         })
         .catch(error => {
-          console.error('Error fetching books:', error);
           showToast.error(t('فشل تحميل الكتب'));
         });
     };
@@ -186,7 +181,6 @@ function Intre() {
     try {
       localStorage.setItem(`books_${i18n.language}`, JSON.stringify(books));
     } catch (error) {
-      console.error('Error saving books:', error);
     }
   }, [books, i18n.language]);
 
@@ -217,7 +211,6 @@ function Intre() {
       }
     })
     .catch(error => {
-      console.error('Error updating header:', error);
       showToast.error(error.response?.data?.message || t('فشل تحديث العنوان'));
     });
   };
@@ -280,7 +273,6 @@ function Intre() {
       }
     })
     .catch(error => {
-      console.error('Error deleting book:', error);
       showToast.error(t('حدث خطأ أثناء حذف الكتاب'));
     })
     .finally(() => {
@@ -358,7 +350,6 @@ function Intre() {
       showToast.edited(t('تم تحديث الكتاب بنجاح'));
     })
     .catch(error => {
-      console.error('Error updating book:', error);
       showToast.error(error.response?.data?.message || t('حدث خطأ في تحديث الكتاب'));
     });
   };
@@ -493,7 +484,6 @@ function Intre() {
       showToast.added(t('تم إضافة الكتاب بنجاح'));
     })
     .catch(error => {
-      console.error('Upload error:', error);
       let errorMessage = t('حدث خطأ أثناء رفع الكتاب');
       
       if (error.response) {
@@ -531,7 +521,6 @@ function Intre() {
           }
         })
         .catch(error => {
-          console.error('Error fetching video header:', error);
           setSubtitleText('مجموعة مميزة من الكتب في علوم الشريعة والسيرة النبوية');
         });
     };
@@ -574,7 +563,6 @@ function Intre() {
       showToast.success(t('تم تحديث العنوان الفرعي بنجاح'));
     })
     .catch(error => {
-      console.error('Error updating video header:', error);
       showToast.error(error.response?.data?.message || t('Failed to update header'));
     });
   };

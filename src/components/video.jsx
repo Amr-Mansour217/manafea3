@@ -290,14 +290,7 @@ function Videos(){
             activeCategory === 'all' 
                 ? `https://elmanafea.shop/videos/all?lang=${i18n.language}`
                 : `https://elmanafea.shop/videos?lang=${i18n.language}&category=${activeCategory}`
-        ).then(response => {
-            console.log('Videos response:', response.data);
-            console.log('Videos URL:', response.config.url);
-
-            if (response.data.videos) {
-                const formattedVideos = response.data.videos.map(video => {
-                    console.log('Raw video data:', video);
-
+        ).then(response => {            if (response.data.videos) {                const formattedVideos = response.data.videos.map(video => {
                     let videoLink = '';
                     if (video.videoType === 'embed') {
                         videoLink = formatYoutubeUrl(video.youtubeEmbedUrl || video.link);
@@ -311,14 +304,12 @@ function Videos(){
                         category: video.category,
                         link: videoLink,
                         isLocal: video.videoType === 'upload'
-                    };
-                });
+                    };                });
 
-                console.log('Formatted videos:', formattedVideos);
                 setVideos(formattedVideos);
             }
         }).catch(error => {
-            console.error('Error fetching videos:', error);
+            
         }).finally(() => {
             setIsLoading(false);
         });
@@ -409,7 +400,7 @@ function Videos(){
     const fetchVideoHeaderData = () => {
         axios.get(`https://elmanafea.shop/vidpageheader?lang=${i18n.language}`)
         .then(response => {
-            console.log('Video header response:', response.data);
+            
 
             if (response.data?.header) {
                 setTexts(prev => ({
@@ -421,14 +412,14 @@ function Videos(){
                 }));
             }
         }).catch(error => {
-            console.error('Error fetching video header:', error);
+            
         });
     };
 
     const fetchVideoSecondHeaderData = () => {
         axios.get(`https://elmanafea.shop/vidsecondheader?lang=${i18n.language}`)
         .then(response => {
-            console.log('Video second header response:', response.data);
+            
 
             if (response.data?.second_header) {
                 setTexts(prev => ({
@@ -440,7 +431,7 @@ function Videos(){
                 }));
             }
         }).catch(error => {
-            console.error('Error fetching video second header:', error);
+            
         });
     };
 
@@ -465,7 +456,7 @@ function Videos(){
                 setCategories(finalCategories);
             }
         }).catch(error => {
-            console.error('Error fetching categories:', error);
+            
             const defaultCategories = [
                 { id: 'all', name: translations.categories[i18n.language].all },
                 ...Object.entries(translations.categories[i18n.language])
@@ -481,7 +472,7 @@ function Videos(){
     };
 
     const handleEditTextClick = (defaultText, type) => {
-        console.log("handleEditTextClick called with:", defaultText, type);
+        
         const currentText = texts[i18n.language]?.[type] || defaultText;
         setEditingText({
             text: currentText,
@@ -558,7 +549,7 @@ function Videos(){
             setNewVideoData({ title: '', link: '', type: '', category: 'all' });
             setSelectedFile(null);
         }).catch(error => {
-            console.error('Error uploading video:', error.response?.data || error.message);
+            
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية رفع الفيديو');
             setShowAddVideoModal(true);
         }).finally(() => {
@@ -621,7 +612,7 @@ function Videos(){
                 setEditingVideo(null);
                 setSelectedFile(null);
             }).catch(error => {
-                console.error('Error updating video:', error.response?.data || error.message);
+                
                 showToast.error(error.response?.data?.message || 'حدث خطأ في عملية تحديث الفيديو');
             }).finally(() => {
                 setIsSavingEdit(false);
@@ -646,7 +637,7 @@ function Videos(){
             showToast.edited(`تم تحديث فيديو "${editingVideo.title}" بنجاح`);
             setEditingVideo(null);
         }).catch(error => {
-            console.error('Error updating video:', error);
+            
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
         }).finally(() => {
             setIsSavingEdit(false);
@@ -691,7 +682,7 @@ function Videos(){
         }).then(() => {
             showToast.deleted('تم حذف الفيديو بنجاح');
         }).catch(error => {
-            console.error('Error deleting video:', error);
+            
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
         }).finally(() => {
             setShowDeleteVideoConfirmModal(false);
@@ -731,7 +722,7 @@ function Videos(){
                 setEditingText(null);
                 showToast.edited('تم تحديث العنوان بنجاح');
             }).catch(error => {
-                console.error('Error updating header:', error);
+                
                 showToast.error(error.response?.data?.message || 'حدث خطأ في عملية تحديث العنوان');
             }).finally(() => {
                 setIsSavingText(false);
@@ -755,7 +746,7 @@ function Videos(){
                 setEditingText(null);
                 showToast.edited('تم تحديث الوصف بنجاح');
             }).catch(error => {
-                console.error('Error updating description:', error);
+                
                 showToast.error(error.response?.data?.message || 'حدث خطأ في عملية تحديث الوصف');
             }).finally(() => {
                 setIsSavingText(false);
@@ -797,7 +788,7 @@ function Videos(){
             setNewCategory({ id: '', name: '' });
             showToast.added(`تم إضافة تصنيف "${newCategory.name}" بنجاح`);
         }).catch(error => {
-            console.error('Error adding category:', error);
+            
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الإضافة');
         }).finally(() => {
             setIsSavingCategory(false);
@@ -841,7 +832,7 @@ function Videos(){
             setNewCategory({ id: '', name: '' });
             showToast.edited(`تم تحديث تصنيف "${newCategory.name}" بنجاح`);
         }).catch(error => {
-            console.error('Error updating category:', error.response?.data || error);
+            
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية التحديث');
         }).finally(() => {
             setIsSavingCategory(false);
@@ -873,7 +864,7 @@ function Videos(){
         }).then(() => {
             showToast.deleted(`تم حذف التصنيف "${categoryToDelete.name}" بنجاح`);
         }).catch(error => {
-            console.error('Error deleting category:', error.response?.data || error);
+            
             showToast.error(error.response?.data?.message || 'حدث خطأ في عملية الحذف');
         }).finally(() => {
             setShowDeleteConfirmModal(false);
@@ -904,7 +895,7 @@ function Videos(){
                 setPdfFiles(response.data.pdfs);
             }
         }).catch(error => {
-            console.error('Error fetching PDFs:', error);
+            
         });
     };
 

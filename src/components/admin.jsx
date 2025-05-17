@@ -40,7 +40,6 @@ const Form = () => {
         setError(data.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
       }
     } catch (err) {
-      console.error('Login error:', err);
       setError('حدث خطأ في الاتصال بالخادم');
     }
   };
