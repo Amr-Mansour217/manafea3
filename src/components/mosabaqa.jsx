@@ -36,6 +36,7 @@ const Mosabaqa = () => {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [newOption, setNewOption] = useState('');
   const [editingOption, setEditingOption] = useState({ id: null, text: '' });
+  const [newOptionIsCorrect, setNewOptionIsCorrect] = useState(false); // new state for correct answer checkbox
 
   // Add new state for question editing
   const [correctAnswer, setCorrectAnswer] = useState('');
@@ -49,6 +50,9 @@ const Mosabaqa = () => {
   // إضافة حالات جديدة للتأكيد على الحذف
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [optionToDelete, setOptionToDelete] = useState(null);
+
+  // New state for correct answer text display
+  const [correctAnswerText, setCorrectAnswerText] = useState('');
 
   useEffect(() => {
     // استرجاع الإجابة الصحيحة من localStorage عند تحميل الصفحة أو تغيير اللغة
@@ -117,8 +121,17 @@ const Mosabaqa = () => {
       const response = await axios.get(`https://elmanafea.shop/storedanswers?lang=${i18n.language}`);
         // التحقق من شكل البيانات القادمة
       let options = [];
+      let correctText = '';
       if (response.data && response.data.answers && Array.isArray(response.data.answers)) {
         options = response.data.answers;
+        // Check for correct answer text in response
+        if (response.data.correctAnswerText) {
+          correctText = response.data.correctAnswerText;
+        } else if (response.data.correctAnswer) {
+          // Try to find the correct answer text from options
+          const found = options.find(opt => opt._id === response.data.correctAnswer);
+          if (found) correctText = found.text;
+        }
       } else if (response.data && Array.isArray(response.data)) {
         options = response.data;
       } else {
@@ -130,11 +143,22 @@ const Mosabaqa = () => {
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
       
-      setAnswerOptions(sortedOptions);    } catch (err) {
+      setAnswerOptions(sortedOptions);
+
+      // Set correct answer from options if available
+      if (sortedOptions.length > 0) {
+        const found = sortedOptions.find(opt => opt.isCorrect);
+        if (found) {
+          setCorrectAnswer(found._id);
+          setCorrectAnswerText(found.text);
+        }
+      }
+    } catch (err) {
       // لا تظهر رسالة خطأ إذا كان الخطأ 404 (لا توجد إجابات)
       if (err.response && err.response.status === 404) {
         // في حالة عدم وجود إجابات، قم بتعيين المصفوفة فارغة بدلاً من عرض خطأ
         setAnswerOptions([]);
+        setCorrectAnswerText('');
       } else {
         showToast.error(t('حدث خطأ في تحميل خيارات الإجابة'));
       }
@@ -204,74 +228,27 @@ const Mosabaqa = () => {
       showToast.error(t('الرجاء إدخال السؤال'));
       return;
     }
-
-    // التحقق من وجود إجابة محددة أو إجابة جديدة
-    if (answerOptions.length > 0 && !questionFormData.correctAnswer) {
-      showToast.error(t('الرجاء اختيار الإجابة الصحيحة'));
-      return;
-    }
-
-    if (answerOptions.length === 0 && !questionFormData.newCorrectAnswer.trim()) {
-      showToast.error(t('الرجاء إدخال الإجابة الصحيحة'));
-      return;
-    }
-
     try {
       setIsLoading(true);
       const token = localStorage.getItem('adminToken');
-
       if (!token) {
         showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
         return;
       }
-
-      let answerId = questionFormData.correctAnswer;
-      let isNewAnswer = false;
-
-      // إذا لم توجد خيارات إجابة، قم بإنشاء إجابة جديدة أولاً (POST)
-      if (answerOptions.length === 0 && questionFormData.newCorrectAnswer.trim()) {
-        const answerResponse = await axios.post('https://elmanafea.shop/admin/answers', {
-          answer: questionFormData.newCorrectAnswer,
-          lang: i18n.language
-        }, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        // استخدام معرف الإجابة الجديدة
-        if (answerResponse.data && answerResponse.data._id) {
-          answerId = answerResponse.data._id;
-          isNewAnswer = true;
-        } else if (answerResponse.data && answerResponse.data.id) {
-          answerId = answerResponse.data.id;
-          isNewAnswer = true;
-        }
-      }
-
-      // حفظ السؤال مع الإجابة الصحيحة
-      // دائمًا استخدم POST لأن الخادم لا يدعم PUT في هذا المسار
       await axios.post('https://elmanafea.shop/admin/question', {
         question: questionFormData.questionText,
-        correctAnswer: answerId,
         lang: i18n.language
       }, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      // تحديث الحالة المحلية
       setQuestion(questionFormData.questionText);
-      setCorrectAnswer(answerId);
-      
-      // حفظ الإجابة الصحيحة في localStorage مع مراعاة اللغة
-      localStorage.setItem(`correctAnswer_${i18n.language}`, answerId);
-      
       closeQuestionModal();
       await fetchQuestion();
       await fetchAnswerOptions();
-      showToast.success(t('تم تحديث السؤال بنجاح'));    } catch (err) {
+      showToast.success(t('تم تحديث السؤال بنجاح'));
+    } catch (err) {
       if (err.response) {
         if (err.response.status === 401) {
           showToast.error(t('الرمز غير صالح أو منتهي الصلاحية. الرجاء تسجيل الدخول مجددا كمسؤول'));
@@ -322,10 +299,7 @@ const Mosabaqa = () => {
         setIsLoading(false);
         return;
       }
-        submissionData.answer = selectedOption.text;
-      
-      // تحديد ما إذا كانت الإجابة المختارة هي الصحيحة
-      const isCorrect = formData.answer === correctAnswer;
+      submissionData.answer = selectedOption.text;
 
       // مسح البيانات فوراً قبل إرسال الطلب
       setFormData({ 
@@ -335,17 +309,50 @@ const Mosabaqa = () => {
         phone: '', 
         email: '', 
         country: '' 
-      });      // إرسال البيانات إلى الخادم
+      });
+
+      // إرسال البيانات إلى الخادم
       const response = await axios.post('https://elmanafea.shop/answer', submissionData);
-      
+
+
+      // تحديد صحة الإجابة بناءً على استجابة الخادم
+      // عدل هنا حسب ما يرجعه الخادم (مثلاً: response.data.message === 'Correct answer')
+      let isCorrect = false;
+      if (
+        response.data &&
+        (
+          response.data.message === 'Correct answer' ||
+          response.data.message === 'correct answer' ||
+          response.data.message === 'Correct_answer' ||
+          response.data.message === 'correct_answer'
+        )
+      ) {
+        isCorrect = true;
+      }
+
       setIsCorrectAnswer(isCorrect);
+
+      // إذا كانت الإجابة خاطئة، استخرج الإجابة الصحيحة من الاستجابة
+      if (!isCorrect) {
+        // حاول إيجاد الإجابة الصحيحة من correctAnswers أو correctAnswer أو أي حقل آخر
+        let correctText = '';
+        if (response.data.correctAnswers && Array.isArray(response.data.correctAnswers) && response.data.correctAnswers.length > 0) {
+          correctText = response.data.correctAnswers[0];
+        } else if (response.data.correctAnswer) {
+          correctText = response.data.correctAnswer;
+        }
+        setCorrectAnswerText(correctText);
+      }
+
       setIsModalOpen(true);
-      
-      // إغلاق النافذة المنبثقة بعد 3 ثوانٍ
-      setTimeout(() => {
-        setIsModalOpen(false);
-      }, 3000);
-        } catch (err) {
+
+      // إغلاق النافذة المنبثقة بعد 3 ثوانٍ فقط إذا كانت الإجابة صحيحة
+      if (isCorrect) {
+        setTimeout(() => {
+          setIsModalOpen(false);
+        }, 3000);
+      }
+    } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         showToast.error(t(err.response.data.message));
       } else {
@@ -421,10 +428,11 @@ const Mosabaqa = () => {
         return;
       }
       
-      // تغيير text إلى answer حسب متطلبات الـ backend
+      // Send isCorrect field to backend
       await axios.post('https://elmanafea.shop/admin/answers', {
         answer: newOption,
-        lang: i18n.language
+        lang: i18n.language,
+        isCorrect: newOptionIsCorrect
       }, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -433,7 +441,9 @@ const Mosabaqa = () => {
       
       await fetchAnswerOptions();
       setNewOption('');
-      showToast.success(t('تمت إضافة الخيار بنجاح'));    } catch (err) {
+      setNewOptionIsCorrect(false);
+      showToast.success(t('تمت إضافة الخيار بنجاح'));
+    } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         showToast.error(t(err.response.data.message));
       } else if (err.response && err.response.status === 401) {
@@ -705,7 +715,16 @@ const Mosabaqa = () => {
               <p>
                 {isCorrectAnswer 
                   ? t('أحسنت! شكراً لمشاركتك في المسابقة') 
-                  : t('للأسف إجابتك غير صحيحة، يمكنك المحاولة مرة أخرى')}
+                  : <>
+                      {t('للأسف إجابتك غير صحيحة، يمكنك المحاولة مرة أخرى')}
+                      <br />
+                      {correctAnswerText && (
+                        <span>
+                          {t('الإجابة الصحيحة هي')}: <strong>{correctAnswerText}</strong>
+                        </span>
+                      )}
+                    </>
+                }
               </p>
               <button className="close-modal-btn" onClick={closeModal}>
                 {t('إغلاق')}
@@ -719,7 +738,6 @@ const Mosabaqa = () => {
           <div className="modal-overlay">
             <div className="options-modal">
               <h3>{t('إدارة خيارات الإجابة')}</h3>
-              
               <div className="options-header">
                 <div className="add-option-form">
                   <input
@@ -728,6 +746,15 @@ const Mosabaqa = () => {
                     onChange={(e) => setNewOption(e.target.value)}
                     placeholder={t('أضف خيار جديد')}
                   />
+                  <label style={{marginInlineStart: 8}}>
+                    <input
+                      type="checkbox"
+                      checked={newOptionIsCorrect}
+                      onChange={e => setNewOptionIsCorrect(e.target.checked)}
+                      style={{marginInlineEnd: 4}}
+                    />
+                    {t('الإجابة الصحيحة')}
+                  </label>
                   <button 
                     onClick={addNewOption}
                     disabled={!newOption.trim() || isLoading}
@@ -818,8 +845,7 @@ const Mosabaqa = () => {
         {showQuestionModal && (
           <div className="modal-overlay">
             <div className="question-modal">
-              <h3>{t('تعديل السؤال والإجابة الصحيحة')}</h3>
-              
+              <h3>{t('تعديل السؤال')}</h3>
               <div className="modal-form">
                 <div className="form-group">
                   <label>{t('السؤال')}</label>
@@ -832,47 +858,12 @@ const Mosabaqa = () => {
                     required
                   />
                 </div>
-                
-                {answerOptions.length > 0 ? (
-                  // إذا كانت هناك خيارات إجابة، أظهر القائمة المنسدلة
-                  <div className="form-group">
-                    <label>{t('الإجابة الصحيحة')}</label>
-                    <select
-                      name="correctAnswer"
-                      value={questionFormData.correctAnswer}
-                      onChange={handleQuestionFormChange}
-                      className="answer-select"
-                    >
-                      <option value="">{t('اختر الإجابة الصحيحة')}</option>
-                      {answerOptions.map(option => (
-                        <option key={option._id} value={option._id}>
-                          {option.text}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  // إذا لم تكن هناك خيارات إجابة، أظهر حقل إدخال للإجابة الجديدة
-                  <div className="form-group">
-                    <label>{t('أضف إجابة جديدة')}</label>
-                    <input
-                      type="text"
-                      name="newCorrectAnswer"
-                      value={questionFormData.newCorrectAnswer}
-                      onChange={handleQuestionFormChange}
-                      placeholder={t('أدخل الإجابة الصحيحة')}
-                    />
-                    <small className="hint-text">{t('سيتم حفظ هذه الإجابة كإجابة صحيحة')}</small>
-                  </div>
-                )}
 
                 <div className="modal-buttons">
                   <button 
                     className="save-btn" 
                     onClick={saveQuestion}
-                    disabled={isLoading || !questionFormData.questionText.trim() || 
-                      (answerOptions.length > 0 && !questionFormData.correctAnswer) ||
-                      (answerOptions.length === 0 && !questionFormData.newCorrectAnswer.trim())}
+                    disabled={isLoading || !questionFormData.questionText.trim()}
                   >
                     {isLoading ? t('جاري الحفظ...') : t('حفظ')}
                     {isLoading && <span className="loading-spinner"></span>}

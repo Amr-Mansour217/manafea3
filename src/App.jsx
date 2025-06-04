@@ -24,12 +24,24 @@ function App() {
 
   useEffect(() => {
     const initializeLanguage = async () => {
-      // تأكد من تحميل اللغة الصحيحة
-      await i18n.changeLanguage(i18n.language);
-      const newDirection = getDirection(i18n.language);
+      // Supported languages
+      const supportedLangs = ['ar', 'en'];
+      let storedLang = localStorage.getItem('i18nextLng');
+      let langToUse = storedLang || i18n.language || 'ar';
+      // If the language is not supported, default to 'ar'
+      if (!supportedLangs.includes(langToUse.split('-')[0])) {
+        langToUse = 'ar';
+        localStorage.setItem('i18nextLng', 'ar');
+      } else {
+        // Always use the base language (e.g., 'en' instead of 'en-GB')
+        langToUse = langToUse.split('-')[0];
+        localStorage.setItem('i18nextLng', langToUse);
+      }
+      await i18n.changeLanguage(langToUse);
+      const newDirection = getDirection(langToUse);
       setDirection(newDirection);
       document.documentElement.dir = newDirection;
-      document.documentElement.lang = i18n.language;
+      document.documentElement.lang = langToUse;
       setIsLoading(false);
     };
 
